@@ -1,21 +1,16 @@
 <template>
-  <div>
-    <IslandView />
-  </div>
+  <div id="three-root"></div>
+  <router-view />
 </template>
 
-<script setup lang="ts">
-import IslandView from '@/features/island/IslandView.vue'
-</script>
+<script setup lang="ts"></script>
 
 <style>
-html,
-body,
-#app {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  background-color: #111;
+#three-root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: auto;
 }
 </style>
