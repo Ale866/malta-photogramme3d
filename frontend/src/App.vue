@@ -11,6 +11,5 @@
   inset: 0;
   width: 100vw;
   height: 100vh;
-  pointer-events: auto;
 }
 </style>

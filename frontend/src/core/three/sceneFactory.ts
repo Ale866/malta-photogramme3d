@@ -44,12 +44,56 @@ class SceneFactory {
     light.position.set(3, 3, 5)
     this.scene.add(light)
 
+    this.setupClickHandler()
+
     this.animate()
   }
 
+  private setupClickHandler() {
+    if (!this.renderer) return
+
+    let isDragging = false
+    const canvas = this.renderer.domElement
+
+    canvas.addEventListener('mousedown', () => { isDragging = false })
+    canvas.addEventListener('mousemove', () => { isDragging = true })
+    canvas.addEventListener('mouseup', (event) => {
+      if (!isDragging) this.handleClick(event)
+    })
+  }
+
+  handleClick(event: MouseEvent) {
+    if (!this.renderer) return
+
+    const rect = this.renderer.domElement.getBoundingClientRect()
+    const mouse = new T.Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    )
+
+    const raycaster = new T.Raycaster()
+    raycaster.setFromCamera(mouse, this.camera)
+    const intersects = raycaster.intersectObjects(this.scene.children)
+
+    if (intersects && intersects.length > 0) {
+      const intersect = intersects[0]!
+      const point = intersect.point.clone()
+
+      point.project(this.camera)
+
+      const canvas = this.renderer.domElement
+      const clientX = ((point.x + 1) / 2) * canvas.clientWidth
+      const clientY = ((-point.y + 1) / 2) * canvas.clientHeight
+
+      console.log('Clicked point on object in screen coords:', clientX, clientY)
+
+    }
+  }
+
+
   private animate = () => {
     requestAnimationFrame(this.animate)
-    this.controls?.update()
+    this.controls!.update()
     this.renderer.render(this.scene, this.camera)
   }
 
@@ -64,7 +108,7 @@ class SceneFactory {
   }
 
   setVisible(show: boolean) {
-    if (!this.renderer?.domElement) return
+    if (!this.renderer.domElement) return
     this.renderer.domElement.style.display = show ? 'block' : 'none'
   }
 }
