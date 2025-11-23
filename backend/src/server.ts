@@ -1,8 +1,12 @@
-import { createApp } from './app'
-import { config } from './config/env'
+import { createApp } from "./app";
 
-const app = createApp()
+const app = createApp();
+const port = 3000;
 
-app.listen(config.PORT, () => {
-  console.log(`Server running on port ${config.PORT}`)
-})
+app.get("/", (req, res) => {
+  res.send("Hello from Express + TypeScript + ES Modules!");
+});
+
+app.listen(port, () => {
+  console.log(`Express server running at http://localhost:${port}`);
+});

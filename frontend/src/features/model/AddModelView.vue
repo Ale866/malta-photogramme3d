@@ -77,11 +77,28 @@ const handleDrop = (event: DragEvent) => {
   })
 }
 
-const submitForm = () => {
-  console.log('Title:', title.value)
-  console.log('Coordinates:', x.value, y.value)
-  console.log('Files:', files.value)
-}
+const submitForm = async () => {
+  const formData = new FormData();
+  formData.append("title", title.value);
+  debugger;
+  files.value.forEach(f => {
+    formData.append("images", f.file);
+  });
+
+  try {
+    const res = await fetch("http://localhost:3000/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    console.log("Upload response:", data);
+
+  } catch (err) {
+    console.error("Upload failed:", err);
+  }
+};
+
 </script>
 
 <style scoped>

@@ -1,22 +1,41 @@
-import { Request, Response } from 'express'
-import { runPipelineService } from '../../services/pipelineService'
+import { Request, Response } from "express";
+import { spawn } from "child_process";
 
-export async function handleImageUpload(req: Request, res: Response) {
-  try {
-    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
-      return res.status(400).json({ error: 'No images uploaded' })
-    }
+export async function runMeshroomPipeline(req: Request, res: Response) {
+  console.log("runMeshroomPipeline called");
+  // try {
+  //   const { title } = req.body;
+  //   const images = req.files as Express.Multer.File[];
 
-    const imagePaths = req.files.map(f => f.path)
+  //   if (!images || images.length === 0) {
+  //     return res.status(400).json({ error: "No images uploaded" });
+  //   }
 
-    const result = await runPipelineService(imagePaths)
+  //   const imagePaths = images.map(f => f.path);
 
-    return res.json({
-      message: 'Pipeline executed successfully',
-      output: result.outputDir
-    })
-  } catch (err: any) {
-    console.error(err)
-    return res.status(500).json({ error: 'Pipeline failed', details: err.message })
-  }
+  //   console.log("Received model:", title);
+  //   console.log("Images:", imagePaths);
+
+  //   const meshroom = spawn("C:\\Users\\Alessandro\\Documents\\UNI\\FYP\\Meshroom-2025.1.0\\meshroom_batch.exe", [
+  //     "--input", imagePaths.join(","),
+  //     "--output", `output/${Date.now()}_${title}`
+  //   ]);
+
+  //   meshroom.stdout.on("data", data => console.log("Meshroom:", data.toString()));
+  //   meshroom.stderr.on("data", data => console.error("Meshroom ERR:", data.toString()));
+
+  //   meshroom.on("close", code => {
+  //     console.log("Meshroom finished with code", code);
+  //   });
+
+  //   return res.json({
+  //     success: true,
+  //     message: "Images uploaded. Meshroom pipeline started.",
+  //     images: imagePaths
+  //   });
+
+  // } catch (err) {
+  //   console.error(err);
+  //   return res.status(500).json({ error: "Server error" });
+  // }
 }
