@@ -82,7 +82,7 @@ const submitForm = async () => {
   formData.append("title", title.value);
   debugger;
   files.value.forEach(f => {
-    formData.append("images", f.file);
+    formData.append("files", f.file);
   });
 
   try {
