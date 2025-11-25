@@ -30,6 +30,7 @@ export async function runMeshroomPipeline(req: Request, res: Response) {
       [
         "--input", jobInput,
         "--output", outputFolder,
+        "--pipeline", "c:\\Users\\Alessandro\\Documents\\UNI\\FYP\\Meshroom-2025.1.0\\aliceVision\\share\\meshroom\\photogrammetryDraft.mg"
       ],
       { shell: true }
     );
