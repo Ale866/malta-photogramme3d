@@ -1,31 +1,28 @@
-import { spawn } from 'child_process'
-import fs from 'fs'
-import path from 'path'
-import crypto from 'crypto'
-import { config } from '../config/env'
+import { spawn } from "child_process";
 
-export function runMeshroom(images: string[]): Promise<string> {
+export function runMeshroom(input: string, output: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const jobId = crypto.randomBytes(6).toString('hex')
-    const outputDir = path.join(config.OUTPUT_DIR, jobId)
+    const meshroom = spawn(
+      "C:\\Users\\Alessandro\\Documents\\UNI\\FYP\\Meshroom-2025.1.0\\meshroom_batch.exe",
+      [
+        "--input", input,
+        "--output", output,
+        "--pipeline", "c:\\Users\\Alessandro\\Documents\\UNI\\FYP\\Meshroom-2025.1.0\\aliceVision\\share\\meshroom\\photogrammetryDraft.mg"
+      ],
+      { shell: true }
+    );
 
-    fs.mkdirSync(outputDir, { recursive: true })
+    meshroom.stdout.on("data", d =>
+      console.log("[Meshroom]", d.toString())
+    );
 
-    const args = [
-      '--input', images.join(','),
-      '--output', outputDir
-    ]
+    meshroom.stderr.on("data", d =>
+      console.error("[Meshroom ERROR]", d.toString())
+    );
 
-    console.log('[Meshroom] running with args', args)
-
-    const process = spawn('meshroom_photogrammetry', args)
-
-    process.stdout.on('data', d => console.log('[Meshroom]', d.toString()))
-    process.stderr.on('data', d => console.error('[Meshroom ERROR]', d.toString()))
-
-    process.on('close', code => {
-      if (code === 0) resolve(outputDir)
-      else reject(new Error('Meshroom failed with exit code ' + code))
-    })
-  })
+    meshroom.on("close", code => {
+      if (code === 0) resolve();
+      else reject(new Error(`Meshroom exit code ${code}`));
+    });
+  });
 }
