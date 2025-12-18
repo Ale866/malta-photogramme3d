@@ -80,7 +80,6 @@ const handleDrop = (event: DragEvent) => {
 const submitForm = async () => {
   const formData = new FormData();
   formData.append("title", title.value);
-  debugger;
   files.value.forEach(f => {
     formData.append("files", f.file);
   });
