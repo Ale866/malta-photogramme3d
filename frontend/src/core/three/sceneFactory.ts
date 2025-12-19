@@ -8,7 +8,8 @@ class SceneFactory {
   private renderer: T.WebGLRenderer
   private controls: OrbitControls | null = null
   private container: HTMLElement | null = null
-  private mapOffset = new T.Vector2()
+
+  private origin = new T.Vector2()
 
   private constructor() {
     this.scene = new T.Scene()
@@ -43,7 +44,6 @@ class SceneFactory {
 
     await this.loadMaltaGeoJSON()
     this.setupClickHandler()
-
     this.animate()
   }
 
@@ -57,13 +57,7 @@ class SceneFactory {
     for (const feature of geojson.features) {
       if (!feature.geometry) continue
 
-      const geom = feature.geometry
-      const polygons =
-        geom.type === 'Polygon'
-          ? [geom.coordinates]
-          : geom.type === 'MultiPolygon'
-            ? geom.coordinates
-            : []
+      const polygons = feature.geometry.coordinates
 
       for (const polygon of polygons) {
         const outerRing = polygon[0]
@@ -82,14 +76,14 @@ class SceneFactory {
 
     const box = new T.Box2().setFromPoints(allPoints)
     const center = box.getCenter(new T.Vector2())
-    this.mapOffset.copy(center)
+    this.origin.copy(center)
 
     const geometry = new T.ExtrudeGeometry(shapes, {
-      depth: 20,
+      depth: 200,
       bevelEnabled: false
     })
 
-    geometry.translate(-center.x, -center.y, 0)
+    geometry.translate(-this.origin.x, -this.origin.y, 0)
 
     const island = new T.Mesh(
       geometry,
@@ -102,19 +96,36 @@ class SceneFactory {
     this.addPietaMarker()
   }
 
+  private utmToLocal(e: number, n: number, z = 0) {
+    return new T.Vector3(
+      e - this.origin.x,
+      n - this.origin.y,
+      z
+    )
+  }
+
+  private localToUtm(pos: T.Vector3) {
+    return {
+      east: pos.x + this.origin.x,
+      north: pos.y + this.origin.y,
+      elevation: pos.z
+    }
+  }
+
   private addVallettaMarker() {
     const vallettaE = 455945.591
     const vallettaN = 3972662.670
 
-    const x = vallettaE - this.mapOffset.x
-    const y = vallettaN - this.mapOffset.y
+    const pos = this.utmToLocal(vallettaE, vallettaN, 300)
+
+    console.log('Valletta local pos:', pos)
 
     const marker = new T.Mesh(
-      new T.SphereGeometry(40, 32, 32),
+      new T.SphereGeometry(50, 32, 32),
       new T.MeshStandardMaterial({ color: 0xff0000 })
     )
 
-    marker.position.set(x, y, 30)
+    marker.position.copy(pos)
     this.scene.add(marker)
   }
 
@@ -122,35 +133,33 @@ class SceneFactory {
     const east = 454094.313
     const north = 3972068.613
 
-    const x = east - this.mapOffset.x
-    const y = north - this.mapOffset.y
+    const pos = this.utmToLocal(east, north, 300)
 
     const marker = new T.Mesh(
-      new T.SphereGeometry(40, 32, 32),
+      new T.SphereGeometry(50, 32, 32),
       new T.MeshStandardMaterial({ color: 0xff0000 })
     )
 
-    marker.position.set(x, y, 30)
+    marker.position.copy(pos)
     this.scene.add(marker)
   }
 
   private setupClickHandler() {
     if (!this.renderer) return
-
-    let isDragging = false
     const canvas = this.renderer.domElement
+    let isDragging = false
 
-    canvas.addEventListener('mousedown', () => { isDragging = false })
-    canvas.addEventListener('mousemove', () => { isDragging = true })
+    canvas.addEventListener('mousedown', () => isDragging = false)
+    canvas.addEventListener('mousemove', () => isDragging = true)
     canvas.addEventListener('mouseup', (event) => {
       if (!isDragging) this.handleClick(event)
     })
   }
 
-  handleClick(event: MouseEvent) {
+  private handleClick(event: MouseEvent) {
     if (!this.renderer) return
-
     const rect = this.renderer.domElement.getBoundingClientRect()
+
     const mouse = new T.Vector2(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1
@@ -158,21 +167,15 @@ class SceneFactory {
 
     const raycaster = new T.Raycaster()
     raycaster.setFromCamera(mouse, this.camera)
-    const intersects = raycaster.intersectObjects(this.scene.children)
 
-    if (intersects && intersects.length > 0) {
-      const intersect = intersects[0]!
-      const point = intersect.point.clone()
+    const intersects = raycaster.intersectObjects(this.scene.children, true)
+    if (!intersects.length) return
 
-      point.project(this.camera)
+    const worldPoint = intersects[0]!.point
 
-      const canvas = this.renderer.domElement
-      const clientX = ((point.x + 1) / 2) * canvas.clientWidth
-      const clientY = ((-point.y + 1) / 2) * canvas.clientHeight
+    console.log('Local map coords:', worldPoint)
 
-      console.log('Clicked point on object in screen coords:', clientX, clientY)
-
-    }
+    console.log('UTM coords:', this.localToUtm(worldPoint))
   }
 
   private animate = () => {
