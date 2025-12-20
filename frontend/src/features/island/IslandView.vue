@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { sceneFactory } from '@/core/three/sceneFactory'
+import SearchBar from '@/components/SearchBar.vue'
 
 onMounted(() => {
   const container = document.getElementById('three-root')!
@@ -15,28 +16,5 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="search-container">
-    <input type="text" class="searchbar" placeholder="Search" />
-  </div>
+  <search-bar></search-bar>
 </template>
-
-<style scoped>
-.search-container {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.searchbar {
-  pointer-events: auto;
-  padding: 10px 12px;
-  width: 240px;
-  border-radius: 8px;
-  border: none;
-  outline: none;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-}
-</style>
