@@ -48,7 +48,7 @@ class SceneFactory {
   }
 
   private async loadMaltaGeoJSON() {
-    const response = await fetch('/malta_terrain.geojson')
+    const response = await fetch('/terrain/malta_terrain.geojson')
     const geojson = await response.json()
 
     const shapes: T.Shape[] = []
