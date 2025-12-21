@@ -20,7 +20,10 @@ export default defineComponent({
     }
 
     function select(entry?: SearchEntry) {
-      if (!entry && results.value[0]) query.value = results.value[0]
+      if (!entry && results.value[0]) {
+        query.value = results.value[0]
+        inputText.value = query.value.name
+      }
       else {
         query.value = entry!
         inputText.value = query.value.name

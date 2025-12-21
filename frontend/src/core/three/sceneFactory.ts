@@ -201,9 +201,6 @@ class SceneFactory {
     if (!intersects.length) return
 
     const worldPoint = intersects[0]!.point
-
-    console.log('Local map coords:', worldPoint)
-
     this.createMarker(worldPoint)
   }
 
