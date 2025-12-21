@@ -4,7 +4,7 @@ export default defineComponent({
   name: 'SearchBar',
   setup() {
     const query = ref('')
-    const results = ref<any[]>([])
+    const results = ref<(SearchEntry & { score: number })[]>([])
 
     let timer: number | null = null
 
@@ -18,12 +18,13 @@ export default defineComponent({
       }, 300)
     }
 
-    function select(entry: any) {
-      query.value = entry.name
+    function select(entry?: SearchEntry) {
+      if (!entry && results.value[0]) query.value = results.value[0].name
+      else query.value = entry!.name
       results.value = []
     }
 
-    let index: any[] = []
+    let index: SearchEntry[] = []
     let loaded = false
 
     async function loadSearchIndex() {
@@ -53,7 +54,7 @@ export default defineComponent({
           score -= entry.rank ?? 0
           return score > 0 ? { ...entry, score } : null
         })
-        .filter(Boolean)
+        .filter((e) => e != null)
         .sort((a, b) => b!.score - a!.score)
         .slice(0, 8)
     }
