@@ -7,6 +7,7 @@ class SceneFactory {
   private scene: T.Scene
   private camera: T.PerspectiveCamera
   private renderer: T.WebGLRenderer
+  private marker: T.Mesh | null = null
   private controls: OrbitControls | null = null
   private container: HTMLElement | null = null
 
@@ -100,12 +101,9 @@ class SceneFactory {
     )
 
     this.scene.add(island)
-
-    this.addVallettaMarker()
-    this.addPietaMarker()
   }
 
-  private utmToLocal(e: number, n: number, z = 0) {
+  utmToLocal(e: number, n: number, z = 0) {
     return new T.Vector3(
       e - this.origin.x,
       n - this.origin.y,
@@ -113,28 +111,15 @@ class SceneFactory {
     )
   }
 
-  private localToUtm(pos: T.Vector3) {
-    return {
-      east: pos.x + this.origin.x,
-      north: pos.y + this.origin.y,
-      elevation: pos.z
-    }
-  }
-
-  private addVallettaMarker() {
-    const vallettaE = 455945.591;
-    const vallettaN = 3972662.670;
-
-    const pos = this.utmToLocal(vallettaE, vallettaN, 300);
-
-    const marker = new T.Mesh(
+  createMarker(target: T.Vector3) {
+    if (this.marker) this.scene.remove(this.marker)
+    this.marker = new T.Mesh(
       new T.SphereGeometry(50, 32, 32),
       new T.MeshStandardMaterial({ color: 0xff0000 })
-    );
-    marker.position.copy(pos);
-    this.scene.add(marker);
-
-    this.flyTo(pos)
+    )
+    this.marker.position.copy({ ...target, z: 300 })
+    this.scene.add(this.marker)
+    this.flyTo(target)
   }
 
   flyTo(
@@ -188,21 +173,6 @@ class SceneFactory {
     })
   }
 
-  private addPietaMarker() {
-    const east = 454094.313
-    const north = 3972068.613
-
-    const pos = this.utmToLocal(east, north, 300)
-
-    const marker = new T.Mesh(
-      new T.SphereGeometry(50, 32, 32),
-      new T.MeshStandardMaterial({ color: 0xff0000 })
-    )
-
-    marker.position.copy(pos)
-    this.scene.add(marker)
-  }
-
   private setupClickHandler() {
     if (!this.renderer) return
     const canvas = this.renderer.domElement
@@ -234,7 +204,7 @@ class SceneFactory {
 
     console.log('Local map coords:', worldPoint)
 
-    console.log('UTM coords:', this.localToUtm(worldPoint))
+    this.createMarker(worldPoint)
   }
 
   private animate = () => {

@@ -2,7 +2,7 @@ import { ref, onMounted, defineComponent } from 'vue'
 
 export default defineComponent({
   name: 'SearchBar',
-  setup() {
+  setup(_, { emit }) {
     const query = ref<SearchEntry>(null!)
     const results = ref<(SearchEntry & { score: number })[]>([])
     const inputText = ref('')
@@ -30,6 +30,8 @@ export default defineComponent({
       if (query.value) {
         console.log(query.value.lat, query.value.lon);
       }
+
+      emit('search-selected', query.value)
     }
 
     let index: SearchEntry[] = []
