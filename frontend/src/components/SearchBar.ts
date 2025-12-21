@@ -3,8 +3,9 @@ import { ref, onMounted, defineComponent } from 'vue'
 export default defineComponent({
   name: 'SearchBar',
   setup() {
-    const query = ref('')
+    const query = ref<SearchEntry>(null!)
     const results = ref<(SearchEntry & { score: number })[]>([])
+    const inputText = ref('')
 
     let timer: number | null = null
 
@@ -14,14 +15,21 @@ export default defineComponent({
       if (timer) clearTimeout(timer)
 
       timer = window.setTimeout(() => {
-        results.value = autocomplete(query.value)
+        results.value = autocomplete(inputText.value)
       }, 300)
     }
 
     function select(entry?: SearchEntry) {
-      if (!entry && results.value[0]) query.value = results.value[0].name
-      else query.value = entry!.name
+      if (!entry && results.value[0]) query.value = results.value[0]
+      else {
+        query.value = entry!
+        inputText.value = query.value.name
+      }
       results.value = []
+
+      if (query.value) {
+        console.log(query.value.lat, query.value.lon);
+      }
     }
 
     let index: SearchEntry[] = []
@@ -55,7 +63,7 @@ export default defineComponent({
           return score > 0 ? { ...entry, score } : null
         })
         .filter((e) => e != null)
-        .sort((a, b) => b!.score - a!.score)
+        .sort((a, b) => b.score - a.score)
         .slice(0, 8)
     }
 
@@ -72,6 +80,7 @@ export default defineComponent({
     return {
       query,
       results,
+      inputText,
       onInput,
       select
     }

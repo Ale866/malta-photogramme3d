@@ -1,6 +1,6 @@
 <template>
   <div class="search-container">
-    <input v-model="query" @input="onInput" placeholder="Search" class="searchbar" @keyup.enter="() => select()" />
+    <input v-model="inputText" @input="onInput" placeholder="Search" class="searchbar" @keyup.enter="() => select()" />
 
     <div v-if="results.length" class="results-container">
       <div v-for="r in results" :key="r.id" class="result-item" @click="select(r)">

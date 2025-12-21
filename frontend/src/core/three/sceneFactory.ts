@@ -1,3 +1,4 @@
+import gsap from 'gsap'
 import * as T from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
@@ -38,6 +39,14 @@ class SceneFactory {
     this.camera.lookAt(0, 0, 0)
 
     this.scene.add(new T.AmbientLight(0xffffff, 0.6))
+    const axesHelper = new T.AxesHelper(5_000_000);
+    axesHelper.setColors(
+      new T.Color(0xff0000),
+      new T.Color(0x00ff00),
+      new T.Color(0x0000ff)
+    );
+    this.scene.add(axesHelper);
+
     const dir = new T.DirectionalLight(0xffffff, 0.8)
     dir.position.set(1000, 1000, 2000)
     this.scene.add(dir)
@@ -113,20 +122,70 @@ class SceneFactory {
   }
 
   private addVallettaMarker() {
-    const vallettaE = 455945.591
-    const vallettaN = 3972662.670
+    const vallettaE = 455945.591;
+    const vallettaN = 3972662.670;
 
-    const pos = this.utmToLocal(vallettaE, vallettaN, 300)
-
-    console.log('Valletta local pos:', pos)
+    const pos = this.utmToLocal(vallettaE, vallettaN, 300);
 
     const marker = new T.Mesh(
       new T.SphereGeometry(50, 32, 32),
       new T.MeshStandardMaterial({ color: 0xff0000 })
+    );
+    marker.position.copy(pos);
+    this.scene.add(marker);
+
+    this.flyTo(pos)
+  }
+
+  flyTo(
+    target: T.Vector3,
+    options?: {
+      height?: number
+      angleX?: number
+      angleY?: number
+      duration?: number
+    }
+  ) {
+    if (!this.controls) return
+
+    const {
+      height = 2500,
+      angleX = -Math.PI / 6,
+      angleY = -Math.PI / 6,
+      duration = 2.5
+    } = options || {}
+
+    this.controls.enabled = false
+
+    const distance = height / Math.cos(angleX)
+
+    const offset = new T.Vector3(
+      Math.sin(angleY) * Math.sin(angleX) * distance,
+      Math.cos(angleY) * Math.sin(angleX) * distance,
+      Math.cos(angleX) * distance
     )
 
-    marker.position.copy(pos)
-    this.scene.add(marker)
+    const cameraTargetPos = target.clone().add(offset)
+
+    gsap.to(this.controls.target, {
+      x: target.x,
+      y: target.y,
+      z: target.z,
+      duration,
+      ease: 'power3.inOut'
+    })
+
+    gsap.to(this.camera.position, {
+      x: cameraTargetPos.x,
+      y: cameraTargetPos.y,
+      z: cameraTargetPos.z,
+      duration,
+      ease: 'power3.inOut',
+      onUpdate: () => { this.controls!.update() },
+      onComplete: () => {
+        this.controls!.enabled = true
+      }
+    })
   }
 
   private addPietaMarker() {
