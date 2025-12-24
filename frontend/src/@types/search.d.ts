@@ -5,4 +5,5 @@ interface SearchEntry {
   type: string;
   lat: number;
   lon: number;
+  city: string;
 }

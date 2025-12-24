@@ -5,6 +5,7 @@
     <div v-if="results.length" class="results-container">
       <div v-for="r in results" :key="r.id" class="result-item" @click="select(r)">
         <strong class="result-name">{{ r.name }}</strong>
+        <small>{{ r.city }}</small>
       </div>
     </div>
   </div>
