@@ -48,26 +48,88 @@ export default defineComponent({
       loaded = true
     }
 
+    function levenshtein(a: string, b: string): number {
+      const aLen = a.length
+      const bLen = b.length
+
+      if (a === b) return 0
+      if (aLen === 0) return bLen
+      if (bLen === 0) return aLen
+
+      const prev: number[] = Array.from(
+        { length: bLen + 1 },
+        (_, i): number => i
+      )
+
+      for (let i = 1; i <= aLen; i++) {
+        let prevDiagonal: number = prev[0]!
+        prev[0] = i
+
+        const aChar = a.charAt(i - 1)
+
+        for (let j = 1; j <= bLen; j++) {
+          const temp: number = prev[j]!
+          const bChar = b.charAt(j - 1)
+
+          const cost: number = aChar === bChar ? 0 : 1
+
+          prev[j] = Math.min(
+            prev[j]! + 1,
+            prev[j - 1]! + 1,
+            prevDiagonal + cost
+          )
+
+          prevDiagonal = temp
+        }
+      }
+      return prev[bLen]!
+    }
+
     function autocomplete(query: string) {
       const q = normalize(query)
       if (q.length < 2) return []
 
-      const tokens = q.split(' ')
+      const qTokens = q.split(/\s+/)
 
       return index
         .map(entry => {
           const name = normalize(entry.name)
+          const nameTokens = name.split(/\s+/)
+
           let score = 0
 
-          for (const t of tokens) {
-            if (name.startsWith(t)) score += 5
-            else if (name.includes(t)) score += 2
+          for (const qToken of qTokens) {
+            let bestTokenScore = 0
+
+            for (const nameToken of nameTokens) {
+              if (nameToken === qToken) {
+                bestTokenScore = Math.max(bestTokenScore, 12)
+              }
+              else if (nameToken.startsWith(qToken)) {
+                bestTokenScore = Math.max(bestTokenScore, 8)
+              }
+              else if (nameToken.includes(qToken)) {
+                bestTokenScore = Math.max(bestTokenScore, 5)
+              }
+              else {
+                const dist = levenshtein(qToken, nameToken)
+                if (dist === 1) bestTokenScore = Math.max(bestTokenScore, 4)
+                else if (dist === 2) bestTokenScore = Math.max(bestTokenScore, 2)
+              }
+            }
+
+            score += bestTokenScore
           }
 
-          score -= entry.rank ?? 0
+          if (score > 0 && qTokens.length > 1) {
+            score += 2
+          }
+
+          score = score - (entry.rank ?? 0)
+
           return score > 0 ? { ...entry, score } : null
         })
-        .filter((e) => e != null)
+        .filter(e => e != null)
         .sort((a, b) => b.score - a.score)
         .slice(0, 8)
     }
