@@ -125,7 +125,7 @@ export default defineComponent({
             score += 2
           }
 
-          score = score - (entry.rank ?? 0)
+          //  score = score - (entry.rank ?? 0)
 
           return score > 0 ? { ...entry, score } : null
         })

@@ -40,13 +40,6 @@ class SceneFactory {
     this.camera.lookAt(0, 0, 0)
 
     this.scene.add(new T.AmbientLight(0xffffff, 0.6))
-    const axesHelper = new T.AxesHelper(5_000_000);
-    axesHelper.setColors(
-      new T.Color(0xff0000),
-      new T.Color(0x00ff00),
-      new T.Color(0x0000ff)
-    );
-    this.scene.add(axesHelper);
 
     const dir = new T.DirectionalLight(0xffffff, 0.8)
     dir.position.set(1000, 1000, 2000)
@@ -141,6 +134,8 @@ class SceneFactory {
     } = options || {}
 
     this.controls.enabled = false
+
+    console.log(target)
 
     const distance = height / Math.cos(angleX)
 
