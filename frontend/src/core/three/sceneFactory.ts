@@ -1,7 +1,7 @@
 import gsap from 'gsap'
 import * as T from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { makeTerrainFromGeoTIFF, makeAlphaMaskFromGeoJSON } from '@/utils/demTerrain'
+import { loadTerrainModelGLB } from '@/utils/terrainModel'
 import { latLonToUTM } from '@/utils/coordinates'
 
 class SceneFactory {
@@ -12,15 +12,16 @@ class SceneFactory {
   private marker: T.Mesh | null = null
   private controls: OrbitControls | null = null
   private container: HTMLElement | null = null
-  private terrain: T.Mesh | null = null
+  private terrain: T.Object3D | null = null
+
   private origin = new T.Vector2()
 
   private constructor() {
     this.scene = new T.Scene()
     this.scene.background = new T.Color(0xe6f0ff)
-    this.scene.fog = new T.Fog(0xe6f0ff, 5000, 120000)
+    this.scene.fog = new T.Fog(0xe6f0ff, 100, 2000)
 
-    this.camera = new T.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5_000_000)
+    this.camera = new T.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5_000_000)
 
     this.renderer = new T.WebGLRenderer({ antialias: true })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -49,57 +50,47 @@ class SceneFactory {
     this.scene.add(new T.HemisphereLight(0xffffff, 0x6b7a99, 0.55))
 
     const dir = new T.DirectionalLight(0xffffff, 1.05)
-    dir.position.set(15000, -12000, 22000)
+    dir.position.set(22000, 26000, 12000)
     dir.castShadow = true
-    dir.shadow.mapSize.width = 2048
-    dir.shadow.mapSize.height = 2048
-    dir.shadow.camera.near = 1
-    dir.shadow.camera.far = 120_000
-    dir.shadow.camera.left = -60_000
-    dir.shadow.camera.right = 60_000
-    dir.shadow.camera.top = 60_000
-    dir.shadow.camera.bottom = -60_000
+
     this.scene.add(dir)
 
-    const { mesh, bbox, zRange } = await makeTerrainFromGeoTIFF({
-      url: '/terrain/dtm_1m_2018_32.tiff',
+    const { root, bboxLocalXZ, yRange } = await loadTerrainModelGLB({
+      url: '/terrain/malta.glb',
       origin: this.origin,
-      segments: 256,
-      zScale: 2.2,
-      seaLevel: 0,
+      scale: 1,
+      verticalExaggeration: 1.0,
+      altitudeColors: true,
     })
 
-    const alphaMask = await makeAlphaMaskFromGeoJSON({
-      url: '/terrain/malta_terrain.geojson',
-      bbox,
-      size: 2048,
+    this.terrain = root
+    this.scene.add(root)
+
+    const oceanMat = new T.MeshStandardMaterial({
+      color: 0x2a6fb0,
+      roughness: 0.35,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.9,
+      side: T.DoubleSide,
+      depthWrite: false,
     })
-
-    const mat = mesh.material as T.MeshStandardMaterial
-    mat.transparent = true
-    mat.alphaMap = alphaMask
-    mat.alphaTest = 0.55
-    mat.needsUpdate = true
-
-    this.terrain = mesh
-    this.scene.add(mesh)
 
     const ocean = new T.Mesh(
-      new T.PlaneGeometry((bbox.maxX - bbox.minX) * 1.4, (bbox.maxY - bbox.minY) * 1.4),
-      new T.MeshStandardMaterial({
-        color: 0x2a6fb0,
-        roughness: 0.35,
-        metalness: 0.05,
-        transparent: true,
-        opacity: 0.9,
-        side: T.DoubleSide,
-      })
+      new T.PlaneGeometry(
+        (bboxLocalXZ.maxX - bboxLocalXZ.minX) * 1.6,
+        (bboxLocalXZ.maxZ - bboxLocalXZ.minZ) * 1.6
+      ),
+      oceanMat
     )
-    ocean.position.set(0, 0, -25)
-    ocean.receiveShadow = true
+
+    ocean.rotation.x = -Math.PI / 2
+    ocean.position.set(0, -2, 0)
+    ocean.receiveShadow = false
+    ocean.renderOrder = -1
     this.scene.add(ocean)
 
-    this.frameObject(mesh, zRange)
+    this.frameObject(root, yRange)
 
     this.setupClickHandler()
     this.animate()
@@ -112,28 +103,28 @@ class SceneFactory {
 
   public goToUTM(easting: number, northing: number) {
     const local = this.utmToLocal(easting, northing, 0)
-    local.z = this.sampleTerrainHeightLocal(local.x, local.y)
+    local.y = this.sampleTerrainHeightLocal(local.x, local.z)
     this.createMarker(local)
   }
 
-  public utmToLocal(e: number, n: number, z = 0) {
-    return new T.Vector3(e - this.origin.x, n - this.origin.y, z)
+  public utmToLocal(e: number, n: number, y = 0) {
+    return new T.Vector3(e - this.origin.x, y, n - this.origin.y)
   }
 
-  private sampleTerrainHeightLocal(x: number, y: number) {
+  private sampleTerrainHeightLocal(x: number, z: number) {
     if (!this.terrain) return 0
 
     const raycaster = new T.Raycaster()
-    const from = new T.Vector3(x, y, 2_000_000)
-    const dir = new T.Vector3(0, 0, -1)
+    const from = new T.Vector3(x, 2_000_000, z)
+    const dir = new T.Vector3(0, -1, 0)
     raycaster.set(from, dir)
 
     const hits = raycaster.intersectObject(this.terrain, true)
     if (!hits.length) return 0
-    return hits[0]!.point.z
+    return hits[0]!.point.y
   }
 
-  private frameObject(obj: T.Object3D, zRange?: { min: number; max: number }) {
+  private frameObject(obj: T.Object3D, yRange?: { min: number; max: number }) {
     if (!this.controls) return
 
     const box = new T.Box3().setFromObject(obj)
@@ -142,33 +133,38 @@ class SceneFactory {
     box.getCenter(center)
     box.getSize(size)
 
-    const maxDim = Math.max(size.x, size.y)
+    const maxDim = Math.max(size.x, size.z)
     const fov = this.camera.fov * (Math.PI / 180)
     const dist = (maxDim / 2) / Math.tan(fov / 2)
 
-    const lift = zRange ? (zRange.max - zRange.min) * 0.25 : 0
-    this.controls.target.set(center.x, center.y, center.z + lift)
+    const lift = yRange ? (yRange.max - yRange.min) * 0.15 : 0
+    this.controls.target.set(center.x, center.y + lift, center.z)
 
-    this.camera.position.set(center.x + dist * 0.55, center.y - dist * 0.65, center.z + dist * 0.95)
-    this.camera.near = Math.max(1, dist / 200)
-    this.camera.far = dist * 250
+    this.camera.position.set(center.x, center.y + dist * 1.15, center.z)
+
+    this.camera.near = Math.max(0.1, dist / 800)
+    this.camera.far = dist * 6
     this.camera.updateProjectionMatrix()
+
     this.controls.update()
   }
 
   createMarker(target: T.Vector3) {
     if (this.marker) this.scene.remove(this.marker)
 
+    const radius = 1
+    const lift = 3
+
     this.marker = new T.Mesh(
-      new T.SphereGeometry(50, 32, 32),
+      new T.SphereGeometry(radius, 24, 24),
       new T.MeshStandardMaterial({ color: 0xff2d2d })
     )
 
-    this.marker.position.set(target.x, target.y, target.z + 300)
+    this.marker.position.set(target.x, target.y + lift, target.z)
     this.scene.add(this.marker)
+
     this.flyTo(target)
   }
-
   flyTo(
     target: T.Vector3,
     options?: {
@@ -181,7 +177,7 @@ class SceneFactory {
     if (!this.controls) return
 
     const {
-      height = 3500,
+      height = 50,
       angleX = -Math.PI / 7,
       angleY = -Math.PI / 6,
       duration = 2.2
@@ -191,9 +187,9 @@ class SceneFactory {
 
     const distance = height / Math.cos(angleX)
     const offset = new T.Vector3(
-      Math.sin(angleY) * Math.sin(angleX) * distance,
-      Math.cos(angleY) * Math.sin(angleX) * distance,
-      Math.cos(angleX) * distance
+      Math.sin(angleY) * Math.sin(-angleX) * distance,
+      Math.cos(-angleX) * distance,
+      Math.cos(angleY) * Math.sin(-angleX) * distance
     )
 
     const cameraTargetPos = target.clone().add(offset)
