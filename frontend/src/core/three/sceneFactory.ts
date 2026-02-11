@@ -54,7 +54,7 @@ class SceneFactory {
     const v = (n - minN) / (maxN - minN)
 
     const x = minX + u * (maxX - minX)
-    const z = minZ + v * (maxZ - minZ)
+    const z = maxZ - v * (maxZ - minZ)
 
     return new T.Vector3(x, y, z)
   }
