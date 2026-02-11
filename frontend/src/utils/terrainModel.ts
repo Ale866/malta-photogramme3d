@@ -1,4 +1,3 @@
-// src/utils/terrainModel.ts
 import * as T from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
@@ -55,30 +54,30 @@ export async function loadTerrainModelGLB(options: {
   const gltf = await loader.loadAsync(url)
   const root = gltf.scene
 
-  if (rotateY !== 0) root.rotation.y += rotateY
+  root.rotation.y += rotateY
 
   root.scale.setScalar(scale)
   root.scale.y *= verticalExaggeration
 
+  const box0 = new T.Box3().setFromObject(root)
+  const center0 = new T.Vector3()
+  box0.getCenter(center0)
+
+  origin.set(center0.x, center0.z)
+
+  const baseY0 = box0.min.y
+  root.position.set(-center0.x, -baseY0, -center0.z)
+
   const box = new T.Box3().setFromObject(root)
-  const center = new T.Vector3()
-  box.getCenter(center)
-
-  origin.set(center.x, center.z)
-
-  const baseY = box.min.y
-  root.position.set(-center.x, -baseY, -center.z)
-
-  const shifted = new T.Box3().setFromObject(root)
 
   const bboxLocalXZ = {
-    minX: shifted.min.x,
-    maxX: shifted.max.x,
-    minZ: shifted.min.z,
-    maxZ: shifted.max.z,
+    minX: box.min.x,
+    maxX: box.max.x,
+    minZ: box.min.z,
+    maxZ: box.max.z,
   }
 
-  const yRange = { min: shifted.min.y, max: shifted.max.y }
+  const yRange = { min: box.min.y, max: box.max.y }
 
   root.traverse((obj) => {
     const mesh = obj as T.Mesh
@@ -89,42 +88,35 @@ export async function loadTerrainModelGLB(options: {
       roughness: 0.95,
       metalness: 0.0,
       side: T.DoubleSide,
+      flatShading: false,
     })
-    mesh.castShadow = true
-    mesh.receiveShadow = true
 
     const geom = mesh.geometry as T.BufferGeometry
-    const g2 = geom.index ? geom.toNonIndexed() : geom
-    mesh.geometry = g2
-
-    const pos = g2.attributes.position as T.BufferAttribute | undefined
+    const pos = geom.attributes.position as T.BufferAttribute | undefined
     if (!pos) return
 
-    if (!altitudeColors) {
-      g2.computeVertexNormals()
-      return
+    if (altitudeColors) {
+      const colors = new Float32Array(pos.count * 3)
+      const colAttr = new T.BufferAttribute(colors, 3)
+
+      const denom = Math.max(1e-6, yRange.max - yRange.min)
+      const tmp = new T.Color()
+
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i)
+        const h01 = clamp((y - yRange.min) / denom, 0, 1)
+        tmp.copy(heightToColor(h01))
+        colAttr.setXYZ(i, tmp.r, tmp.g, tmp.b)
+      }
+
+      geom.setAttribute('color', colAttr)
     }
 
-    const colors = new Float32Array(pos.count * 3)
-    const colAttr = new T.BufferAttribute(colors, 3)
+    geom.computeVertexNormals()
 
-    const denom = Math.max(1e-6, yRange.max - yRange.min)
-    const tmp = new T.Color()
-
-    for (let i = 0; i < pos.count; i++) {
-      const y = pos.getY(i)
-      const h01 = clamp((y - yRange.min) / denom, 0, 1)
-      tmp.copy(heightToColor(h01))
-      colAttr.setXYZ(i, tmp.r, tmp.g, tmp.b)
-    }
-
-    g2.setAttribute('color', colAttr)
-    g2.computeVertexNormals()
+    mesh.castShadow = true
+    mesh.receiveShadow = true
   })
 
-  return {
-    root,
-    bboxLocalXZ,
-    yRange,
-  }
+  return { root, bboxLocalXZ, yRange }
 }

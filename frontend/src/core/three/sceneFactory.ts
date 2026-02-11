@@ -15,11 +15,13 @@ class SceneFactory {
   private terrain: T.Object3D | null = null
 
   private origin = new T.Vector2()
+  private utmBbox: { minE: number; minN: number; maxE: number; maxN: number } | null = null
+  private modelBboxXZ: { minX: number; minZ: number; maxX: number; maxZ: number } | null = null
 
   private constructor() {
     this.scene = new T.Scene()
     this.scene.background = new T.Color(0xe6f0ff)
-    this.scene.fog = new T.Fog(0xe6f0ff, 100, 2000)
+    this.scene.fog = new T.Fog(0xe6f0ff, 300, 1_000)
 
     this.camera = new T.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5_000_000)
 
@@ -38,6 +40,25 @@ class SceneFactory {
     return SceneFactory.instance
   }
 
+  public setUtmBbox(b: { minE: number; minN: number; maxE: number; maxN: number }) {
+    this.utmBbox = b
+  }
+
+  public utmToLocal(e: number, n: number, y = 0) {
+    if (!this.utmBbox || !this.modelBboxXZ) return new T.Vector3(0, y, 0)
+
+    const { minE, minN, maxE, maxN } = this.utmBbox
+    const { minX, minZ, maxX, maxZ } = this.modelBboxXZ
+
+    const u = (e - minE) / (maxE - minE)
+    const v = (n - minN) / (maxN - minN)
+
+    const x = minX + u * (maxX - minX)
+    const z = minZ + v * (maxZ - minZ)
+
+    return new T.Vector3(x, y, z)
+  }
+
   async init(container: HTMLElement) {
     this.container = container
     container.appendChild(this.renderer.domElement)
@@ -47,12 +68,14 @@ class SceneFactory {
     this.controls.enableDamping = true
     this.controls.screenSpacePanning = true
 
-    this.scene.add(new T.HemisphereLight(0xffffff, 0x6b7a99, 0.55))
+    this.scene.add(new T.HemisphereLight(0xffffff, 0x6b7a99, 0.95))
+    this.scene.add(new T.AmbientLight(0xffffff, 0.18))
 
     const dir = new T.DirectionalLight(0xffffff, 1.05)
     dir.position.set(22000, 26000, 12000)
     dir.castShadow = true
-
+    dir.shadow.bias = -0.0005
+    dir.shadow.normalBias = 0.2
     this.scene.add(dir)
 
     const { root, bboxLocalXZ, yRange } = await loadTerrainModelGLB({
@@ -61,7 +84,10 @@ class SceneFactory {
       scale: 1,
       verticalExaggeration: 1.0,
       altitudeColors: true,
+      rotateY: 0,
     })
+
+    this.modelBboxXZ = bboxLocalXZ
 
     this.terrain = root
     this.scene.add(root)
@@ -70,10 +96,7 @@ class SceneFactory {
       color: 0x2a6fb0,
       roughness: 0.35,
       metalness: 0.05,
-      transparent: true,
-      opacity: 0.9,
       side: T.DoubleSide,
-      depthWrite: false,
     })
 
     const ocean = new T.Mesh(
@@ -87,7 +110,6 @@ class SceneFactory {
     ocean.rotation.x = -Math.PI / 2
     ocean.position.set(0, -2, 0)
     ocean.receiveShadow = false
-    ocean.renderOrder = -1
     this.scene.add(ocean)
 
     this.frameObject(root, yRange)
@@ -105,10 +127,6 @@ class SceneFactory {
     const local = this.utmToLocal(easting, northing, 0)
     local.y = this.sampleTerrainHeightLocal(local.x, local.z)
     this.createMarker(local)
-  }
-
-  public utmToLocal(e: number, n: number, y = 0) {
-    return new T.Vector3(e - this.origin.x, y, n - this.origin.y)
   }
 
   private sampleTerrainHeightLocal(x: number, z: number) {
@@ -145,26 +163,22 @@ class SceneFactory {
     this.camera.near = Math.max(0.1, dist / 800)
     this.camera.far = dist * 6
     this.camera.updateProjectionMatrix()
-
     this.controls.update()
   }
 
   createMarker(target: T.Vector3) {
     if (this.marker) this.scene.remove(this.marker)
 
-    const radius = 1
-    const lift = 3
-
     this.marker = new T.Mesh(
-      new T.SphereGeometry(radius, 24, 24),
+      new T.SphereGeometry(1, 24, 24),
       new T.MeshStandardMaterial({ color: 0xff2d2d })
     )
 
-    this.marker.position.set(target.x, target.y + lift, target.z)
+    this.marker.position.set(target.x, target.y + 1, target.z)
     this.scene.add(this.marker)
-
     this.flyTo(target)
   }
+
   flyTo(
     target: T.Vector3,
     options?: {
@@ -248,7 +262,7 @@ class SceneFactory {
     this.renderer.render(this.scene, this.camera)
   }
 
-  resize() {
+  resize = () => {
     if (!this.container) return
     const w = this.container.clientWidth
     const h = this.container.clientHeight
