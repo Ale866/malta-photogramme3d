@@ -23,14 +23,9 @@ const sessionSchema = new Schema(
       default: null,
     },
     userAgent: { type: String, required: false },
-    ip: { type: String, required: false },
   },
   { timestamps: true }
 );
-
-// Optional: TTL index so Mongo can auto-delete expired sessions.
-// If you use this, ensure `expiresAt` is set correctly.
-// sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export type SessionDoc = InferSchemaType<typeof sessionSchema> & { _id: mongoose.Types.ObjectId };
 
