@@ -1,25 +1,20 @@
 import { Request, Response } from 'express';
 import { register } from '../../application/auth/register';
-import { config } from '../../config/env';
-import { ttlToMs } from "../../utils/timestamp";
+import { authServices } from '../auth/authServices';
+import { setRefreshCookie, clearRefreshCookie } from '../auth/refreshCookie';
 
 export async function registerController(req: Request, res: Response) {
   try {
     const { email, password, nickname } = req.body ?? {};
 
-    const result = await register({
+    const result = await register(authServices, {
       email,
       password,
       nickname,
       userAgent: req.headers['user-agent'],
     });
 
-    res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/auth/refresh',
-      maxAge: ttlToMs(config.JWT_REFRESH_TTL),
-    });
+    setRefreshCookie(res, result.refreshToken);
 
     return res.status(201).json({
       accessToken: result.accessToken,
