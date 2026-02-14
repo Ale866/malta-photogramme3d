@@ -9,13 +9,15 @@ export type SessionWithHash = SessionDTO & {
   refreshTokenHash: string;
 };
 
+export type CreateSessionInput = {
+  userId: string;
+  refreshTokenHash: string;
+  expiresAt: Date;
+  userAgent?: string;
+};
+
 export interface SessionRepository {
-  create(input: {
-    userId: string;
-    refreshTokenHash: string;
-    expiresAt: Date;
-    userAgent?: string;
-  }): Promise<SessionDTO>;
+  create(input: CreateSessionInput): Promise<SessionDTO>;
   findByRefreshTokenHash(hash: string): Promise<SessionWithHash | null>;
   revoke(sessionId: string): Promise<void>;
 }

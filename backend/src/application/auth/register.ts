@@ -16,21 +16,19 @@ type RegisterInput = {
 export async function register(input: RegisterInput) {
   const email = input.email.trim().toLowerCase();
   const password = input.password;
+  const nickname = input.nickname.trim();
 
-  if (!email || !password) {
-    throw new Error('Email and password are required');
-  }
-  if (password.length < 6) {
-    throw new Error('Password must be at least 6 characters');
-  }
+  if (!email) throw new Error('Email is required');
+  if (!password) throw new Error('Password is required');
+  if (!nickname) throw new Error('Nickname is required');
+
+  if (password.length < 6) throw new Error('Password must be at least 6 characters');
 
   const existing = await userRepo.findByEmail(email);
-  if (existing) {
-    throw new Error('Email already in use');
-  }
+  if (existing) throw new Error('Email already in use');
 
   const passwordHash = await hashPassword(password);
-  const user = await userRepo.create({ email, passwordHash, nickname: input.nickname });
+  const user = await userRepo.create({ email, passwordHash, nickname });
 
   const refreshToken = generateRefreshToken();
   const refreshTokenHash = hashRefreshToken(refreshToken);

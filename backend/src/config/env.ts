@@ -15,6 +15,6 @@ export const config = {
   MONGODB_URI: requireEnv('MONGODB_URI'),
 
   JWT_ACCESS_SECRET: requireEnv('JWT_ACCESS_SECRET'),
-  JWT_ACCESS_TTL: process.env.JWT_ACCESS_TTL,
-  JWT_REFRESH_TTL: process.env.JWT_REFRESH_TTL,
+  JWT_ACCESS_TTL: requireEnv('JWT_ACCESS_TTL'),
+  JWT_REFRESH_TTL: requireEnv('JWT_REFRESH_TTL'),
 };
