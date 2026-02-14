@@ -12,6 +12,4 @@ export type AuthServices = {
 
   generateRefreshToken: () => string;
   hashRefreshToken: (t: string) => string;
-
-  now?: () => Date;
 };
