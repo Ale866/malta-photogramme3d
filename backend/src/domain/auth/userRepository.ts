@@ -1,16 +1,24 @@
-export type UserDTO = {
+export type User = {
   id: string;
   email: string;
   nickname: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-export type UserWithPasswordHash = UserDTO & {
+export type UserWithPasswordHash = User & {
   passwordHash: string;
 };
 
+export type UserCreateInput = {
+  email: string;
+  passwordHash: string;
+  nickname: string;
+};
+
 export interface UserRepository {
-  create(input: UserDTO): Promise<UserDTO>;
-  findByEmail(email: string): Promise<UserDTO | null>;
+  create(input: UserCreateInput): Promise<User>;
+  findByEmail(email: string): Promise<User | null>;
   findByEmailWithPassword(email: string): Promise<UserWithPasswordHash | null>;
-  findById(id: string): Promise<UserDTO | null>;
+  findById(id: string): Promise<User | null>;
 }

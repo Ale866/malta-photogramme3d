@@ -1,8 +1,8 @@
 import { SessionModel } from '../db/models/SessionModel';
-import { CreateSessionInput, SessionDTO, SessionWithHash } from '../../domain/auth/sessionRepository';
+import { CreateSessionInput, Session, SessionWithHash } from '../../domain/auth/sessionRepository';
 
 export const sessionRepo = {
-  async create(input: CreateSessionInput): Promise<SessionDTO> {
+  async create(input: CreateSessionInput): Promise<Session> {
     const doc = await SessionModel.create({
       userId: input.userId,
       refreshTokenHash: input.refreshTokenHash,
@@ -19,7 +19,7 @@ export const sessionRepo = {
     };
   },
 
-  async findByRefreshTokenHash(hash: string): Promise<(SessionWithHash) | null> {
+  async findByRefreshTokenHash(hash: string): Promise<SessionWithHash | null> {
     const doc = await SessionModel.findOne({ refreshTokenHash: hash });
     if (!doc) return null;
 

@@ -19,7 +19,15 @@ const userSchema = new Schema(
       required: true,
       trim: true,
       maxlength: 50,
-    }
+    },
+    createdAt: {
+      type: Date,
+      default: null,
+    },
+    updatedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
