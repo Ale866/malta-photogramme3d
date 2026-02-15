@@ -1,6 +1,6 @@
 <template>
   <div id="three-root"></div>
-  <router-view />
+  <router-view class="router-view" />
 </template>
 
 <script setup lang="ts"></script>
@@ -11,5 +11,10 @@
   inset: 0;
   width: 100vw;
   height: 100vh;
+}
+
+.router-view {
+  position: relative;
+  z-index: 2;
 }
 </style>

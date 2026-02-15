@@ -8,6 +8,7 @@ const LoginView = () => import('@/features/auth/views/LoginView.vue')
 const routes = [
   { path: '/', name: "Island", component: IslandView },
   { path: '/add-model', name: "AddModel", meta: { requiresAuth: true }, component: AddModelView },
+  { path: '/login', name: "Login", component: LoginView },
 ]
 
 export const router = createRouter({

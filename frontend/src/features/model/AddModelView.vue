@@ -102,8 +102,6 @@ const submitForm = async () => {
 
 <style scoped>
 .add-model {
-  z-index: 2;
-  position: relative;
   padding: 1rem;
   max-width: 460px;
   background: #1c1c1c;
