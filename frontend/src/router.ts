@@ -1,6 +1,6 @@
 import { createWebHistory, createRouter } from 'vue-router'
 
-const IslandView = () => import('@/features/island/IslandView.vue')
+const IslandView = () => import('@/features/island/views/IslandView.vue')
 const AddModelView = () => import('@/features/model/AddModelView.vue')
 
 const routes = [

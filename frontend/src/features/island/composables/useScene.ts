@@ -1,8 +1,8 @@
+import { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
 import { shallowRef, onUnmounted } from 'vue'
-import { SceneOrchestrator } from '@/core/three/SceneOrchestrator'
 
 export function useScene() {
-  const orchestrator = shallowRef<SceneOrchestrator | null>(null)
+  const orchestrator = shallowRef<IslandOrchestrator | null>(null)
   const isInitialized = shallowRef(false)
   const isLoading = shallowRef(false)
   const error = shallowRef<string | null>(null)
@@ -23,7 +23,7 @@ export function useScene() {
     error.value = null
 
     try {
-      orchestrator.value = new SceneOrchestrator()
+      orchestrator.value = new IslandOrchestrator()
 
       await orchestrator.value.init(container, options)
 
@@ -46,7 +46,7 @@ export function useScene() {
     }
   }
 
-  function getOrchestrator(): SceneOrchestrator {
+  function getOrchestrator(): IslandOrchestrator {
     if (!orchestrator.value) {
       throw new Error('Scene not initialized. Call initScene() first.')
     }

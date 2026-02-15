@@ -1,13 +1,13 @@
-import { SceneRenderer } from './rendering/SceneRenderer'
-import { CameraController } from './controls/CameraController'
-import { InteractionHandler } from './controls/InteractionHandler'
-import { MarkerRenderer } from './objects/MarkerRenderer'
+import { SceneRenderer } from '@/core/three/rendering/SceneRenderer'
+import { CameraController } from '@/core/three/controls/CameraController'
+import { InteractionHandler } from '@/core/three/controls/InteractionHandler'
+import { MarkerRenderer } from '@/core/three/objects/MarkerRenderer'
 import { CoordinateMapper } from '@/features/terrain/domain/CoordinateMapper'
 import { TerrainService } from '@/features/terrain/application/TerrainService'
 import { NavigationService } from '@/features/navigation/application/NavigationService'
 
 
-export class SceneOrchestrator {
+export class IslandOrchestrator {
   private sceneRenderer: SceneRenderer
   private cameraController: CameraController | null = null
   private interactionHandler: InteractionHandler | null = null
@@ -86,7 +86,7 @@ export class SceneOrchestrator {
 
   getNavigationService() {
     if (!this.navigationService) {
-      throw new Error('SceneOrchestrator not initialized. Call init() first.')
+      throw new Error('IslandOrchestrator not initialized. Call init() first.')
     }
     return this.navigationService
   }

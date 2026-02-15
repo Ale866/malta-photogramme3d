@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useScene } from '@/core/composables/useScene'
+import { useScene } from '@/features/island/composables/useScene'
 import SearchBar from '@/components/SearchBar.vue'
 
 const { initScene, getOrchestrator } = useScene()
