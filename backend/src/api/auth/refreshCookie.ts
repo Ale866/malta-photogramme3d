@@ -8,7 +8,7 @@ export function setRefreshCookie(res: Response, refreshToken: string) {
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
     sameSite: 'lax',
-    path: '/auth/refresh',
+    path: '/auth',
     maxAge: ttlToMs(config.JWT_REFRESH_TTL),
   });
 }
@@ -19,6 +19,6 @@ export function getRefreshCookieName() {
 
 export function clearRefreshCookie(res: Response) {
   res.clearCookie(REFRESH_COOKIE_NAME, {
-    path: '/auth/refresh',
+    path: '/auth',
   });
 }
