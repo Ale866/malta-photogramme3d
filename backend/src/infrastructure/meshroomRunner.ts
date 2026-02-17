@@ -20,6 +20,8 @@ export function runMeshroom(input: string, output: string): Promise<void> {
       console.error("[Meshroom ERROR]", d.toString())
     );
 
+    meshroom.on("error", reject);
+
     meshroom.on("close", code => {
       if (code === 0) resolve();
       else reject(new Error(`Meshroom exit code ${code}`));
