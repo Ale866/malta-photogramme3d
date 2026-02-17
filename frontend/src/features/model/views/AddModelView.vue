@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { ModelApi } from '../infrastructure/api'
 
 interface UploadedFile {
   file: File
@@ -78,23 +79,15 @@ const handleDrop = (event: DragEvent) => {
 }
 
 const submitForm = async () => {
-  const formData = new FormData();
-  formData.append("title", title.value);
-  files.value.forEach(f => {
-    formData.append("files", f.file);
-  });
-
   try {
-    const res = await fetch("http://localhost:3000/upload", {
-      method: "POST",
-      body: formData
+    const data = await ModelApi.upload({
+      title: title.value,
+      files: files.value.map(f => f.file),
     });
 
-    const data = await res.json();
-    console.log("Upload response:", data);
-
+    console.log('Upload response:', data);
   } catch (err) {
-    console.error("Upload failed:", err);
+    console.error('Upload failed:', err);
   }
 };
 
