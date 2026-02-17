@@ -1,5 +1,5 @@
-import axios, { AxiosError, type AxiosInstance } from 'axios';
 import { useAuth } from '@/features/auth/application/useAuth';
+import { getErrorMessage, http } from '@/core/api/httpClient';
 
 export type UploadInput = {
   title: string;
@@ -11,16 +11,6 @@ export type UploadResponse = {
   message: string;
   jobId: string;
 };
-
-function getErrorMessage(err: unknown): string {
-  const ax = err as AxiosError<any>;
-  return ax?.response?.data?.error ?? ax?.message ?? 'Request failed';
-}
-
-const http: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:3000',
-  withCredentials: true,
-});
 
 export const ModelApi = {
   async upload(input: UploadInput): Promise<UploadResponse> {

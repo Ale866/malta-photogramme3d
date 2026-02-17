@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosInstance } from 'axios';
+import { getErrorMessage, http } from '@/core/api/httpClient';
 
 export type AuthUser = {
   id: string;
@@ -18,19 +18,6 @@ export type UserInput = {
   password: string;
   nickname?: string;
 }
-
-function getErrorMessage(err: unknown): string {
-  const ax = err as AxiosError<any>;
-  return ax?.response?.data?.error ?? ax?.message ?? 'Request failed';
-}
-
-const http: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:3000',
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
 
 export const AuthApi = {
   async login(input: UserInput): Promise<AuthResponse> {

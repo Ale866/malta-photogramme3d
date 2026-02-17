@@ -28,8 +28,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useModel } from 'vue'
 import { ModelApi } from '../infrastructure/api'
+import { use3dModel } from '../application/useModel'
 
 interface UploadedFile {
   file: File
@@ -78,13 +79,11 @@ const handleDrop = (event: DragEvent) => {
   })
 }
 
+const { uploadModel } = use3dModel()
+
 const submitForm = async () => {
   try {
-    const data = await ModelApi.upload({
-      title: title.value,
-      files: files.value.map(f => f.file),
-    });
-
+    const data = await uploadModel(title.value, files.value.map(f => f.file));
     console.log('Upload response:', data);
   } catch (err) {
     console.error('Upload failed:', err);
