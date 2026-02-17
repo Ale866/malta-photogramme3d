@@ -2,7 +2,7 @@ import { createWebHistory, createRouter } from 'vue-router'
 import { useAuth } from './features/auth/application/useAuth'
 
 const IslandView = () => import('@/features/island/views/IslandView.vue')
-const AddModelView = () => import('@/features/model/AddModelView.vue')
+const AddModelView = () => import('@/features/model/views/AddModelView.vue')
 const LoginView = () => import('@/features/auth/views/LoginView.vue')
 
 const routes = [

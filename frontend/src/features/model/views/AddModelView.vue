@@ -28,8 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useModel } from 'vue'
-import { ModelApi } from '../infrastructure/api'
+import { ref } from 'vue'
 import { use3dModel } from '../application/useModel'
 
 interface UploadedFile {
@@ -38,8 +37,6 @@ interface UploadedFile {
 }
 
 const title = ref('')
-const x = ref<number | null>(null)
-const y = ref<number | null>(null)
 const files = ref<UploadedFile[]>([])
 
 const handleFileSelect = (event: Event) => {

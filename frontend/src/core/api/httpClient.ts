@@ -8,7 +8,4 @@ export function getErrorMessage(err: unknown): string {
 export const http: AxiosInstance = axios.create({
   baseURL: 'http://localhost:3000',
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });

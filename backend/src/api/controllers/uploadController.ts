@@ -36,6 +36,7 @@ export async function uploadController(req: AuthedRequest, res: Response) {
         await modelJobRepo.setRunning(job.id);
         await runMeshroomPipeline(title.trim(), files);
         await modelJobRepo.setDone(job.id);
+        console.log("Set done");
       } catch (e) {
         console.error("Pipeline failed for job", job.id, e);
         await modelJobRepo.setFailed(job.id);
