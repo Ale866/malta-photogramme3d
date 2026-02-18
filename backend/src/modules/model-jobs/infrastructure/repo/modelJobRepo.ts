@@ -1,5 +1,5 @@
 import type { ModelJobRepository, CreateModelJobInput, ModelJob } from '../../domain/modelJobRepository';
-import { ModelJobModel } from '../db/models/ModelJobModel';
+import { ModelJobModel } from '../db/ModelJobSchema';
 
 function toDomain(doc: any): ModelJob {
   return {

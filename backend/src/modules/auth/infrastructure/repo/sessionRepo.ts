@@ -1,4 +1,4 @@
-import { SessionModel } from '../db/models/SessionModel';
+import { SessionModel } from '../db/SessionSchema';
 import { CreateSessionInput, Session, SessionWithHash } from '../../domain/sessionRepository';
 
 export const sessionRepo = {

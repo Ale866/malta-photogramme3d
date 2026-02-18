@@ -1,5 +1,5 @@
 import { User, UserCreateInput, UserWithPasswordHash } from '../../domain/userRepository';
-import { UserModel } from '../db/models/UserModel';
+import { UserModel } from '../db/UserSchema';
 
 export const userRepo = {
   async create(input: UserCreateInput): Promise<User> {
