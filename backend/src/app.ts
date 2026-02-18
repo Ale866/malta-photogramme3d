@@ -1,7 +1,7 @@
 import express from "express";
-import uploadRoutes from "./api/routes/upload";
-import authRoutes from "./api/routes/auth";
-import { connectDb } from "./infrastructure/db/mongoConnection";
+import uploadRoutes from "./modules/upload/api/uploadRoutes";
+import authRoutes from "./modules/auth/api/authRoutes";
+import { connectDb } from "./shared/db/mongoConnection";
 import cookieParser from 'cookie-parser';
 import cors from "cors";
 
