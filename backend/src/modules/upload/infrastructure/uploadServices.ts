@@ -6,8 +6,7 @@ import { FileStorage } from "./fileStorage";
 export const uploadServices: UploadServices = {
   modelJobs: modelJobRepo,
   fileStorage: {
-    createJobDirectories: (baseUpload, title) => FileStorage.createJobDirectories(baseUpload, title),
-    moveFile: (src, dest) => FileStorage.moveFile(src, dest),
+    stageUpload: (baseUpload, title, files) => FileStorage.stageUpload(baseUpload, title, files),
   },
   pipeline: pipelineServices,
 };

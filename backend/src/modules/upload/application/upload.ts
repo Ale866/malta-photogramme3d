@@ -16,18 +16,21 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
   const files = input.files ?? [];
   if (files.length === 0) throw new Error("No images uploaded");
 
+  const prepared = services.fileStorage.stageUpload("uploads", title, files);
+
   const job = await services.modelJobs.create({
     ownerId: input.ownerId,
     title,
     status: "queued",
-    imagePaths: files.map((file) => file.path),
+    imagePaths: prepared.imagePaths,
+    inputFolder: prepared.inputFolder,
+    outputFolder: prepared.outputFolder,
   });
 
   void (async () => {
     try {
       await services.modelJobs.setRunning(job.id);
 
-      const prepared = prepareJobFiles(services, title, files);
       await runMeshroomPipeline(services.pipeline, {
         inputFolder: prepared.inputFolder,
         outputFolder: prepared.outputFolder,
@@ -42,21 +45,4 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
   })();
 
   return { jobId: job.id };
-}
-
-function prepareJobFiles(services: UploadServices, title: string, files: Express.Multer.File[]) {
-  const { inputFolder, outputFolder } = services.fileStorage.createJobDirectories("uploads", title);
-
-  const imagePaths: string[] = [];
-  for (const file of files) {
-    const dest = `${inputFolder}/${file.originalname}`;
-    services.fileStorage.moveFile(file.path, dest);
-    imagePaths.push(dest);
-  }
-
-  return {
-    inputFolder,
-    outputFolder,
-    imagePaths,
-  };
 }

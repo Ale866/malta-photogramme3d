@@ -4,11 +4,15 @@ import type { PipelineServices } from "../../pipeline/application/ports";
 export type UploadServices = {
   modelJobs: ModelJobRepository;
   fileStorage: {
-    createJobDirectories: (baseUpload: string, title: string) => {
+    stageUpload: (
+      baseUpload: string,
+      title: string,
+      files: Express.Multer.File[]
+    ) => {
       inputFolder: string;
       outputFolder: string;
+      imagePaths: string[];
     };
-    moveFile: (src: string, dest: string) => void;
   };
   pipeline: PipelineServices;
 };
