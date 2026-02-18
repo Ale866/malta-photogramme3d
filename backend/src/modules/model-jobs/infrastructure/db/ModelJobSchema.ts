@@ -42,6 +42,6 @@ export type ModelJobDoc = InferSchemaType<typeof modelJobSchema> & {
   _id: mongoose.Types.ObjectId;
 };
 
-export const ModelJobModel: Model<ModelJobDoc> =
+export const ModelJobSchema: Model<ModelJobDoc> =
   (mongoose.models.ModelJob as Model<ModelJobDoc>) ||
   mongoose.model<ModelJobDoc>('ModelJob', modelJobSchema);

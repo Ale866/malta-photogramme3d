@@ -1,5 +1,5 @@
 import type { ModelJobRepository, CreateModelJobInput, ModelJob } from '../../domain/modelJobRepository';
-import { ModelJobModel } from '../db/ModelJobSchema';
+import { ModelJobSchema } from '../db/ModelJobSchema';
 
 function toDomain(doc: any): ModelJob {
   return {
@@ -17,7 +17,7 @@ function toDomain(doc: any): ModelJob {
 
 export const modelJobRepo: ModelJobRepository = {
   async create(input: CreateModelJobInput): Promise<ModelJob> {
-    const created = await ModelJobModel.create({
+    const created = await ModelJobSchema.create({
       ownerId: input.ownerId,
       title: input.title,
       status: input.status ?? 'queued',
@@ -30,7 +30,7 @@ export const modelJobRepo: ModelJobRepository = {
   },
 
   async findById(id: string): Promise<ModelJob | null> {
-    const doc = await ModelJobModel.findById(id).lean();
+    const doc = await ModelJobSchema.findById(id).lean();
     if (!doc) return null;
 
     return {
@@ -47,14 +47,14 @@ export const modelJobRepo: ModelJobRepository = {
   },
 
   async setRunning(jobId: string) {
-    await ModelJobModel.findByIdAndUpdate(jobId, { status: 'running' }).exec();
+    await ModelJobSchema.findByIdAndUpdate(jobId, { status: 'running' }).exec();
   },
 
   async setDone(jobId: string, patch?: { outputFolder?: string }) {
-    await ModelJobModel.findByIdAndUpdate(jobId, { status: 'done', ...(patch ?? {}) }).exec();
+    await ModelJobSchema.findByIdAndUpdate(jobId, { status: 'done', ...(patch ?? {}) }).exec();
   },
 
   async setFailed(jobId: string) {
-    await ModelJobModel.findByIdAndUpdate(jobId, { status: 'failed' }).exec();
+    await ModelJobSchema.findByIdAndUpdate(jobId, { status: 'failed' }).exec();
   },
 };

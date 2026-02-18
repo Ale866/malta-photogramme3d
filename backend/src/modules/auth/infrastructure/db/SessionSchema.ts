@@ -29,5 +29,5 @@ const sessionSchema = new Schema(
 
 export type SessionDoc = InferSchemaType<typeof sessionSchema> & { _id: mongoose.Types.ObjectId };
 
-export const SessionModel: Model<SessionDoc> =
+export const SessionSchema: Model<SessionDoc> =
   (mongoose.models.Session as Model<SessionDoc>) || mongoose.model<SessionDoc>('Session', sessionSchema);

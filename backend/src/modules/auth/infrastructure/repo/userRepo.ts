@@ -1,9 +1,9 @@
 import { User, UserCreateInput, UserWithPasswordHash } from '../../domain/userRepository';
-import { UserModel } from '../db/UserSchema';
+import { UserSchema } from '../db/UserSchema';
 
 export const userRepo = {
   async create(input: UserCreateInput): Promise<User> {
-    const doc = await UserModel.create({
+    const doc = await UserSchema.create({
       email: input.email.toLowerCase(),
       passwordHash: input.passwordHash,
       nickname: input.nickname,
@@ -19,7 +19,7 @@ export const userRepo = {
   },
 
   async findByEmail(email: string): Promise<User | null> {
-    const doc = await UserModel.findOne({ email: email.toLowerCase() });
+    const doc = await UserSchema.findOne({ email: email.toLowerCase() });
     if (!doc) return null;
 
     return {
@@ -32,7 +32,7 @@ export const userRepo = {
   },
 
   async findByEmailWithPassword(email: string): Promise<UserWithPasswordHash | null> {
-    const doc = await UserModel.findOne({ email: email.toLowerCase() }).select('+passwordHash');
+    const doc = await UserSchema.findOne({ email: email.toLowerCase() }).select('+passwordHash');
     if (!doc) return null;
 
     return {
@@ -46,7 +46,7 @@ export const userRepo = {
   },
 
   async findById(id: string): Promise<User | null> {
-    const doc = await UserModel.findById(id);
+    const doc = await UserSchema.findById(id);
     if (!doc) return null;
 
     return {

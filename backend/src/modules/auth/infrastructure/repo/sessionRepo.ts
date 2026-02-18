@@ -1,9 +1,9 @@
-import { SessionModel } from '../db/SessionSchema';
+import { SessionSchema } from '../db/SessionSchema';
 import { CreateSessionInput, Session, SessionWithHash } from '../../domain/sessionRepository';
 
 export const sessionRepo = {
   async create(input: CreateSessionInput): Promise<Session> {
-    const doc = await SessionModel.create({
+    const doc = await SessionSchema.create({
       userId: input.userId,
       refreshTokenHash: input.refreshTokenHash,
       expiresAt: input.expiresAt,
@@ -20,7 +20,7 @@ export const sessionRepo = {
   },
 
   async findByRefreshTokenHash(hash: string): Promise<SessionWithHash | null> {
-    const doc = await SessionModel.findOne({ refreshTokenHash: hash });
+    const doc = await SessionSchema.findOne({ refreshTokenHash: hash });
     if (!doc) return null;
 
     return {
@@ -33,7 +33,7 @@ export const sessionRepo = {
   },
 
   async revoke(sessionId: string): Promise<void> {
-    await SessionModel.updateOne(
+    await SessionSchema.updateOne(
       { _id: sessionId, revokedAt: null },
       { $set: { revokedAt: new Date() } }
     );
