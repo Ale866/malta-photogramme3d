@@ -27,7 +27,7 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     outputFolder: prepared.outputFolder,
   });
 
-  void (async () => {
+  (async () => {
     try {
       await services.modelJobs.setRunning(job.id);
 
@@ -37,6 +37,12 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
       });
 
       await services.modelJobs.setDone(job.id);
+      await services.models.create({
+        ownerId: job.ownerId,
+        sourceJobId: job.id,
+        outputFolder: job.outputFolder,
+        title: job.title,
+      })
       console.log("Set done");
     } catch (e) {
       console.error("Pipeline failed for job", job.id, e);

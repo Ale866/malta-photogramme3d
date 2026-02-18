@@ -1,8 +1,10 @@
 import type { ModelJobRepository } from "../../model-jobs/domain/modelJobRepository";
+import { ModelRepository } from "../../model/domain/modelRepository";
 import type { PipelineServices } from "../../pipeline/application/ports";
 
 export type UploadServices = {
   modelJobs: ModelJobRepository;
+  models: ModelRepository;
   fileStorage: {
     stageUpload: (
       baseUpload: string,
