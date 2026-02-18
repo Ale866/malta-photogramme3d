@@ -1,12 +1,13 @@
 import type { UploadServices } from "../application/ports";
-import { modelJobRepo } from "../../model-jobs/infrastructure/repo/modelJobRepo";
+import { modelJobServices } from "../../model-jobs/infrastructure/modelJobServices";
 import { pipelineServices } from "../../pipeline/infrastructure/pipelineServices";
 import { FileStorage } from "./fileStorage";
 
 export const uploadServices: UploadServices = {
-  modelJobs: modelJobRepo,
+  modelJobs: modelJobServices.modelJobs,
   fileStorage: {
-    stageUpload: (baseUpload, title, files) => FileStorage.stageUpload(baseUpload, title, files),
+    stageUpload: (baseUpload, title, files) =>
+      FileStorage.stageUpload(baseUpload, title, files),
   },
   pipeline: pipelineServices,
 };
