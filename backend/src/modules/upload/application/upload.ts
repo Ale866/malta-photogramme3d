@@ -1,3 +1,13 @@
+import { createModelFromJob } from "../../model/application/createModelFromJob";
+import type { ModelsServices } from "../../model/application/ports";
+import {
+  createQueuedModelJob,
+  setModelJobDone,
+  setModelJobFailed,
+  setModelJobRunning,
+} from "../../model-jobs/application/jobLifecycle";
+import type { ModelJobServices } from "../../model-jobs/application/ports";
+
 import { runMeshroomPipeline } from "../../pipeline/application/runMeshroomPipeline";
 import type { UploadServices } from "./ports";
 
@@ -18,7 +28,10 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
 
   const prepared = services.fileStorage.stageUpload("uploads", title, files);
 
-  const job = await services.modelJobs.createQueued({
+  const modelJobServices: ModelJobServices = { modelJobs: services.modelJobs };
+  const modelsServices: ModelsServices = { models: services.models };
+
+  const job = await createQueuedModelJob(modelJobServices, {
     ownerId: input.ownerId,
     title,
     imagePaths: prepared.imagePaths,
@@ -26,27 +39,28 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     outputFolder: prepared.outputFolder,
   });
 
-  (async () => {
+  void (async () => {
     try {
-      await services.modelJobs.setRunning(job.id);
+      await setModelJobRunning(modelJobServices, job.id);
 
       await runMeshroomPipeline(services.pipeline, {
         inputFolder: prepared.inputFolder,
         outputFolder: prepared.outputFolder,
       });
 
-      await services.modelJobs.setDone(job.id);
-      await services.models.createModelFromJob({
+      const model = await createModelFromJob(modelsServices, {
         ownerId: job.ownerId,
         sourceJobId: job.id,
-        outputFolder: job.outputFolder,
+        outputFolder: prepared.outputFolder,
         title: job.title,
       });
+
+      await setModelJobDone(modelJobServices, job.id);
 
       console.log("Set done");
     } catch (e) {
       console.error("Pipeline failed for job", job.id, e);
-      await services.modelJobs.setFailed(job.id);
+      await setModelJobFailed(modelJobServices, job.id);
     }
   })();
 
