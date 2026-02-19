@@ -12,15 +12,21 @@ export type UploadResponse = {
   jobId: string;
 };
 
+export type Model = {
+  ownerId: string;
+  title: string;
+  sourceJobId: string;
+  outputFolder: string;
+  createdAt: string;
+}
+
+const auth = useAuth();
+const token = auth.getAccessToken();
+
 export const ModelApi = {
   async upload(input: UploadInput): Promise<UploadResponse> {
     try {
-      const auth = useAuth();
-      const token = auth.getAccessToken();
-
-      if (!token) {
-        throw new Error('Not authenticated (missing access token)');
-      }
+      if (!token) throw new Error('Not authenticated (missing access token)');
 
       const formData = new FormData();
       formData.append('title', input.title);
@@ -37,4 +43,19 @@ export const ModelApi = {
       throw new Error(getErrorMessage(err));
     }
   },
+  async getModels(): Promise<Model[]> {
+    try {
+      if (!token) throw new Error('Not authenticated (missing access token)');
+
+      const res = await http.get('/models', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      })
+
+      return res.data;
+    } catch (err) {
+      throw new Error(getErrorMessage(err))
+    }
+  }
 };

@@ -6,7 +6,13 @@ export function use3dModel() {
     return result;
   }
 
+  async function getModels() {
+    const result = await ModelApi.getModels();
+    return result
+  }
+
   return {
     uploadModel,
+    getModels,
   }
 }

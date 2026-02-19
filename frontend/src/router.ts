@@ -2,12 +2,20 @@ import { createWebHistory, createRouter } from 'vue-router'
 import { useAuth } from './features/auth/application/useAuth'
 
 const IslandView = () => import('@/features/island/views/IslandView.vue')
-const AddModelView = () => import('@/features/model/views/AddModelView.vue')
 const LoginView = () => import('@/features/auth/views/LoginView.vue')
+
+const AddModelView = () => import('@/features/model/views/AddModelView.vue')
+const ListModelView = () => import('@/features/model/views/ListModelView.vue')
 
 const routes = [
   { path: '/', name: "Island", component: IslandView },
-  { path: '/add-model', name: "AddModel", meta: { requiresAuth: true }, component: AddModelView },
+  {
+    path: '/model',
+    children: [
+      { path: 'add', name: "AddModel", meta: { requiresAuth: true }, component: AddModelView },
+      { path: 'list', name: "ListModel", meta: { requiresAuth: true }, component: ListModelView }
+    ]
+  },
   { path: '/login', name: "Login", component: LoginView },
 ]
 
