@@ -14,7 +14,7 @@ export async function uploadController(req: AuthedRequest, res: Response) {
       files,
     });
 
-    res.status(202).json({
+    return res.status(202).json({
       success: true,
       message: "Upload accepted",
       jobId: result.jobId,

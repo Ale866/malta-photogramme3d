@@ -47,7 +47,7 @@ export const ModelApi = {
     try {
       if (!token) throw new Error('Not authenticated (missing access token)');
 
-      const res = await http.get('/models', {
+      const res = await http.get('/model/list', {
         headers: {
           Authorization: `Bearer ${token}`,
         }
