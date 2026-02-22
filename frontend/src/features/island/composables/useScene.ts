@@ -1,8 +1,11 @@
 import { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
 import { shallowRef, onUnmounted } from 'vue'
+import type { ViewportProjectionPort } from '@/features/island/domain/ViewportProjectionPort'
+import { ThreeViewportProjectionAdapter } from '@/features/island/infrastructure/ThreeViewportProjectionAdapter'
 
 export function useScene() {
   const orchestrator = shallowRef<IslandOrchestrator | null>(null)
+  const viewportProjectionPort = shallowRef<ViewportProjectionPort | null>(null)
   const isInitialized = shallowRef(false)
   const isLoading = shallowRef(false)
   const error = shallowRef<string | null>(null)
@@ -26,6 +29,10 @@ export function useScene() {
       orchestrator.value = new IslandOrchestrator()
 
       await orchestrator.value.init(container, options)
+      viewportProjectionPort.value = new ThreeViewportProjectionAdapter(
+        orchestrator.value.getSceneRenderer(),
+        orchestrator.value.getCameraController()
+      )
 
       isInitialized.value = true
 
@@ -53,10 +60,18 @@ export function useScene() {
     return orchestrator.value
   }
 
+  function getViewportProjectionPort(): ViewportProjectionPort {
+    if (!viewportProjectionPort.value) {
+      throw new Error('Scene not initialized. Call initScene() first.')
+    }
+    return viewportProjectionPort.value
+  }
+
   function dispose() {
     if (orchestrator.value) {
       orchestrator.value.dispose()
       orchestrator.value = null
+      viewportProjectionPort.value = null
       isInitialized.value = false
     }
   }
@@ -71,6 +86,7 @@ export function useScene() {
     error,
     initScene,
     getOrchestrator,
+    getViewportProjectionPort,
     dispose,
   }
 }

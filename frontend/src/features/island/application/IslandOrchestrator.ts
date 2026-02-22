@@ -6,7 +6,6 @@ import { CoordinateMapper } from '@/features/terrain/domain/CoordinateMapper'
 import { TerrainService } from '@/features/terrain/application/TerrainService'
 import { NavigationService } from '@/features/navigation/application/NavigationService'
 import type { MappedCoordinates } from '@/core/domain/Coordinates'
-import { ThreeViewportProjectionAdapter } from '@/features/island/infrastructure/ThreeViewportProjectionAdapter'
 
 
 export class IslandOrchestrator {
@@ -18,7 +17,6 @@ export class IslandOrchestrator {
   private navigationService: NavigationService | null = null
   private markerRenderer: MarkerRenderer | null = null
   private onTerrainClick: ((coordinates: MappedCoordinates) => void) | null = null
-  private viewportProjectionPort: ThreeViewportProjectionAdapter | null = null
 
   constructor() {
     this.sceneRenderer = new SceneRenderer()
@@ -47,11 +45,6 @@ export class IslandOrchestrator {
     this.cameraController = new CameraController(
       this.sceneRenderer.getCamera(),
       this.sceneRenderer.getCanvas()
-    )
-
-    this.viewportProjectionPort = new ThreeViewportProjectionAdapter(
-      this.sceneRenderer,
-      this.cameraController
     )
 
     this.terrainService.setCameraController(this.cameraController)
@@ -109,11 +102,15 @@ export class IslandOrchestrator {
     return this.coordinateMapper
   }
 
-  getViewportProjectionPort() {
-    if (!this.viewportProjectionPort) {
+  getSceneRenderer() {
+    return this.sceneRenderer
+  }
+
+  getCameraController() {
+    if (!this.cameraController) {
       throw new Error('IslandOrchestrator not initialized. Call init() first.')
     }
-    return this.viewportProjectionPort
+    return this.cameraController
   }
 
   resize() {

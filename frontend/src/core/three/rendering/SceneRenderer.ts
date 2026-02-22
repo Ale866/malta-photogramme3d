@@ -33,6 +33,7 @@ export class SceneRenderer {
     this.container = container
     container.appendChild(this.renderer.domElement)
     this.resize()
+    requestAnimationFrame(() => requestAnimationFrame(() => this.resize()))
   }
 
   add(object: T.Object3D) {
@@ -60,10 +61,9 @@ export class SceneRenderer {
   }
 
   resize() {
-    if (!this.container) return
-
-    const w = this.container.clientWidth
-    const h = this.container.clientHeight
+    const w = window.innerWidth
+    const h = window.innerHeight
+    if (w <= 0 || h <= 0) return
 
     this.camera.aspect = w / h
     this.camera.updateProjectionMatrix()
