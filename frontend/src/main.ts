@@ -2,5 +2,13 @@ import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
 import { router } from './router'
+import { useAuth } from '@/features/auth/application/useAuth'
 
-createApp(App).use(router).mount('#app')
+async function bootstrap() {
+  const auth = useAuth()
+  await auth.hydrateSession()
+
+  createApp(App).use(router).mount('#app')
+}
+
+void bootstrap()

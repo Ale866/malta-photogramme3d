@@ -28,12 +28,8 @@ async function requireAccessToken() {
   let token = auth.getAccessToken();
   if (token) return token;
 
-  try {
-    await auth.refresh();
-    token = auth.getAccessToken();
-  } catch {
-    throw new Error('Failed to refresh access token');
-  }
+  await auth.hydrateSession();
+  token = auth.getAccessToken();
 
   if (!token) throw new Error('Not authenticated (missing access token)');
   return token;

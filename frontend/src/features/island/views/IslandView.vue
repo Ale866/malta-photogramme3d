@@ -70,12 +70,8 @@ async function openCreateModel() {
 
   let authenticated = auth.isAuthenticated.value
   if (!authenticated) {
-    try {
-      await auth.refresh()
-      authenticated = auth.isAuthenticated.value
-    } catch {
-      authenticated = false
-    }
+    await auth.hydrateSession()
+    authenticated = auth.isAuthenticated.value
   }
 
   if (!authenticated) {

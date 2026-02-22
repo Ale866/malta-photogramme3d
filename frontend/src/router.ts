@@ -30,13 +30,13 @@ router.beforeEach(async (to) => {
   const auth = useAuth()
   if (auth.isAuthenticated.value) return true
 
-  try {
-    await auth.refresh()
+  await auth.hydrateSession()
+  if (auth.isAuthenticated.value) {
     return true
-  } catch {
-    return {
-      path: '/login',
-      query: { next: to.fullPath },
-    }
+  }
+
+  return {
+    path: '/login',
+    query: { next: to.fullPath },
   }
 })
