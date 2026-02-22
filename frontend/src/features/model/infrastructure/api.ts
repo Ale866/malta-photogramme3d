@@ -1,9 +1,11 @@
 import { useAuth } from '@/features/auth/application/useAuth';
 import { getErrorMessage, http } from '@/core/api/httpClient';
+import type { ModelCoordinates } from '@/features/model/domain/ModelCreationDraft';
 
 export type UploadInput = {
   title: string;
   files: File[];
+  coordinates?: ModelCoordinates | null;
 };
 
 export type UploadResponse = {
@@ -21,16 +23,33 @@ export type Model = {
 }
 
 const auth = useAuth();
-const token = auth.getAccessToken();
+
+async function requireAccessToken() {
+  let token = auth.getAccessToken();
+  if (token) return token;
+
+  try {
+    await auth.refresh();
+    token = auth.getAccessToken();
+  } catch {
+    throw new Error('Failed to refresh access token');
+  }
+
+  if (!token) throw new Error('Not authenticated (missing access token)');
+  return token;
+}
 
 export const ModelApi = {
   async upload(input: UploadInput): Promise<UploadResponse> {
     try {
-      if (!token) throw new Error('Not authenticated (missing access token)');
+      const token = await requireAccessToken();
 
       const formData = new FormData();
       formData.append('title', input.title);
       input.files.forEach((f) => formData.append('files', f));
+      if (input.coordinates) {
+        formData.append('coordinates', JSON.stringify(input.coordinates));
+      }
 
       const res = await http.post<UploadResponse>('/upload', formData, {
         headers: {
@@ -43,9 +62,10 @@ export const ModelApi = {
       throw new Error(getErrorMessage(err));
     }
   },
+
   async getModels(): Promise<Model[]> {
     try {
-      if (!token) throw new Error('Not authenticated (missing access token)');
+      const token = await requireAccessToken();
 
       const res = await http.get('/model/list', {
         headers: {

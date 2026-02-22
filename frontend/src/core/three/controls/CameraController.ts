@@ -51,6 +51,7 @@ export class CameraController {
       angleX?: number
       angleY?: number
       duration?: number
+      targetYOffset?: number
     }
   ) {
     const {
@@ -58,6 +59,7 @@ export class CameraController {
       angleX = -Math.PI / 7,
       angleY = -Math.PI / 6,
       duration = 2.2,
+      targetYOffset = height * 0.62,
     } = options || {}
 
     this.controls.enabled = false
@@ -73,7 +75,7 @@ export class CameraController {
 
     gsap.to(this.controls.target, {
       x: target.x,
-      y: target.y,
+      y: target.y + targetYOffset,
       z: target.z,
       duration,
       ease: 'power3.inOut',
