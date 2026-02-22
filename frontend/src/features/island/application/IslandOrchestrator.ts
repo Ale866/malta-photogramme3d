@@ -5,6 +5,7 @@ import { MarkerRenderer } from '@/core/three/objects/MarkerRenderer'
 import { CoordinateMapper } from '@/features/terrain/domain/CoordinateMapper'
 import { TerrainService } from '@/features/terrain/application/TerrainService'
 import { NavigationService } from '@/features/navigation/application/NavigationService'
+import type { MappedCoordinates } from '@/core/domain/Coordinates'
 
 
 export class IslandOrchestrator {
@@ -15,6 +16,7 @@ export class IslandOrchestrator {
   private terrainService: TerrainService
   private navigationService: NavigationService | null = null
   private markerRenderer: MarkerRenderer | null = null
+  private onTerrainClick: ((coordinates: MappedCoordinates) => void) | null = null
 
   constructor() {
     this.sceneRenderer = new SceneRenderer()
@@ -74,6 +76,7 @@ export class IslandOrchestrator {
     this.interactionHandler.setupClickHandler(
       (point) => {
         this.navigationService?.goToPosition(point)
+        this.emitTerrainClick(point)
       },
       this.sceneRenderer.getScene(),
       this.terrainService.getTerrainObject() || undefined
@@ -89,6 +92,10 @@ export class IslandOrchestrator {
       throw new Error('IslandOrchestrator not initialized. Call init() first.')
     }
     return this.navigationService
+  }
+
+  setOnTerrainClick(handler: ((coordinates: MappedCoordinates) => void) | null) {
+    this.onTerrainClick = handler
   }
 
   getCoordinateMapper() {
@@ -109,5 +116,19 @@ export class IslandOrchestrator {
     this.navigationService?.dispose()
     this.cameraController?.dispose()
     this.sceneRenderer.dispose()
+  }
+
+  private emitTerrainClick(point: { x: number; y: number; z: number }) {
+    if (!this.onTerrainClick) return
+
+    const utm = this.coordinateMapper.localToUtm(point.x, point.z, point.y)
+    this.onTerrainClick({
+      local: {
+        x: point.x,
+        y: point.y,
+        z: point.z,
+      },
+      utm,
+    })
   }
 }
