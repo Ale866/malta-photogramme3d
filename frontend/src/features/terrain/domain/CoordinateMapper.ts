@@ -51,6 +51,32 @@ export class CoordinateMapper {
     return new T.Vector3(x, y, z)
   }
 
+  localToUtm(x: number, z: number, altitude = 0) {
+    if (!this.utmBbox || !this.modelBboxXZ) {
+      console.warn('CoordinateMapper: Bounding boxes not set, returning origin')
+      return {
+        easting: 0,
+        northing: 0,
+        altitude,
+      }
+    }
+
+    const { minE, minN, maxE, maxN } = this.utmBbox
+    const { minX, minZ, maxX, maxZ } = this.modelBboxXZ
+
+    const u = (x - minX) / (maxX - minX)
+    const v = (maxZ - z) / (maxZ - minZ)
+
+    const easting = minE + u * (maxE - minE)
+    const northing = minN + v * (maxN - minN)
+
+    return {
+      easting,
+      northing,
+      altitude,
+    }
+  }
+
   isReady() {
     return this.utmBbox !== null && this.modelBboxXZ !== null
   }
