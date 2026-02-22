@@ -31,10 +31,12 @@ export class SceneRenderer {
 
   initialize(container: HTMLElement) {
     this.container = container
-    container.appendChild(this.renderer.domElement)
+    const canvas = this.renderer.domElement
+    // canvas.style.display = 'block'
+    // canvas.style.width = '100%'
+    // canvas.style.height = '100%'
+    container.appendChild(canvas)
     this.resize()
-    requestAnimationFrame(() => requestAnimationFrame(() => this.resize()))
-    window.addEventListener('load', this.resizeOnLoad, { once: true })
   }
 
   add(object: T.Object3D) {
@@ -62,8 +64,8 @@ export class SceneRenderer {
   }
 
   resize() {
-    const w = window.innerWidth
-    const h = window.innerHeight
+    const w = this.container?.clientWidth || window.innerWidth
+    const h = this.container?.clientHeight || window.innerHeight
     if (w <= 0 || h <= 0) return
 
     this.camera.aspect = w / h
@@ -119,14 +121,9 @@ export class SceneRenderer {
 
   dispose() {
     this.stopRenderLoop()
-    window.removeEventListener('load', this.resizeOnLoad)
     this.renderer.dispose()
     if (this.container && this.renderer.domElement.parentNode === this.container) {
       this.container.removeChild(this.renderer.domElement)
     }
-  }
-
-  private resizeOnLoad = () => {
-    this.resize()
   }
 }

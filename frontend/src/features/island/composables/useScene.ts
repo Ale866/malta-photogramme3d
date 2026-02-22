@@ -9,6 +9,7 @@ export function useScene() {
   const isInitialized = shallowRef(false)
   const isLoading = shallowRef(false)
   const error = shallowRef<string | null>(null)
+  let detachWindowResize: (() => void) | null = null
 
   async function initScene(
     container: HTMLElement,
@@ -38,10 +39,7 @@ export function useScene() {
 
       const handleResize = () => orchestrator.value?.resize()
       window.addEventListener('resize', handleResize)
-
-      onUnmounted(() => {
-        window.removeEventListener('resize', handleResize)
-      })
+      detachWindowResize = () => window.removeEventListener('resize', handleResize)
 
       return orchestrator.value
     } catch (err) {
@@ -68,6 +66,9 @@ export function useScene() {
   }
 
   function dispose() {
+    detachWindowResize?.()
+    detachWindowResize = null
+
     if (orchestrator.value) {
       orchestrator.value.dispose()
       orchestrator.value = null

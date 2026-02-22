@@ -1,14 +1,16 @@
 <template>
-  <div class="add-model">
-    <h1>Add Model</h1>
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-    <p v-if="successMessage" class="success">{{ successMessage }}</p>
+  <div class="add-model-page">
+    <div class="add-model">
+      <h1>Add Model</h1>
+      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="success">{{ successMessage }}</p>
 
-    <ModelCreationForm
-      :is-submitting="isSubmitting"
-      submit-label="Upload model"
-      @submit="submitForm"
-    />
+      <ModelCreationForm
+        :is-submitting="isSubmitting"
+        submit-label="Upload model"
+        @submit="submitForm"
+      />
+    </div>
   </div>
 </template>
 
@@ -42,14 +44,18 @@ const submitForm = async (draft: ModelCreationDraft) => {
 </script>
 
 <style scoped>
-.add-model {
+.add-model-page {
   position: fixed;
+  inset: 0;
   z-index: 4;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(560px, calc(100vw - 2rem));
-  max-height: calc(100vh - 2rem);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.add-model {
+  width: min(560px, 100%);
+  max-height: 100%;
   overflow: auto;
   padding: 1rem;
   background: #1c1c1c;
