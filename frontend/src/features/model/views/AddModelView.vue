@@ -43,8 +43,15 @@ const submitForm = async (draft: ModelCreationDraft) => {
 
 <style scoped>
 .add-model {
+  position: fixed;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
   padding: 1rem;
-  max-width: 560px;
   background: #1c1c1c;
   color: #fff;
   border-radius: 8px;

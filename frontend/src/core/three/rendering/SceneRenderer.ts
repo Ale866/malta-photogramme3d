@@ -34,6 +34,7 @@ export class SceneRenderer {
     container.appendChild(this.renderer.domElement)
     this.resize()
     requestAnimationFrame(() => requestAnimationFrame(() => this.resize()))
+    window.addEventListener('load', this.resizeOnLoad, { once: true })
   }
 
   add(object: T.Object3D) {
@@ -118,9 +119,14 @@ export class SceneRenderer {
 
   dispose() {
     this.stopRenderLoop()
+    window.removeEventListener('load', this.resizeOnLoad)
     this.renderer.dispose()
     if (this.container && this.renderer.domElement.parentNode === this.container) {
       this.container.removeChild(this.renderer.domElement)
     }
+  }
+
+  private resizeOnLoad = () => {
+    this.resize()
   }
 }
