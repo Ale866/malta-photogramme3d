@@ -11,7 +11,11 @@ export class InteractionHandler {
     this.canvas = canvas
   }
 
-  setupClickHandler(onClick: (point: T.Vector3) => void, scene: T.Scene, terrainObject?: T.Object3D) {
+  setupClickHandler(
+    onClick: (point: T.Vector3) => void,
+    scene: T.Scene,
+    terrainObject?: T.Object3D
+  ) {
     this.canvas.addEventListener('pointerdown', (event) => {
       if (!event.isPrimary) return
       if (event.pointerType === 'mouse' && event.button !== 0) return

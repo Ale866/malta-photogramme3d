@@ -100,6 +100,14 @@ export class CameraController {
     return this.controls
   }
 
+  onChange(handler: () => void) {
+    const callback = () => handler()
+    this.controls.addEventListener('change', callback)
+    return () => {
+      this.controls.removeEventListener('change', callback)
+    }
+  }
+
   dispose() {
     this.controls.dispose()
   }

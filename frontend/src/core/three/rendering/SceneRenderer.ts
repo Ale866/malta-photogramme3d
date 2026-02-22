@@ -6,6 +6,7 @@ export class SceneRenderer {
   private renderer: T.WebGLRenderer
   private container: HTMLElement | null = null
   private animationFrameId: number | null = null
+  private reusableProjected = new T.Vector3()
 
   constructor() {
     this.scene = new T.Scene()
@@ -93,6 +94,26 @@ export class SceneRenderer {
 
   getCanvas() {
     return this.renderer.domElement
+  }
+
+  projectWorldToScreen(
+    point: { x: number; y: number; z: number },
+    out: { x: number; y: number; visible: boolean } = { x: 0, y: 0, visible: false }
+  ) {
+    const projected = this.reusableProjected.set(point.x, point.y, point.z).project(this.camera)
+    const rect = this.renderer.domElement.getBoundingClientRect()
+
+    out.x = ((projected.x + 1) / 2) * rect.width + rect.left
+    out.y = ((-projected.y + 1) / 2) * rect.height + rect.top
+    out.visible =
+      projected.z > -1 &&
+      projected.z < 1 &&
+      projected.x >= -1 &&
+      projected.x <= 1 &&
+      projected.y >= -1 &&
+      projected.y <= 1
+
+    return out
   }
 
   dispose() {
