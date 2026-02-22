@@ -4,11 +4,14 @@ import { useScene } from '@/features/island/composables/useScene'
 import SearchBar from '@/components/SearchBar.vue'
 import ModelCreationModal from '@/features/model/components/ModelCreationModal.vue'
 import type { MappedCoordinates } from '@/core/domain/Coordinates'
-import type { ThreeViewportProjectionAdapter } from '../infrastructure/ThreeViewportProjectionAdapter'
+import type { ViewportProjectionPort } from '@/features/island/domain/ViewportProjectionPort'
+import LoginModal from '@/features/auth/components/LoginModal.vue'
+import { useAuth } from '@/features/auth/application/useAuth'
 
-const { initScene, getOrchestrator } = useScene()
+const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
 const selectedCoordinates = ref<MappedCoordinates | null>(null)
 const isCreateModelOpen = ref(false)
+const isLoginModalOpen = ref(false)
 const markerButtonVisible = ref(false)
 const markerButtonStyle = ref<{ left: string; top: string }>({
   left: '0px',
@@ -16,7 +19,8 @@ const markerButtonStyle = ref<{ left: string; top: string }>({
 })
 const screenProjection = { x: 0, y: 0, visible: false }
 let stopCameraChangeListener: (() => void) | null = null
-let viewportProjectionPort: ThreeViewportProjectionAdapter | null = null
+let viewportProjectionPort: ViewportProjectionPort | null = null
+const auth = useAuth()
 
 onMounted(async () => {
   const container = document.getElementById('three-root')!
@@ -32,15 +36,16 @@ onMounted(async () => {
   })
 
   const orchestrator = getOrchestrator()
-  viewportProjectionPort = orchestrator.getViewportProjectionPort()
+  viewportProjectionPort = getViewportProjectionPort()
   orchestrator.setOnTerrainClick((coordinates) => {
     selectedCoordinates.value = coordinates
     isCreateModelOpen.value = false
+    isLoginModalOpen.value = false
     updateMarkerButtonPosition()
   })
 
   stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
-    if (selectedCoordinates.value && !isCreateModelOpen.value) {
+    if (selectedCoordinates.value && !isCreateModelOpen.value && !isLoginModalOpen.value) {
       updateMarkerButtonPosition()
     }
   })
@@ -60,14 +65,47 @@ function closeCreateModel() {
   }
 }
 
-function openCreateModel() {
+async function openCreateModel() {
   if (!selectedCoordinates.value) return
+
+  let authenticated = auth.isAuthenticated.value
+  if (!authenticated) {
+    try {
+      await auth.refresh()
+      authenticated = auth.isAuthenticated.value
+    } catch {
+      authenticated = false
+    }
+  }
+
+  if (!authenticated) {
+    isLoginModalOpen.value = true
+    markerButtonVisible.value = false
+    return
+  }
+
   isCreateModelOpen.value = true
+  isLoginModalOpen.value = false
   markerButtonVisible.value = false
 }
 
+function closeLoginModal() {
+  isLoginModalOpen.value = false
+  if (selectedCoordinates.value && !isCreateModelOpen.value) {
+    updateMarkerButtonPosition()
+  }
+}
+
+function onLoginSuccess() {
+  isLoginModalOpen.value = false
+  if (selectedCoordinates.value) {
+    isCreateModelOpen.value = true
+    markerButtonVisible.value = false
+  }
+}
+
 function updateMarkerButtonPosition() {
-  if (!selectedCoordinates.value || isCreateModelOpen.value) {
+  if (!selectedCoordinates.value || isCreateModelOpen.value || isLoginModalOpen.value) {
     markerButtonVisible.value = false
     return
   }
@@ -96,23 +134,21 @@ onUnmounted(() => {
     stopCameraChangeListener = null
   }
   viewportProjectionPort = null
-
-  try {
-    getOrchestrator().setOnTerrainClick(null)
-  } catch {
-    // No orchestrator when unmounted before initialization finishes.
-  }
+  getOrchestrator().setOnTerrainClick(null)
 })
 
 </script>
 
 <template>
-  <search-bar @search-selected="onSearchSelected"></search-bar>
-  <button v-if="markerButtonVisible" class="marker-add-model-button" type="button" :style="markerButtonStyle"
-    @click.stop="openCreateModel">
-    Add model
-  </button>
-  <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates" @close="closeCreateModel" />
+  <div class="island-view-root">
+    <search-bar @search-selected="onSearchSelected"></search-bar>
+    <button v-if="markerButtonVisible" class="marker-add-model-button" type="button" :style="markerButtonStyle"
+      @click.stop="openCreateModel">
+      Add model
+    </button>
+    <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates" @close="closeCreateModel" />
+    <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
+  </div>
 </template>
 
 <style scoped>
