@@ -30,78 +30,24 @@ async function onSubmit() {
 
 <template>
   <div class="login-page">
-    <h2 class="title">Login</h2>
+    <h2 class="login-page-title">Login</h2>
 
-    <form class="form" @submit.prevent="onSubmit">
-      <label class="field">
-        <span class="label">Email</span>
-        <input v-model="email" class="input" type="email" autocomplete="email" required />
+    <form class="form-grid" @submit.prevent="onSubmit">
+      <label class="form-field">
+        <span class="form-label">Email</span>
+        <input v-model="email" class="form-input" type="email" autocomplete="email" required />
       </label>
 
-      <label class="field">
-        <span class="label">Password</span>
-        <input v-model="password" class="input" type="password" autocomplete="current-password" required />
+      <label class="form-field">
+        <span class="form-label">Password</span>
+        <input v-model="password" class="form-input" type="password" autocomplete="current-password" required />
       </label>
 
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="text-error">{{ error }}</p>
 
-      <button class="button" type="submit" :disabled="isLoading">
+      <button class="btn btn-primary btn-block" type="submit" :disabled="isLoading">
         {{ isLoading ? 'Logging in...' : 'Login' }}
       </button>
     </form>
   </div>
 </template>
-
-<style scoped>
-.login-page {
-  max-width: 420px;
-  margin: 64px auto;
-  padding: 16px;
-}
-
-.title {
-  margin-bottom: 12px;
-}
-
-.form {
-  display: grid;
-  gap: 12px;
-}
-
-.field {
-  display: grid;
-  gap: 6px;
-}
-
-.label {
-  font-size: 14px;
-}
-
-.input {
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  outline: none;
-}
-
-.input:focus {
-  border-color: #666;
-}
-
-.error {
-  color: #c00;
-  margin: 0;
-}
-
-.button {
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

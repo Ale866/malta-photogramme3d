@@ -1,9 +1,10 @@
 <template>
   <form class="model-form" @submit.prevent="submitForm">
-    <div class="form-group">
-      <label for="title">Title</label>
+    <div class="form-field">
+      <label class="form-label" for="title">Title</label>
       <input
         id="title"
+        class="form-input"
         v-model="title"
         type="text"
         placeholder="Model title"
@@ -11,50 +12,50 @@
       />
     </div>
 
-    <div v-if="coordinates" class="coordinate-grid">
-      <div class="coordinate-card">
-        <span class="coordinate-label">Local</span>
+    <div v-if="coordinates" class="model-form-coordinates">
+      <div class="model-form-coord-card">
+        <span class="model-form-coord-label">Local</span>
         <p>X: {{ formatNumber(coordinates.local.x) }}</p>
         <p>Y: {{ formatNumber(coordinates.local.y) }}</p>
         <p>Z: {{ formatNumber(coordinates.local.z) }}</p>
       </div>
-      <div class="coordinate-card">
-        <span class="coordinate-label">UTM</span>
+      <div class="model-form-coord-card">
+        <span class="model-form-coord-label">UTM</span>
         <p>E: {{ formatNumber(coordinates.utm.easting) }}</p>
         <p>N: {{ formatNumber(coordinates.utm.northing) }}</p>
         <p>Alt: {{ formatNumber(coordinates.utm.altitude) }}</p>
       </div>
     </div>
 
-    <div class="upload-area" @dragover.prevent @drop.prevent="handleDrop">
+    <div class="model-form-upload" @dragover.prevent @drop.prevent="handleDrop">
       <p>Drag and drop images here, or click to select files</p>
-      <input type="file" multiple accept="image/*" @change="handleFileSelect" />
+      <input class="model-form-upload-input" type="file" multiple accept="image/*" @change="handleFileSelect" />
     </div>
 
-    <div v-if="files.length > 0" class="preview-carousel">
+    <div v-if="files.length > 0" class="model-form-carousel">
       <button
         type="button"
-        class="carousel-arrow"
+        class="btn btn-icon model-form-carousel-arrow"
         aria-label="Previous slide"
         @click="showPrevious"
       >
         &lt;
       </button>
 
-      <div class="carousel-slide">
+      <div class="model-form-carousel-slide">
         <div
-          class="carousel-grid"
+          class="model-form-carousel-grid"
           :style="{ '--carousel-columns': String(columnsPerSlide) }"
         >
           <div
             v-for="entry in visibleFiles"
             :key="entry.index"
-            class="image-wrapper"
+            class="model-form-image-wrap"
           >
-            <img :src="entry.file.preview" alt="preview" />
+            <img class="model-form-image" :src="entry.file.preview" alt="preview" />
             <button
               type="button"
-              class="delete-icon"
+              class="model-form-delete"
               aria-label="Remove image"
               @click="removeFile(entry.index)"
             >
@@ -62,12 +63,12 @@
             </button>
           </div>
         </div>
-        <p class="carousel-counter">Slide {{ currentPage + 1 }} / {{ totalPages }}</p>
+        <p class="text-muted model-form-counter">Slide {{ currentPage + 1 }} / {{ totalPages }}</p>
       </div>
 
       <button
         type="button"
-        class="carousel-arrow"
+        class="btn btn-icon model-form-carousel-arrow"
         aria-label="Next slide"
         @click="showNext"
       >
@@ -75,7 +76,7 @@
       </button>
     </div>
 
-    <button type="submit" :disabled="isSubmitting">{{ submitLabel }}</button>
+    <button class="btn btn-primary btn-block" type="submit" :disabled="isSubmitting">{{ submitLabel }}</button>
   </form>
 </template>
 
@@ -217,164 +218,3 @@ const submitForm = () => {
   })
 }
 </script>
-
-<style scoped>
-.model-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-label {
-  font-weight: 600;
-}
-
-input[type="text"] {
-  padding: 0.6rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid #5e5e5e;
-  background: #262626;
-  color: #fff;
-}
-
-.coordinate-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.coordinate-card {
-  background: #2a2a2a;
-  border: 1px solid #444;
-  border-radius: 8px;
-  padding: 0.65rem 0.75rem;
-}
-
-.coordinate-card p {
-  margin: 0.2rem 0;
-  font-size: 0.9rem;
-}
-
-.coordinate-label {
-  display: inline-block;
-  margin-bottom: 0.3rem;
-  font-size: 0.8rem;
-  color: #9bd2ff;
-  font-weight: 700;
-}
-
-.upload-area {
-  min-height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  border: 2px dashed #666;
-  border-radius: 6px;
-  cursor: pointer;
-  position: relative;
-  text-align: center;
-}
-
-.upload-area input[type="file"] {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.preview-carousel {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.6rem;
-  align-items: center;
-}
-
-.carousel-arrow {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid #5b5b5b;
-  background: #2c2c2c;
-  color: #fff;
-  padding: 0;
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.carousel-slide {
-  min-width: 0;
-}
-
-.carousel-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--carousel-columns, 5), minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.image-wrapper {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-}
-
-.image-wrapper img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-  display: block;
-}
-
-.delete-icon {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: #000;
-  color: #ff4d4d;
-  font-weight: bold;
-  border-radius: 999px;
-  width: 20px;
-  height: 20px;
-  text-align: center;
-  line-height: 18px;
-  cursor: pointer;
-  border: 0;
-  padding: 0;
-}
-
-.carousel-counter {
-  margin: 0.45rem 0 0;
-  text-align: center;
-  font-size: 0.82rem;
-  color: #c7c7c7;
-}
-
-button[type="submit"] {
-  width: 100%;
-  padding: 0.65rem 1rem;
-  border: 0;
-  border-radius: 6px;
-  color: #fff;
-  background: #0d79ff;
-}
-
-button[type="submit"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@media (max-width: 700px) {
-  .coordinate-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

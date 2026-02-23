@@ -138,34 +138,16 @@ onUnmounted(() => {
 <template>
   <div class="island-view-root">
     <search-bar @search-selected="onSearchSelected"></search-bar>
-    <button v-if="markerButtonVisible" class="marker-add-model-button" type="button" :style="markerButtonStyle"
-      @click.stop="openCreateModel">
+    <button
+      v-if="markerButtonVisible"
+      class="btn btn-primary btn-pill island-marker-add-model"
+      type="button"
+      :style="markerButtonStyle"
+      @click.stop="openCreateModel"
+    >
       Add model
     </button>
     <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates" @close="closeCreateModel" />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
   </div>
 </template>
-
-<style scoped>
-.marker-add-model-button {
-  position: fixed;
-  z-index: 900;
-  transform: translate(-50%, -150%);
-  border: 1px solid #3f84ff;
-  border-radius: 999px;
-  background: #0d79ff;
-  color: #fff;
-  font-weight: 600;
-  padding: 0.42rem 0.85rem;
-  white-space: nowrap;
-}
-
-@media (max-width: 700px) {
-  .marker-add-model-button {
-    transform: translate(-50%, -165%);
-    padding: 0.38rem 0.75rem;
-    font-size: 0.9rem;
-  }
-}
-</style>
