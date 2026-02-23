@@ -1,4 +1,5 @@
 import { SceneRenderer } from '@/core/three/rendering/SceneRenderer'
+import { DebugOverlayService } from '@/core/three/rendering/DebugOverlayService'
 import { CameraController } from '@/core/three/controls/CameraController'
 import { InteractionHandler } from '@/core/three/controls/InteractionHandler'
 import { MarkerRenderer } from '@/core/three/objects/MarkerRenderer'
@@ -10,6 +11,7 @@ import type { MappedCoordinates } from '@/core/domain/Coordinates'
 
 export class IslandOrchestrator {
   private sceneRenderer: SceneRenderer
+  private debugOverlayService: DebugOverlayService
   private cameraController: CameraController | null = null
   private interactionHandler: InteractionHandler | null = null
   private coordinateMapper: CoordinateMapper
@@ -20,6 +22,7 @@ export class IslandOrchestrator {
 
   constructor() {
     this.sceneRenderer = new SceneRenderer()
+    this.debugOverlayService = new DebugOverlayService()
     this.coordinateMapper = new CoordinateMapper()
 
     this.terrainService = new TerrainService(
@@ -41,6 +44,7 @@ export class IslandOrchestrator {
     } = options || {}
 
     this.sceneRenderer.initialize(container)
+    this.debugOverlayService.initialize()
 
     this.cameraController = new CameraController(
       this.sceneRenderer.getCamera(),
@@ -82,9 +86,15 @@ export class IslandOrchestrator {
       this.terrainService.getTerrainObject() || undefined
     )
 
-    this.sceneRenderer.startRenderLoop(() => {
-      this.cameraController?.update()
-    })
+    this.sceneRenderer.startRenderLoop(
+      () => {
+        this.debugOverlayService.beginFrame()
+        this.cameraController?.update()
+      },
+      () => {
+        this.debugOverlayService.endFrame()
+      }
+    )
   }
 
   getNavigationService() {
@@ -119,10 +129,12 @@ export class IslandOrchestrator {
 
   setVisible(visible: boolean) {
     this.sceneRenderer.setVisible(visible)
+    this.debugOverlayService.setVisible(visible)
   }
 
   dispose() {
     this.sceneRenderer.stopRenderLoop()
+    this.debugOverlayService.dispose()
     this.terrainService.dispose()
     this.navigationService?.dispose()
     this.cameraController?.dispose()

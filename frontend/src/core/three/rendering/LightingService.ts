@@ -13,7 +13,7 @@ export class LightingService {
     this.lights.push(ambientLight)
 
     const directionalLight = new T.DirectionalLight(0xffffff, 1.05)
-    directionalLight.position.set(22000, 26000, 12000)
+    directionalLight.position.set(72000, 26000, 12000)
     directionalLight.castShadow = true
     directionalLight.shadow.bias = -0.0005
     directionalLight.shadow.normalBias = 0.2

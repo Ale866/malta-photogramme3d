@@ -22,8 +22,7 @@ export class SceneRenderer {
 
     this.renderer = new T.WebGLRenderer({ antialias: true })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    this.renderer.shadowMap.enabled = true
-    this.renderer.shadowMap.type = T.PCFSoftShadowMap
+    this.renderer.shadowMap.enabled = false
     this.renderer.outputColorSpace = T.SRGBColorSpace
     this.renderer.toneMapping = T.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.15
@@ -32,9 +31,6 @@ export class SceneRenderer {
   initialize(container: HTMLElement) {
     this.container = container
     const canvas = this.renderer.domElement
-    // canvas.style.display = 'block'
-    // canvas.style.width = '100%'
-    // canvas.style.height = '100%'
     container.appendChild(canvas)
     this.resize()
   }
@@ -47,11 +43,12 @@ export class SceneRenderer {
     this.scene.remove(object)
   }
 
-  startRenderLoop(beforeRender?: () => void) {
+  startRenderLoop(beforeRender?: () => void, afterRender?: () => void) {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
       beforeRender?.()
       this.renderer.render(this.scene, this.camera)
+      afterRender?.()
     }
     animate()
   }
