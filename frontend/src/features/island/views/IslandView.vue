@@ -38,10 +38,7 @@ onMounted(async () => {
   const orchestrator = getOrchestrator()
   viewportProjectionPort = getViewportProjectionPort()
   orchestrator.setOnTerrainClick((coordinates) => {
-    selectedCoordinates.value = coordinates
-    isCreateModelOpen.value = false
-    isLoginModalOpen.value = false
-    updateMarkerButtonPosition()
+    setSelectedCoordinates(coordinates)
   })
 
   stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
@@ -53,7 +50,24 @@ onMounted(async () => {
 
 function onSearchSelected(query: SearchEntry) {
   const orchestrator = getOrchestrator()
-  orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
+  const local = orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
+  const utm = orchestrator.getCoordinateMapper().localToUtm(local.x, local.z, local.y)
+
+  setSelectedCoordinates({
+    local: {
+      x: local.x,
+      y: local.y,
+      z: local.z,
+    },
+    utm,
+  })
+}
+
+function setSelectedCoordinates(coordinates: MappedCoordinates) {
+  selectedCoordinates.value = coordinates
+  isCreateModelOpen.value = false
+  isLoginModalOpen.value = false
+  updateMarkerButtonPosition()
 }
 
 function closeCreateModel() {
@@ -138,13 +152,8 @@ onUnmounted(() => {
 <template>
   <div class="island-view-root">
     <search-bar @search-selected="onSearchSelected"></search-bar>
-    <button
-      v-if="markerButtonVisible"
-      class="btn btn-primary btn-pill island-marker-add-model"
-      type="button"
-      :style="markerButtonStyle"
-      @click.stop="openCreateModel"
-    >
+    <button v-if="markerButtonVisible" class="btn btn-primary btn-pill island-marker-add-model" type="button"
+      :style="markerButtonStyle" @click.stop="openCreateModel">
       Add model
     </button>
     <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates" @close="closeCreateModel" />

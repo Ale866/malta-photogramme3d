@@ -23,19 +23,21 @@ export class NavigationService {
     this.terrainService = terrainService
   }
 
-  goToLatLon(lat: number, lon: number) {
+  goToLatLon(lat: number, lon: number): T.Vector3 {
     const { easting, northing } = latLonToUTM(lat, lon)
-    this.goToUTM(easting, northing)
+    return this.goToUTM(easting, northing)
   }
 
-  goToUTM(easting: number, northing: number) {
+  goToUTM(easting: number, northing: number): T.Vector3 {
     const local = this.coordinateMapper.utmToLocal(easting, northing, 0)
     local.y = this.terrainService.sampleHeight(local.x, local.z)
     this.createMarkerAndFlyTo(local)
+    return local.clone()
   }
 
-  goToPosition(position: T.Vector3) {
+  goToPosition(position: T.Vector3): T.Vector3 {
     this.createMarkerAndFlyTo(position)
+    return position.clone()
   }
 
   private createMarkerAndFlyTo(position: T.Vector3) {
