@@ -3,8 +3,10 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useScene } from '@/features/island/composables/useScene'
 import SearchBar from '@/components/SearchBar.vue'
 import ModelCreationModal from '@/features/model/components/ModelCreationModal.vue'
+import MobileJoystick from '@/features/island/components/MobileJoystick.vue'
 import type { MappedCoordinates } from '@/core/domain/Coordinates'
 import type { ViewportProjectionPort } from '@/features/island/domain/ViewportProjectionPort'
+import type { CameraController } from '@/core/three/controls/CameraController'
 import LoginModal from '@/features/auth/components/LoginModal.vue'
 import { useAuth } from '@/features/auth/application/useAuth'
 
@@ -20,6 +22,7 @@ const markerButtonStyle = ref<{ left: string; top: string }>({
 const screenProjection = { x: 0, y: 0, visible: false }
 let stopCameraChangeListener: (() => void) | null = null
 let viewportProjectionPort: ViewportProjectionPort | null = null
+let cameraController: CameraController | null = null
 const auth = useAuth()
 
 onMounted(async () => {
@@ -36,6 +39,7 @@ onMounted(async () => {
   })
 
   const orchestrator = getOrchestrator()
+  cameraController = orchestrator.getCameraController()
   viewportProjectionPort = getViewportProjectionPort()
   orchestrator.setOnTerrainClick((coordinates) => {
     setSelectedCoordinates(coordinates)
@@ -138,7 +142,14 @@ function updateMarkerButtonPosition() {
   markerButtonVisible.value = true
 }
 
+function onMobileJoystickMove(input: { x: number; y: number }) {
+  cameraController?.setMobileMoveInput(input)
+}
+
 onUnmounted(() => {
+  cameraController?.setMobileMoveInput({ x: 0, y: 0 })
+  cameraController = null
+
   if (stopCameraChangeListener) {
     stopCameraChangeListener()
     stopCameraChangeListener = null
@@ -158,5 +169,6 @@ onUnmounted(() => {
     </button>
     <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates" @close="closeCreateModel" />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
+    <mobile-joystick class="island-mobile-joystick" @move="onMobileJoystickMove" />
   </div>
 </template>

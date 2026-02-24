@@ -19,3 +19,17 @@
     font-size: 0.9rem;
   }
 }
+
+.island-mobile-joystick {
+  position: fixed;
+  left: calc(env(safe-area-inset-left, 0px) + 1rem);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  z-index: var(--z-marker-button);
+  display: none;
+}
+
+@media (hover: none) {
+  .island-mobile-joystick {
+    display: block;
+  }
+}

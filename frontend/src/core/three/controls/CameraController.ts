@@ -5,6 +5,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 export class CameraController {
   private controls: OrbitControls
   private camera: T.PerspectiveCamera
+  private mobileMoveInput = new T.Vector2()
+  private lastUpdateTs = 0
+  private forward = new T.Vector3()
+  private right = new T.Vector3()
+  private move = new T.Vector3()
 
   constructor(camera: T.PerspectiveCamera, domElement: HTMLElement) {
     this.camera = camera
@@ -14,7 +19,19 @@ export class CameraController {
   }
 
   update() {
+    const now = performance.now()
+    const deltaSeconds =
+      this.lastUpdateTs > 0
+        ? Math.min((now - this.lastUpdateTs) / 1000, 0.05)
+        : 1 / 60
+    this.lastUpdateTs = now
+
+    this.applyMobileMovement(deltaSeconds)
     this.controls.update()
+  }
+
+  setMobileMoveInput(input: { x: number; y: number }) {
+    this.mobileMoveInput.set(input.x, input.y)
   }
 
   frameObject(
@@ -109,6 +126,46 @@ export class CameraController {
   }
 
   dispose() {
+    this.mobileMoveInput.set(0, 0)
+    this.lastUpdateTs = 0
     this.controls.dispose()
+  }
+
+  private applyMobileMovement(deltaSeconds: number) {
+    const inputMagnitude = this.mobileMoveInput.length()
+    if (inputMagnitude < 0.01) return
+
+    this.forward
+      .copy(this.controls.target)
+      .sub(this.camera.position)
+      .setY(0)
+
+    if (this.forward.lengthSq() < 1e-6) {
+      const azimuth = this.controls.getAzimuthalAngle()
+      this.forward.set(-Math.sin(azimuth), 0, -Math.cos(azimuth))
+    }
+
+    if (this.forward.lengthSq() < 1e-6) return
+
+    this.forward.normalize()
+    this.right.set(-this.forward.z, 0, this.forward.x)
+
+    this.move
+      .copy(this.forward)
+      .multiplyScalar(this.mobileMoveInput.y)
+      .addScaledVector(this.right, this.mobileMoveInput.x)
+
+    if (this.move.lengthSq() < 1e-6) return
+
+    this.move.normalize()
+
+    const distanceToTarget = this.camera.position.distanceTo(this.controls.target)
+    const movementSpeed = Math.max(4, distanceToTarget * 0.6)
+    const movementDistance =
+      movementSpeed * deltaSeconds * Math.min(1, inputMagnitude)
+
+    this.move.multiplyScalar(movementDistance)
+    this.camera.position.add(this.move)
+    this.controls.target.add(this.move)
   }
 }
