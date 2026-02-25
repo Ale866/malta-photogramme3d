@@ -6,6 +6,7 @@ import {
   setModelJobSucceeded,
   updateModelJobRuntime,
 } from "../../model-jobs/application/jobLifecycle";
+import { toModelJobStatusDto } from "../../model-jobs/application/jobStatusDto";
 import type { ModelJobServices } from "../../model-jobs/application/ports";
 
 import { runMeshroomPipeline } from "../../pipeline/application/runMeshroomPipeline";
@@ -48,11 +49,12 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     let logTail: string[] = [];
 
     const persistRuntime = async () => {
-      await updateModelJobRuntime(modelJobServices, job.id, {
+      const updated = await updateModelJobRuntime(modelJobServices, job.id, {
         stage,
         progress,
         logTail: [...logTail],
       });
+      services.jobRealtime?.emitUpdate(toModelJobStatusDto(updated));
     };
 
     const interval = setInterval(() => {
@@ -76,7 +78,8 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
       }
     };
 
-    await setModelJobRunning(modelJobServices, job.id);
+    const runningJob = await setModelJobRunning(modelJobServices, job.id);
+    services.jobRealtime?.emitUpdate(toModelJobStatusDto(runningJob));
     captureRuntime({ stage: "starting", progress: 1 });
 
     await runMeshroomPipeline(services.pipeline, {
@@ -101,7 +104,8 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
       title: job.title,
     });
 
-    await setModelJobSucceeded(modelJobServices, job.id, { modelId: model.id });
+    const succeeded = await setModelJobSucceeded(modelJobServices, job.id, { modelId: model.id });
+    services.jobRealtime?.emitUpdate(toModelJobStatusDto(succeeded));
     clearInterval(interval);
   })();
 

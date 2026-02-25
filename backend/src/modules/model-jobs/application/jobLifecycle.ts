@@ -49,18 +49,24 @@ function requireJobId(jobId: string) {
   return normalized;
 }
 
-export async function setModelJobRunning(services: ModelJobServices, jobId: string): Promise<void> {
+export async function setModelJobRunning(
+  services: ModelJobServices,
+  jobId: string
+): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const job = await requireExistingJob(services, normalizedJobId);
 
   assertModelJobStatusTransition(job.status, "running");
 
-  await services.modelJobs.updateState(normalizedJobId, {
+  const updated = await services.modelJobs.updateState(normalizedJobId, {
     status: "running",
     stage: "starting",
     progress: Math.max(1, clampProgress(job.progress)),
     startedAt: job.startedAt ?? new Date(),
   });
+
+  if (!updated) throw new Error("Job not found");
+  return updated;
 }
 
 export type UpdateModelJobRuntimeInput = {
