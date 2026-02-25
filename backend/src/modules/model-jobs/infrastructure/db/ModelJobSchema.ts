@@ -30,9 +30,47 @@ const modelJobSchema = new Schema(
     status: {
       type: String,
       required: true,
-      enum: ['queued', 'running', 'done', 'failed'],
+      enum: ['queued', 'running', 'succeeded', 'failed', 'done'],
       default: 'queued',
       index: true,
+    },
+    stage: {
+      type: String,
+      required: true,
+      default: 'starting',
+    },
+    progress: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+      default: 0,
+    },
+    logTail: {
+      type: [String],
+      required: true,
+      default: [],
+    },
+    error: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    modelId: {
+      type: String,
+      required: false,
+      default: null,
+      index: true,
+    },
+    startedAt: {
+      type: Date,
+      required: false,
+      default: null,
+    },
+    finishedAt: {
+      type: Date,
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }

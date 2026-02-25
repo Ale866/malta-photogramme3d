@@ -1,3 +1,5 @@
+export type ModelJobStatus = "queued" | "running" | "succeeded" | "failed";
+
 export interface ModelJob {
   id: string;
   ownerId: string;
@@ -5,7 +7,14 @@ export interface ModelJob {
   inputFolder: string;
   outputFolder: string;
   imagePaths: string[];
-  status: 'queued' | 'running' | 'done' | 'failed';
+  status: ModelJobStatus;
+  stage: string;
+  progress: number;
+  logTail: string[];
+  error: string | null;
+  modelId: string | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,16 +22,33 @@ export interface ModelJob {
 export type CreateModelJobInput = {
   ownerId: string;
   title: string;
-  status?: ModelJob['status'];
+  status?: ModelJobStatus;
   inputFolder?: string;
   outputFolder?: string;
   imagePaths?: string[];
+  stage?: string;
+  progress?: number;
+  logTail?: string[];
+  error?: string | null;
+  modelId?: string | null;
+  startedAt?: Date | null;
+  finishedAt?: Date | null;
+};
+
+export type UpdateModelJobStateInput = {
+  status?: ModelJobStatus;
+  stage?: string;
+  progress?: number;
+  logTail?: string[];
+  error?: string | null;
+  modelId?: string | null;
+  startedAt?: Date | null;
+  finishedAt?: Date | null;
+  outputFolder?: string;
 };
 
 export interface ModelJobRepository {
   create(input: CreateModelJobInput): Promise<ModelJob>;
   findById(id: string): Promise<ModelJob | null>;
-  setRunning(jobId: string): Promise<void>;
-  setDone(jobId: string, patch?: { outputFolder?: string }): Promise<void>;
-  setFailed(jobId: string): Promise<void>;
+  updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null>;
 }
