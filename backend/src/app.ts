@@ -5,6 +5,7 @@ import { connectDb } from "./shared/db/mongoConnection";
 import cookieParser from 'cookie-parser';
 import cors from "cors";
 import modelRoutes from "./modules/model/api/modelRoutes";
+import modelJobRoutes from "./modules/model-jobs/api/modelJobRoutes";
 
 export function createApp() {
   const app = express();
@@ -20,6 +21,7 @@ export function createApp() {
   app.use(express.json());
   app.use("/upload", uploadRoutes);
   app.use("/model", modelRoutes);
+  app.use("/model-jobs", modelJobRoutes);
   app.use("/auth", authRoutes);
 
   return app;
