@@ -2,6 +2,7 @@ import { createModelFromJob } from "../../model/application/createModelFromJob";
 import type { ModelsServices } from "../../model/application/ports";
 import {
   createQueuedModelJob,
+  setModelJobFailed,
   setModelJobRunning,
   setModelJobSucceeded,
   updateModelJobRuntime,
@@ -78,36 +79,49 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
       }
     };
 
-    const runningJob = await setModelJobRunning(modelJobServices, job.id);
-    services.jobRealtime?.emitUpdate(toModelJobStatusDto(runningJob));
-    captureRuntime({ stage: "starting", progress: 1 });
+    try {
+      const runningJob = await setModelJobRunning(modelJobServices, job.id);
+      services.jobRealtime?.emitUpdate(toModelJobStatusDto(runningJob));
+      captureRuntime({ stage: "starting", progress: 1 });
 
-    await runMeshroomPipeline(services.pipeline, {
-      inputFolder: prepared.inputFolder,
-      outputFolder: prepared.outputFolder,
-    }, {
-      onProgress: (event) => {
-        captureRuntime({
-          stage: event.stage,
-          progress: event.progress,
-          line: event.line,
-        });
-      },
-    });
+      await runMeshroomPipeline(services.pipeline, {
+        inputFolder: prepared.inputFolder,
+        outputFolder: prepared.outputFolder,
+      }, {
+        onProgress: (event) => {
+          captureRuntime({
+            stage: event.stage,
+            progress: event.progress,
+            line: event.line,
+          });
+        },
+      });
 
-    await persistRuntime();
+      await persistRuntime();
 
-    const model = await createModelFromJob(modelsServices, {
-      ownerId: job.ownerId,
-      sourceJobId: job.id,
-      outputFolder: prepared.outputFolder,
-      title: job.title,
-    });
+      const model = await createModelFromJob(modelsServices, {
+        ownerId: job.ownerId,
+        sourceJobId: job.id,
+        outputFolder: prepared.outputFolder,
+        title: job.title,
+      });
 
-    const succeeded = await setModelJobSucceeded(modelJobServices, job.id, { modelId: model.id });
-    services.jobRealtime?.emitUpdate(toModelJobStatusDto(succeeded));
-    clearInterval(interval);
+      const succeeded = await setModelJobSucceeded(modelJobServices, job.id, { modelId: model.id });
+      services.jobRealtime?.emitUpdate(toModelJobStatusDto(succeeded));
+    } catch (error) {
+      const failed = await setModelJobFailed(modelJobServices, job.id, {
+        error: toErrorMessage(error),
+      });
+      services.jobRealtime?.emitUpdate(toModelJobStatusDto(failed));
+    } finally {
+      clearInterval(interval);
+    }
   })();
 
   return { jobId: job.id };
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) return error.message.trim();
+  return "Pipeline failed";
 }
