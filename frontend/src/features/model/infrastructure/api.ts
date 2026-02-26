@@ -1,6 +1,7 @@
 import { useAuth } from '@/features/auth/application/useAuth';
 import { getErrorMessage, http } from '@/core/api/httpClient';
 import type { ModelCoordinates } from '@/features/model/domain/ModelCreationDraft';
+import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 
 export type UploadInput = {
   title: string;
@@ -73,5 +74,23 @@ export const ModelApi = {
     } catch (err) {
       throw new Error(getErrorMessage(err))
     }
-  }
+  },
+
+  async getModelJobStatus(jobId: string): Promise<ModelJobSnapshot> {
+    try {
+      const token = await requireAccessToken();
+      const normalizedJobId = jobId.trim();
+      if (!normalizedJobId) throw new Error('Job ID is required');
+
+      const res = await http.get<ModelJobSnapshot>(`/model-jobs/${normalizedJobId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return res.data;
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
 };

@@ -58,7 +58,7 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     };
 
     const interval = setInterval(() => {
-      void persistRuntime();
+      persistRuntime();
     }, JOB_UPDATE_THROTTLE_MS);
 
     const captureRuntime = (next: { stage?: string; progress?: number; line?: string }) => {
