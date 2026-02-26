@@ -69,3 +69,16 @@ export function useAuth() {
     getAccessToken,
   };
 }
+
+export async function requireAccessToken(): Promise<string> {
+  const auth = useAuth();
+
+  let token = auth.getAccessToken();
+  if (token) return token;
+
+  await auth.hydrateSession();
+  token = auth.getAccessToken();
+
+  if (!token) throw new Error("Not authenticated (missing access token)");
+  return token;
+}

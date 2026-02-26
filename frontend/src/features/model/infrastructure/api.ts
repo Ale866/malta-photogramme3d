@@ -1,5 +1,5 @@
-import { useAuth } from '@/features/auth/application/useAuth';
 import { getErrorMessage, http } from '@/core/api/httpClient';
+import { requireAccessToken } from '@/features/auth/application/useAuth';
 import type { ModelCoordinates } from '@/features/model/domain/ModelCreationDraft';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 
@@ -21,19 +21,6 @@ export type Model = {
   sourceJobId: string;
   outputFolder: string;
   createdAt: string;
-}
-
-const auth = useAuth();
-
-async function requireAccessToken() {
-  let token = auth.getAccessToken();
-  if (token) return token;
-
-  await auth.hydrateSession();
-  token = auth.getAccessToken();
-
-  if (!token) throw new Error('Not authenticated (missing access token)');
-  return token;
 }
 
 export const ModelApi = {
