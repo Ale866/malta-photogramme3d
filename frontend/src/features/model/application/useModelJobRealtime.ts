@@ -8,6 +8,8 @@ import {
 type RealtimeHandlers = {
   onSnapshot: (snapshot: ModelJobSnapshot) => void;
   onUpdate: (update: ModelJobSnapshot) => void;
+  onConnect?: () => void;
+  onDisconnect?: (reason: string) => void;
   onError?: (message: string) => void;
 };
 

@@ -6,6 +6,8 @@ const SOCKET_URL = "http://localhost:3000";
 type JobSocketHandlers = {
   onSnapshot: (snapshot: ModelJobSnapshot) => void;
   onUpdate: (update: ModelJobSnapshot) => void;
+  onConnect?: () => void;
+  onDisconnect?: (reason: string) => void;
   onError?: (message: string) => void;
 };
 
@@ -19,6 +21,10 @@ export function createJobSocketClient(token: string, handlers: JobSocketHandlers
     auth: { token },
   });
 
+  socket.on("connect", () => {
+    handlers.onConnect?.();
+  });
+
   socket.on("job:snapshot", (payload: ModelJobSnapshot) => {
     handlers.onSnapshot(payload);
   });
@@ -29,6 +35,10 @@ export function createJobSocketClient(token: string, handlers: JobSocketHandlers
 
   socket.on("connect_error", (error: Error) => {
     handlers.onError?.(error.message);
+  });
+
+  socket.on("disconnect", (reason: string) => {
+    handlers.onDisconnect?.(reason);
   });
 
   return {
