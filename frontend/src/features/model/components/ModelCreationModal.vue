@@ -24,6 +24,17 @@
         </header>
 
         <p v-if="errorMessage" class="text-error model-sheet-error">{{ errorMessage }}</p>
+        <div v-if="jobStatus" class="add-model-job-status">
+          <p><strong>Job:</strong> {{ jobStatus.jobId }}</p>
+          <p><strong>Status:</strong> {{ jobStatus.status }}</p>
+          <p><strong>Stage:</strong> {{ jobStatus.stage }}</p>
+          <p><strong>Progress:</strong> {{ jobStatus.progress }}%</p>
+          <p><strong>Mode:</strong> {{ mode }}</p>
+          <p><strong>Socket:</strong> {{ isSocketConnected ? 'connected' : 'disconnected' }}</p>
+          <p v-if="jobStatus.modelId"><strong>Model ID:</strong> {{ jobStatus.modelId }}</p>
+          <p v-if="jobStatus.error" class="text-error"><strong>Error:</strong> {{ jobStatus.error }}</p>
+        </div>
+        <p v-if="trackingError" class="text-error model-sheet-error">{{ trackingError }}</p>
 
         <ModelCreationForm
           :coordinates="coordinates"
@@ -37,9 +48,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, toRefs } from 'vue'
+import { onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import ModelCreationForm from '@/features/model/components/ModelCreationForm.vue'
 import { use3dModel } from '@/features/model/application/useModel'
+import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelCreationDraft, ModelCoordinates } from '@/features/model/domain/ModelCreationDraft'
 
 const props = withDefaults(defineProps<{
@@ -58,10 +70,21 @@ const emit = defineEmits<{
 }>()
 
 const { uploadModel } = use3dModel()
+const {
+  job: jobStatus,
+  trackingError,
+  mode,
+  isSocketConnected,
+  start: startTracking,
+  stop: stopTracking,
+} = useModelJobTracker()
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
 const close = () => {
+  stopTracking()
+  jobStatus.value = null
+  errorMessage.value = null
   emit('close')
 }
 
@@ -86,7 +109,14 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  stopTracking()
   window.removeEventListener('click', handleOutsideClick, true)
+})
+
+watch(open, (isOpen) => {
+  if (isOpen) return
+  stopTracking()
+  jobStatus.value = null
 })
 
 const handleSubmit = async (draft: ModelCreationDraft) => {
@@ -100,8 +130,8 @@ const handleSubmit = async (draft: ModelCreationDraft) => {
       ...draft,
       coordinates: props.coordinates ?? draft.coordinates,
     })
+    await startTracking(result.jobId)
     emit('submitted', result.jobId)
-    close()
   } catch (err) {
     errorMessage.value = err instanceof Error ? err.message : 'Upload failed'
   } finally {

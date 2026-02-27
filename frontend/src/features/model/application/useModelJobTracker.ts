@@ -16,10 +16,11 @@ export function useModelJobTracker() {
   const job = ref<ModelJobSnapshot | null>(null);
   const trackingError = ref<string | null>(null);
   const isTracking = ref(false);
+  const mode = ref<"idle" | "socket" | "polling">("idle");
+  const isSocketConnected = ref(false);
 
   let activeJobId: string | null = null;
   let pollTimer: number | null = null;
-  let socketConnected = false;
 
   const applySnapshot = (snapshot: ModelJobSnapshot) => {
     if (!activeJobId || snapshot.jobId !== activeJobId) return;
@@ -44,12 +45,14 @@ export function useModelJobTracker() {
     stopPolling();
     activeJobId = null;
     realtime.disconnect();
-    socketConnected = false;
+    isSocketConnected.value = false;
+    mode.value = "idle";
     isTracking.value = false;
   };
 
   const startPolling = (pollIntervalMs: number) => {
     if (pollTimer !== null) return;
+    mode.value = "polling";
     pollTimer = window.setInterval(() => {
       void pollOnce();
     }, pollIntervalMs);
@@ -69,6 +72,7 @@ export function useModelJobTracker() {
     activeJobId = normalizedJobId;
     isTracking.value = true;
     trackingError.value = null;
+    mode.value = "polling";
 
     await pollOnce();
 
@@ -77,7 +81,8 @@ export function useModelJobTracker() {
         onSnapshot: applySnapshot,
         onUpdate: applySnapshot,
         onConnect: () => {
-          socketConnected = true;
+          isSocketConnected.value = true;
+          mode.value = "socket";
           trackingError.value = null;
           stopPolling();
           if (activeJobId) {
@@ -85,19 +90,19 @@ export function useModelJobTracker() {
           }
         },
         onDisconnect: () => {
-          socketConnected = false;
+          isSocketConnected.value = false;
           if (activeJobId) {
             startPolling(pollIntervalMs);
           }
         },
         onError: (message) => {
           trackingError.value = message;
-          if (!socketConnected && activeJobId) {
+          if (!isSocketConnected.value && activeJobId) {
             startPolling(pollIntervalMs);
           }
         },
       });
-      if (!socketConnected) {
+      if (!isSocketConnected.value) {
         startPolling(pollIntervalMs);
       }
     } catch (error) {
@@ -114,6 +119,8 @@ export function useModelJobTracker() {
     job,
     isTracking,
     trackingError,
+    mode,
+    isSocketConnected,
     start,
     stop,
   };
