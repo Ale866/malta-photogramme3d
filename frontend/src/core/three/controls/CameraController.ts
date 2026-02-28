@@ -14,6 +14,8 @@ export class CameraController {
   constructor(camera: T.PerspectiveCamera, domElement: HTMLElement) {
     this.camera = camera
     this.controls = new OrbitControls(camera, domElement)
+    this.controls.minDistance = 10
+    this.controls.maxDistance = 200
     this.controls.enableDamping = true
     this.controls.screenSpacePanning = true
   }
