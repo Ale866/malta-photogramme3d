@@ -4,8 +4,8 @@ import fragmentShader from '../shaders/ocean/fragment.glsl?raw'
 
 export class OceanRenderer {
   private oceanMesh: T.Mesh<T.PlaneGeometry, T.ShaderMaterial> | null = null
-  private depthColor = new T.Color(0x2f86ad)
-  private surfaceColor = new T.Color(0x8fd2f2)
+  private depthColor = new T.Color(6 / 255, 66 / 255, 115 / 255)
+  private surfaceColor = new T.Color(143 / 255, 210 / 255, 242 / 255)
 
   createOcean(bboxLocalXZ: {
     minX: number
@@ -16,14 +16,14 @@ export class OceanRenderer {
     const width = (bboxLocalXZ.maxX - bboxLocalXZ.minX) * 4.0
     const height = (bboxLocalXZ.maxZ - bboxLocalXZ.minZ) * 4.0
     const maxDim = Math.max(width, height)
-    const displacementScale = Math.min(30)
+    const displacementScale = 25
 
     const oceanMaterial = new T.ShaderMaterial({
       vertexShader,
       fragmentShader,
       uniforms: {
         uTime: { value: 0 },
-        uBigWavesElevation: { value: 0.2 },
+        uBigWavesElevation: { value: 0.15 },
         uBigWavesFrequency: {
           value: new T.Vector2(
             8.0 / width,
@@ -32,7 +32,7 @@ export class OceanRenderer {
         },
         uBigWavesSpeed: { value: 0.2 },
 
-        uSmallWavesElevation: { value: 0.15 },
+        uSmallWavesElevation: { value: 0.35 },
         uSmallWavesFrequency: { value: 6.0 / maxDim },
         uSmallWavesSpeed: { value: 0.1 },
         uSmallIterations: { value: 4.0 },
@@ -40,8 +40,8 @@ export class OceanRenderer {
 
         uDepthColor: { value: this.depthColor },
         uSurfaceColor: { value: this.surfaceColor },
-        uColorOffset: { value: 0.09 },
-        uColorMultiplier: { value: 3.0 },
+        uColorOffset: { value: 0.1 },
+        uColorMultiplier: { value: 2.0 },
       }
     })
 
