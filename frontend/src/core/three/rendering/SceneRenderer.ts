@@ -7,6 +7,7 @@ export class SceneRenderer {
   private container: HTMLElement | null = null
   private animationFrameId: number | null = null
   private reusableProjected = new T.Vector3()
+  private clock = new T.Clock();
 
   constructor() {
     this.scene = new T.Scene()
@@ -43,10 +44,13 @@ export class SceneRenderer {
     this.scene.remove(object)
   }
 
-  startRenderLoop(beforeRender?: () => void, afterRender?: () => void) {
+  startRenderLoop(beforeRender?: (elapsed: number, delta: number) => void, afterRender?: () => void) {
+    this.clock.start();
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
-      beforeRender?.()
+      const elapsed = this.clock.getElapsedTime();
+      const delta = this.clock.getDelta();
+      beforeRender?.(elapsed, delta)
       this.renderer.render(this.scene, this.camera)
       afterRender?.()
     }

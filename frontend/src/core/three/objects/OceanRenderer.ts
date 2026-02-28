@@ -1,7 +1,9 @@
 import * as T from 'three'
+import vertexShader from '../shaders/ocean/vertex.glsl?raw'
+import fragmentShader from '../shaders/ocean/fragment.glsl?raw'
 
 export class OceanRenderer {
-  private oceanMesh: T.Mesh | null = null
+  private oceanMesh: T.Mesh<T.PlaneGeometry, T.ShaderMaterial> | null = null
 
   createOcean(bboxLocalXZ: {
     minX: number
@@ -9,18 +11,22 @@ export class OceanRenderer {
     maxX: number
     maxZ: number
   }): T.Mesh {
-    const oceanMaterial = new T.MeshStandardMaterial({
-      color: 0x2a6fb0,
-      roughness: 0.35,
-      metalness: 0.05,
-      side: T.DoubleSide,
+    const oceanMaterial = new T.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: {
+        uTime: { value: 0 },
+        uBigWavesAnimation: { value: 0.2 },
+        uBigWavesFrequency: { value: new T.Vector2(4, 1.5) },
+        uBigWavesSpeed: { value: 0.75 }
+      }
     })
 
     const width = (bboxLocalXZ.maxX - bboxLocalXZ.minX) * 1.6
     const height = (bboxLocalXZ.maxZ - bboxLocalXZ.minZ) * 1.6
 
     this.oceanMesh = new T.Mesh(
-      new T.PlaneGeometry(width, height),
+      new T.PlaneGeometry(width, height, 128, 128),
       oceanMaterial
     )
 
@@ -29,6 +35,13 @@ export class OceanRenderer {
     this.oceanMesh.receiveShadow = false
 
     return this.oceanMesh
+  }
+
+  update(elapsed: number, _: number) {
+    const material = this.oceanMesh?.material
+    if (material instanceof T.ShaderMaterial && material.uniforms.uTime) {
+      material.uniforms.uTime.value = elapsed
+    }
   }
 
   getOcean() {

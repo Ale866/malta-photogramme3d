@@ -1,24 +1,13 @@
 <template>
   <Teleport to="body">
     <div v-if="open" class="model-sheet-host">
-      <section
-        ref="sheetRef"
-        class="model-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Create model"
-      >
+      <section ref="sheetRef" class="model-sheet" role="dialog" aria-modal="true" aria-label="Create model">
         <header class="model-sheet-header">
           <div>
             <h2 class="model-sheet-title">Create Model</h2>
             <p class="text-muted model-sheet-subtitle">Tap on the map to change selection at any time.</p>
           </div>
-          <button
-            type="button"
-            class="btn btn-icon model-sheet-close"
-            aria-label="Close popup"
-            @click="close"
-          >
+          <button type="button" class="btn btn-icon model-sheet-close" aria-label="Close popup" @click="close">
             X
           </button>
         </header>
@@ -36,12 +25,8 @@
         </div>
         <p v-if="trackingError" class="text-error model-sheet-error">{{ trackingError }}</p>
 
-        <ModelCreationForm
-          :coordinates="coordinates"
-          :is-submitting="isSubmitting"
-          submit-label="Upload model"
-          @submit="handleSubmit"
-        />
+        <ModelCreationForm :coordinates="coordinates" :is-submitting="isSubmitting" submit-label="Upload model"
+          @submit="handleSubmit" />
       </section>
     </div>
   </Teleport>

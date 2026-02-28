@@ -64,6 +64,10 @@ export class TerrainService {
     return this.terrainRenderer.getTerrain()
   }
 
+  update(elapsed: number, delta: number) {
+    this.oceanRenderer.update(elapsed, delta)
+  }
+
   dispose() {
     this.terrainRenderer.dispose()
     this.oceanRenderer.dispose()
