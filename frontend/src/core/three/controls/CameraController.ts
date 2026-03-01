@@ -7,6 +7,13 @@ export class CameraController {
   private camera: T.PerspectiveCamera
   private mobileMoveInput = new T.Vector2()
   private lastUpdateTs = 0
+  private maxZoomDistance = 260
+  private movementBounds: {
+    minX: number
+    minZ: number
+    maxX: number
+    maxZ: number
+  } | null = null
   private forward = new T.Vector3()
   private right = new T.Vector3()
   private move = new T.Vector3()
@@ -15,7 +22,7 @@ export class CameraController {
     this.camera = camera
     this.controls = new OrbitControls(camera, domElement)
     this.controls.minDistance = 10
-    this.controls.maxDistance = 200
+    this.controls.maxDistance = this.maxZoomDistance
     this.controls.enableDamping = true
     this.controls.screenSpacePanning = true
   }
@@ -30,10 +37,42 @@ export class CameraController {
 
     this.applyMobileMovement(deltaSeconds)
     this.controls.update()
+    this.restrictMovements()
   }
 
   setMobileMoveInput(input: { x: number; y: number }) {
     this.mobileMoveInput.set(input.x, input.y)
+  }
+
+  setBounds(
+    bounds: {
+      minX: number
+      minZ: number
+      maxX: number
+      maxZ: number
+    },
+    padding = 0
+  ) {
+    this.movementBounds = {
+      minX: Math.min(bounds.minX, bounds.maxX) - padding,
+      minZ: Math.min(bounds.minZ, bounds.maxZ) - padding,
+      maxX: Math.max(bounds.minX, bounds.maxX) + padding,
+      maxZ: Math.max(bounds.minZ, bounds.maxZ) + padding,
+    }
+
+    const spanX = this.movementBounds.maxX - this.movementBounds.minX
+    const spanZ = this.movementBounds.maxZ - this.movementBounds.minZ
+    const halfDiagonal = Math.sqrt(spanX * spanX + spanZ * spanZ) * 0.5
+    this.maxZoomDistance = Math.min(320, Math.max(180, halfDiagonal * 0.42))
+    this.controls.maxDistance = this.maxZoomDistance
+
+    this.restrictMovements()
+  }
+
+  clearMovementBounds() {
+    this.movementBounds = null
+    this.maxZoomDistance = 260
+    this.controls.maxDistance = this.maxZoomDistance
   }
 
   frameObject(
@@ -58,6 +97,7 @@ export class CameraController {
 
     this.camera.near = Math.max(0.1, dist / 800)
     this.camera.far = dist * 6
+    this.controls.maxDistance = this.maxZoomDistance
     this.camera.updateProjectionMatrix()
 
     this.controls.update()
@@ -130,6 +170,7 @@ export class CameraController {
   dispose() {
     this.mobileMoveInput.set(0, 0)
     this.lastUpdateTs = 0
+    this.movementBounds = null
     this.controls.dispose()
   }
 
@@ -170,4 +211,26 @@ export class CameraController {
     this.camera.position.add(this.move)
     this.controls.target.add(this.move)
   }
+
+  private restrictMovements() {
+    const bounds = this.movementBounds
+    if (!bounds) return
+
+    const target = this.controls.target
+    const position = this.camera.position
+
+    const clampedTargetX = Math.min(bounds.maxX, Math.max(bounds.minX, target.x))
+    const clampedTargetZ = Math.min(bounds.maxZ, Math.max(bounds.minZ, target.z))
+    const deltaX = clampedTargetX - target.x
+    const deltaZ = clampedTargetZ - target.z
+
+    if (deltaX === 0 && deltaZ === 0) return
+
+    target.x = clampedTargetX
+    target.z = clampedTargetZ
+    position.x += deltaX
+    position.z += deltaZ
+    this.controls.update()
+  }
+
 }

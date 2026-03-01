@@ -13,36 +13,47 @@ export class OceanRenderer {
     maxX: number
     maxZ: number
   }): T.Mesh {
-    const width = (bboxLocalXZ.maxX - bboxLocalXZ.minX) * 4.0
-    const height = (bboxLocalXZ.maxZ - bboxLocalXZ.minZ) * 4.0
-    const maxDim = Math.max(width, height)
-    const displacementScale = 25
+    const terrainWidth = bboxLocalXZ.maxX - bboxLocalXZ.minX
+    const terrainHeight = bboxLocalXZ.maxZ - bboxLocalXZ.minZ
+    const visualScale = 4.0
+    const planeScale = 6.0
+
+    const width = terrainWidth * planeScale
+    const height = terrainHeight * planeScale
+    const visualWidth = terrainWidth * visualScale
+    const visualHeight = terrainHeight * visualScale
+    const visualMaxDim = Math.max(visualWidth, visualHeight)
+    const uniforms = {
+      fogNear: { value: 1 },
+      fogFar: { value: 2000 },
+      fogColor: { value: new T.Color(230 / 255, 240 / 255, 255 / 255) },
+      uTime: { value: 0 },
+      uBigWavesElevation: { value: 0.15 },
+      uBigWavesFrequency: {
+        value: new T.Vector2(
+          8.0 / visualWidth,
+          3.0 / visualHeight
+        ),
+      },
+      uBigWavesSpeed: { value: 0.2 },
+      uSmallWavesElevation: { value: 0.35 },
+      uSmallWavesFrequency: { value: 6.0 / visualMaxDim },
+      uSmallWavesSpeed: { value: 0.1 },
+      uSmallIterations: { value: 4.0 },
+      uDisplacementScale: { value: 25 },
+      uDepthColor: { value: this.depthColor },
+      uSurfaceColor: { value: this.surfaceColor },
+      uColorOffset: { value: 0.1 },
+      uColorMultiplier: { value: 2.0 },
+    }
 
     const oceanMaterial = new T.ShaderMaterial({
       vertexShader,
       fragmentShader,
-      uniforms: {
-        uTime: { value: 0 },
-        uBigWavesElevation: { value: 0.15 },
-        uBigWavesFrequency: {
-          value: new T.Vector2(
-            8.0 / width,
-            3.0 / height
-          ),
-        },
-        uBigWavesSpeed: { value: 0.2 },
-
-        uSmallWavesElevation: { value: 0.35 },
-        uSmallWavesFrequency: { value: 6.0 / maxDim },
-        uSmallWavesSpeed: { value: 0.1 },
-        uSmallIterations: { value: 4.0 },
-        uDisplacementScale: { value: displacementScale },
-
-        uDepthColor: { value: this.depthColor },
-        uSurfaceColor: { value: this.surfaceColor },
-        uColorOffset: { value: 0.1 },
-        uColorMultiplier: { value: 2.0 },
-      }
+      fog: true,
+      transparent: true,
+      depthWrite: false,
+      uniforms
     })
 
     this.oceanMesh = new T.Mesh(

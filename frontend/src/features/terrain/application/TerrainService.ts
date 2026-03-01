@@ -47,6 +47,28 @@ export class TerrainService {
     const ocean = this.oceanRenderer.createOcean(bboxLocalXZ)
     this.sceneRenderer.add(ocean)
 
+    const terrainWidth = bboxLocalXZ.maxX - bboxLocalXZ.minX
+    const terrainDepth = bboxLocalXZ.maxZ - bboxLocalXZ.minZ
+
+    const oceanScale = 6.0
+    const centerX = (bboxLocalXZ.minX + bboxLocalXZ.maxX) * 0.5
+    const centerZ = (bboxLocalXZ.minZ + bboxLocalXZ.maxZ) * 0.5
+    const boundHalfWidth = terrainWidth * oceanScale * 0.5 * 0.55
+    const boundHalfDepth = terrainDepth * oceanScale * 0.5 * 0.55
+    this.cameraController?.setBounds({
+      minX: centerX - boundHalfWidth,
+      maxX: centerX + boundHalfWidth,
+      minZ: centerZ - boundHalfDepth,
+      maxZ: centerZ + boundHalfDepth,
+    })
+
+    const oceanWidth = terrainWidth * oceanScale
+    const oceanDepth = terrainDepth * oceanScale
+    const minOceanDim = Math.min(oceanWidth, oceanDepth)
+    const fogFar = Math.max(500, Math.min(1400, minOceanDim * 0.5))
+    const fogNear = Math.max(200, fogFar * 0.4)
+    this.sceneRenderer.setFogRange(fogNear, fogFar)
+
     if (this.cameraController) {
       this.cameraController.frameObject(root, yRange)
     }

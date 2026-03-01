@@ -80,6 +80,17 @@ export class SceneRenderer {
     this.camera.updateProjectionMatrix()
   }
 
+  setFogRange(near: number, far: number) {
+    if (!Number.isFinite(near) || !Number.isFinite(far) || far <= near) return
+
+    const backgroundColor =
+      this.scene.background instanceof T.Color
+        ? this.scene.background
+        : new T.Color(0xe6f0ff)
+
+    this.scene.fog = new T.Fog(backgroundColor, near, far)
+  }
+
   setVisible(visible: boolean) {
     this.renderer.domElement.style.display = visible ? 'block' : 'none'
   }

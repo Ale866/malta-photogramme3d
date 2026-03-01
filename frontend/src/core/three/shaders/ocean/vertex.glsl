@@ -10,6 +10,9 @@ uniform float uSmallIterations;
 uniform float uDisplacementScale;
 
 varying float vElevation;
+varying vec2 vUv;
+
+#include <fog_pars_vertex>
 
 vec4 permute(vec4 x)
 {
@@ -110,9 +113,12 @@ void main()
 
     modelPosition.y += elevation * uDisplacementScale;
 
-    vec4 viewPosition = viewMatrix * modelPosition;
-    vec4 projectedPosition = projectionMatrix * viewPosition;
+    vec4 mvPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * mvPosition;
     gl_Position = projectedPosition;
 
     vElevation = elevation;
+    vUv = uv;
+
+    #include <fog_vertex>
 }
