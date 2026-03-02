@@ -44,13 +44,13 @@ export class SceneRenderer {
     this.scene.remove(object)
   }
 
-  startRenderLoop(beforeRender?: (elapsed: number, delta: number) => void, afterRender?: () => void) {
+  startRenderLoop(beforeRender?: (elapsed: number) => void, afterRender?: () => void) {
     this.clock.start();
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
       const elapsed = this.clock.getElapsedTime();
-      const delta = this.clock.getDelta();
-      beforeRender?.(elapsed, delta)
+      // const delta = this.clock.getDelta();
+      beforeRender?.(elapsed)
       this.renderer.render(this.scene, this.camera)
       afterRender?.()
     }

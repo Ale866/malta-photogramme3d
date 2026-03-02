@@ -68,7 +68,7 @@ export class OceanRenderer {
     return this.oceanMesh
   }
 
-  update(elapsed: number, _: number) {
+  update(elapsed: number) {
     const material = this.oceanMesh?.material
     if (material instanceof T.ShaderMaterial && material.uniforms.uTime) {
       material.uniforms.uTime.value = elapsed

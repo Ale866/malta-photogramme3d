@@ -86,8 +86,8 @@ export class TerrainService {
     return this.terrainRenderer.getTerrain()
   }
 
-  update(elapsed: number, delta: number) {
-    this.oceanRenderer.update(elapsed, delta)
+  update(elapsed: number) {
+    this.oceanRenderer.update(elapsed)
   }
 
   dispose() {

@@ -87,10 +87,10 @@ export class IslandOrchestrator {
     )
 
     this.sceneRenderer.startRenderLoop(
-      (elapsed, delta) => {
+      (elapsed) => {
         this.debugOverlayService.beginFrame()
         this.cameraController?.update()
-        this.terrainService.update(elapsed, delta)
+        this.terrainService.update(elapsed)
       },
       () => {
         this.debugOverlayService.endFrame()
