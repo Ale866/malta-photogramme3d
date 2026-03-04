@@ -6,6 +6,7 @@ const LoginView = () => import('@/features/auth/views/LoginView.vue')
 
 const AddModelView = () => import('@/features/model/views/AddModelView.vue')
 const ListModelView = () => import('@/features/model/views/ListModelView.vue')
+const ModelDetailsView = () => import('@/features/model/views/ModelDetailsView.vue')
 
 const routes = [
   { path: '/', name: "Island", component: IslandView },
@@ -13,7 +14,8 @@ const routes = [
     path: '/model',
     children: [
       { path: 'add', name: "AddModel", meta: { requiresAuth: true }, component: AddModelView },
-      { path: 'list', name: "ListModel", meta: { requiresAuth: true }, component: ListModelView }
+      { path: 'list', name: "ListModel", meta: { requiresAuth: true }, component: ListModelView },
+      { path: ':modelId', name: "ModelDetails", meta: { requiresAuth: true }, component: ModelDetailsView },
     ]
   },
   { path: '/login', name: "Login", component: LoginView },

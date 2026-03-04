@@ -90,7 +90,7 @@ export const modelJobRepo: ModelJobRepository = {
       return this.findById(jobId);
     }
 
-    const doc = await ModelJobSchema.findByIdAndUpdate(jobId, { $set: update }, { new: true }).lean();
+    const doc = await ModelJobSchema.findByIdAndUpdate(jobId, { $set: update }, { returnDocument: 'after' }).lean();
     if (!doc) return null;
 
     return toDomain(doc);

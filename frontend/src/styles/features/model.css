@@ -200,7 +200,119 @@
   margin: 0.2rem 0;
 }
 
+.model-list-page {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  overflow: auto;
+  padding: var(--space-5);
+  background: linear-gradient(180deg, rgb(20 20 20 / 92%), rgb(12 12 12 / 96%));
+}
+
+.model-list-header h1 {
+  margin: 0 0 var(--space-2);
+}
+
+.model-list-grid {
+  margin-top: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.model-list-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.model-list-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.model-list-card:focus-visible {
+  outline: 2px solid var(--accent-primary-strong);
+  outline-offset: 2px;
+}
+
+.model-list-card--pending {
+  border-color: #a87612;
+}
+
+.model-list-card--failed {
+  border-color: #874141;
+}
+
+.model-list-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.model-list-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.model-list-card-status {
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+}
+
+.model-list-card-preview {
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.model-list-card-meta {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.model-list-card-meta div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.model-list-card-meta dt {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.model-list-card-meta dd {
+  margin: 0;
+}
+
+.model-details-placeholder {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  overflow: auto;
+  padding: var(--space-5);
+  background: rgb(18 18 18 / 96%);
+}
+
 @media (max-width: 700px) {
+  .model-list-page {
+    padding: var(--space-3);
+  }
+
   .model-sheet-host {
     padding-left: var(--space-2);
     padding-right: var(--space-2);

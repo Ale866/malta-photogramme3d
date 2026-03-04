@@ -1,6 +1,7 @@
 import { ModelApi } from "../infrastructure/api";
 import type { ModelCreationDraft } from "../domain/ModelCreationDraft";
 import type { ModelJobSnapshot } from "../domain/ModelJob";
+import type { ModelSummary } from "../domain/ModelSummary";
 
 export function use3dModel() {
   async function uploadModel(input: ModelCreationDraft) {
@@ -12,9 +13,9 @@ export function use3dModel() {
     return result;
   }
 
-  async function getModels() {
+  async function getModels(): Promise<ModelSummary[]> {
     const result = await ModelApi.getModels();
-    return result
+    return result;
   }
 
   async function getModelJobStatus(jobId: string): Promise<ModelJobSnapshot> {

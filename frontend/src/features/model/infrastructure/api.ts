@@ -2,6 +2,7 @@ import { getErrorMessage, http } from '@/core/api/httpClient';
 import { requireAccessToken } from '@/features/auth/application/useAuth';
 import type { ModelCoordinates } from '@/features/model/domain/ModelCreationDraft';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
+import type { ModelSummary } from '@/features/model/domain/ModelSummary';
 
 export type UploadInput = {
   title: string;
@@ -15,12 +16,28 @@ export type UploadResponse = {
   jobId: string;
 };
 
-export type Model = {
+type ModelDto = {
+  id: string;
   ownerId: string;
   title: string;
-  sourceJobId: string;
+  sourceJobId: string | null;
   outputFolder: string;
   createdAt: string;
+  coordinates?: ModelCoordinates | null;
+  modelJob?: ModelJobSnapshot | null;
+};
+
+function toModelSummary(dto: ModelDto): ModelSummary {
+  return {
+    id: dto.id,
+    ownerId: dto.ownerId,
+    title: dto.title,
+    sourceJobId: dto.sourceJobId ?? null,
+    outputFolder: dto.outputFolder,
+    createdAt: dto.createdAt,
+    coordinates: dto.coordinates ?? null,
+    modelJob: dto.modelJob ?? null,
+  };
 }
 
 export const ModelApi = {
@@ -47,19 +64,19 @@ export const ModelApi = {
     }
   },
 
-  async getModels(): Promise<Model[]> {
+  async getModels(): Promise<ModelSummary[]> {
     try {
       const token = await requireAccessToken();
 
-      const res = await http.get('/model/list', {
+      const res = await http.get<ModelDto[]>('/model/list', {
         headers: {
           Authorization: `Bearer ${token}`,
         }
-      })
+      });
 
-      return res.data;
+      return res.data.map(toModelSummary);
     } catch (err) {
-      throw new Error(getErrorMessage(err))
+      throw new Error(getErrorMessage(err));
     }
   },
 
