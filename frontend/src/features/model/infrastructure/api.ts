@@ -1,14 +1,8 @@
 import { getErrorMessage, http } from '@/core/api/httpClient';
 import { requireAccessToken } from '@/features/auth/application/useAuth';
-import type { ModelCoordinates } from '@/features/model/domain/ModelCreationDraft';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 import type { ModelSummary } from '@/features/model/domain/ModelSummary';
-
-export type UploadInput = {
-  title: string;
-  files: File[];
-  coordinates?: ModelCoordinates | null;
-};
+import type { ModelCreationDraft } from '../domain/ModelCreationDraft';
 
 export type UploadResponse = {
   success: boolean;
@@ -23,7 +17,7 @@ type ModelDto = {
   sourceJobId: string | null;
   outputFolder: string;
   createdAt: string;
-  coordinates?: ModelCoordinates | null;
+  coordinates: { x: number, y: number, z: number };
   modelJob?: ModelJobSnapshot | null;
 };
 
@@ -35,13 +29,13 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     sourceJobId: dto.sourceJobId ?? null,
     outputFolder: dto.outputFolder,
     createdAt: dto.createdAt,
-    coordinates: dto.coordinates ?? null,
+    coordinates: dto.coordinates,
     modelJob: dto.modelJob ?? null,
   };
 }
 
 export const ModelApi = {
-  async upload(input: UploadInput): Promise<UploadResponse> {
+  async upload(input: ModelCreationDraft): Promise<UploadResponse> {
     try {
       const token = await requireAccessToken();
 

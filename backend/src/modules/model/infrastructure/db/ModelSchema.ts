@@ -21,6 +21,14 @@ const modelSchema = new Schema(
       type: String,
       required: true,
     },
+    coordinates: {
+      type: {
+        x: { type: Number, required: true },
+        y: { type: Number, required: true },
+        z: { type: Number, required: true },
+      },
+      required: true
+    },
     createdAt: {
       type: Date,
       default: null,

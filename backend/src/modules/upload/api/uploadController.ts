@@ -6,12 +6,14 @@ import { uploadServices } from "../infrastructure/uploadServices";
 export async function uploadController(req: AuthedRequest, res: Response) {
   try {
     const files = req.files as Express.Multer.File[];
-    const { title } = req.body ?? {};
+    const { title, coordinates } = req.body ?? {};
+    const parsedCoordinates = typeof coordinates === "string" ? JSON.parse(coordinates) : coordinates;
 
     const result = await startUpload(uploadServices, {
       ownerId: req.user?.sub,
       title,
       files,
+      coordinates: parsedCoordinates
     });
 
     return res.status(202).json({
@@ -25,7 +27,11 @@ export async function uploadController(req: AuthedRequest, res: Response) {
         return res.status(401).json({ error: err.message });
       }
 
-      if (err.message === "Title is required" || err.message === "No images uploaded") {
+      if (
+        err.message === "Title is required" ||
+        err.message === "No images uploaded" ||
+        err.message.includes("JSON")
+      ) {
         return res.status(400).json({ error: err.message });
       }
     }

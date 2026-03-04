@@ -24,13 +24,6 @@ function formatDate(value: string): string {
   return dateFormatter.format(date);
 }
 
-function formatCoordinatesOrLocation(model: ModelSummary): string {
-  if (!model.coordinates) return 'Location not available yet';
-
-  const { easting, northing } = model.coordinates.utm;
-  return `E ${easting.toFixed(2)}, N ${northing.toFixed(2)}`;
-}
-
 export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
   const lifecycle = getModelLifecycleStatus(model);
 
@@ -38,7 +31,7 @@ export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
     id: model.id,
     title: model.title,
     modelPlaceholderLabel: '3D preview placeholder',
-    coordinatesOrLocationLabel: formatCoordinatesOrLocation(model),
+    coordinatesOrLocationLabel: `${model.coordinates.x}, ${model.coordinates.y}, ${model.coordinates.z}`,
     dateLabel: formatDate(model.createdAt),
     statusLabel: lifecycle === 'pending' ? 'Processing' : lifecycle === 'failed' ? 'Failed' : 'Ready',
     statusTone: lifecycle,

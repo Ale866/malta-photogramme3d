@@ -9,6 +9,7 @@ function toDomain(doc: any): DomainModel {
     sourceJobId: doc.sourceJobId ?? null,
     outputFolder: doc.outputFolder,
     createdAt: doc.createdAt,
+    coordinates: doc.coordinates,
   };
 }
 
@@ -19,6 +20,7 @@ export const modelRepo: ModelRepository = {
       title: input.title,
       sourceJobId: input.sourceJobId ?? undefined,
       outputFolder: input.outputFolder,
+      coordinates: input.coordinates,
     });
 
     return toDomain(created);
@@ -35,6 +37,7 @@ export const modelRepo: ModelRepository = {
       sourceJobId: doc.sourceJobId ?? null,
       outputFolder: doc.outputFolder,
       createdAt: doc.createdAt,
+      coordinates: doc.coordinates,
     };
   },
 
@@ -47,6 +50,7 @@ export const modelRepo: ModelRepository = {
       sourceJobId: d.sourceJobId ?? null,
       outputFolder: d.outputFolder,
       createdAt: d.createdAt,
+      coordinates: d.coordinates,
     }));
   },
 };

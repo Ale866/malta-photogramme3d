@@ -2,29 +2,11 @@
   <form class="model-form" @submit.prevent="submitForm">
     <div class="form-field">
       <label class="form-label" for="title">Title</label>
-      <input
-        id="title"
-        class="form-input"
-        v-model="title"
-        type="text"
-        placeholder="Model title"
-        required
-      />
+      <input id="title" class="form-input" v-model="title" type="text" placeholder="Model title" required />
     </div>
 
     <div v-if="coordinates" class="model-form-coordinates">
-      <div class="model-form-coord-card">
-        <span class="model-form-coord-label">Local</span>
-        <p>X: {{ formatNumber(coordinates.local.x) }}</p>
-        <p>Y: {{ formatNumber(coordinates.local.y) }}</p>
-        <p>Z: {{ formatNumber(coordinates.local.z) }}</p>
-      </div>
-      <div class="model-form-coord-card">
-        <span class="model-form-coord-label">UTM</span>
-        <p>E: {{ formatNumber(coordinates.utm.easting) }}</p>
-        <p>N: {{ formatNumber(coordinates.utm.northing) }}</p>
-        <p>Alt: {{ formatNumber(coordinates.utm.altitude) }}</p>
-      </div>
+      {{ coordinates.x }}, {{ coordinates.y }}, {{ coordinates.z }}
     </div>
 
     <div class="model-form-upload" @dragover.prevent @drop.prevent="handleDrop">
@@ -33,32 +15,16 @@
     </div>
 
     <div v-if="files.length > 0" class="model-form-carousel">
-      <button
-        type="button"
-        class="btn btn-icon model-form-carousel-arrow"
-        aria-label="Previous slide"
-        @click="showPrevious"
-      >
+      <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Previous slide"
+        @click="showPrevious">
         &lt;
       </button>
 
       <div class="model-form-carousel-slide">
-        <div
-          class="model-form-carousel-grid"
-          :style="{ '--carousel-columns': String(columnsPerSlide) }"
-        >
-          <div
-            v-for="entry in visibleFiles"
-            :key="entry.index"
-            class="model-form-image-wrap"
-          >
+        <div class="model-form-carousel-grid" :style="{ '--carousel-columns': String(columnsPerSlide) }">
+          <div v-for="entry in visibleFiles" :key="entry.index" class="model-form-image-wrap">
             <img class="model-form-image" :src="entry.file.preview" alt="preview" />
-            <button
-              type="button"
-              class="model-form-delete"
-              aria-label="Remove image"
-              @click="removeFile(entry.index)"
-            >
+            <button type="button" class="model-form-delete" aria-label="Remove image" @click="removeFile(entry.index)">
               x
             </button>
           </div>
@@ -66,12 +32,7 @@
         <p class="text-muted model-form-counter">Slide {{ currentPage + 1 }} / {{ totalPages }}</p>
       </div>
 
-      <button
-        type="button"
-        class="btn btn-icon model-form-carousel-arrow"
-        aria-label="Next slide"
-        @click="showNext"
-      >
+      <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Next slide" @click="showNext">
         &gt;
       </button>
     </div>
@@ -82,7 +43,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
-import type { ModelCreationDraft, ModelCoordinates } from '@/features/model/domain/ModelCreationDraft'
+import type { ModelCreationDraft } from '@/features/model/domain/ModelCreationDraft'
 
 interface UploadedFile {
   file: File
@@ -90,11 +51,11 @@ interface UploadedFile {
 }
 
 const props = withDefaults(defineProps<{
-  coordinates?: ModelCoordinates | null
+  coordinates: { x: number, y: number, z: number }
   isSubmitting?: boolean
   submitLabel?: string
 }>(), {
-  coordinates: null,
+  coordinates: () => ({ x: 0, y: 0, z: 0 }),
   isSubmitting: false,
   submitLabel: 'Submit',
 })
@@ -204,8 +165,6 @@ const showNext = () => {
   if (totalPages.value <= 1) return
   currentPage.value = (currentPage.value + 1) % totalPages.value
 }
-
-const formatNumber = (value: number) => value.toFixed(3)
 
 const submitForm = () => {
   const sanitizedTitle = title.value.trim()

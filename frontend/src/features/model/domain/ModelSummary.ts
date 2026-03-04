@@ -1,4 +1,3 @@
-import type { ModelCoordinates } from './ModelCreationDraft';
 import type { ModelJobSnapshot } from './ModelJob';
 
 export type ModelSummary = {
@@ -8,7 +7,7 @@ export type ModelSummary = {
   sourceJobId: string | null;
   outputFolder: string;
   createdAt: string;
-  coordinates?: ModelCoordinates | null;
+  coordinates: { x: number, y: number, z: number };
   modelJob?: ModelJobSnapshot | null;
 };
 

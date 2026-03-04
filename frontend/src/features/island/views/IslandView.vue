@@ -4,14 +4,13 @@ import { useScene } from '@/features/island/composables/useScene'
 import SearchBar from '@/components/SearchBar.vue'
 import ModelCreationModal from '@/features/model/components/ModelCreationModal.vue'
 import MobileJoystick from '@/features/island/components/MobileJoystick.vue'
-import type { MappedCoordinates } from '@/core/domain/Coordinates'
 import type { ViewportProjectionPort } from '@/features/island/domain/ViewportProjectionPort'
 import type { CameraController } from '@/core/three/controls/CameraController'
 import LoginModal from '@/features/auth/components/LoginModal.vue'
 import { useAuth } from '@/features/auth/application/useAuth'
 
 const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
-const selectedCoordinates = ref<MappedCoordinates | null>(null)
+const selectedCoordinates = ref<{ x: number, y: number, z: number } | null>(null)
 const isCreateModelOpen = ref(false)
 const isLoginModalOpen = ref(false)
 const markerButtonVisible = ref(false)
@@ -42,7 +41,7 @@ onMounted(async () => {
   cameraController = orchestrator.getCameraController()
   viewportProjectionPort = getViewportProjectionPort()
   orchestrator.setOnTerrainClick((coordinates) => {
-    setSelectedCoordinates(coordinates)
+    setSelectedCoordinates(coordinates.local)
   })
 
   stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
@@ -55,19 +54,15 @@ onMounted(async () => {
 function onSearchSelected(query: SearchEntry) {
   const orchestrator = getOrchestrator()
   const local = orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
-  const utm = orchestrator.getCoordinateMapper().localToUtm(local.x, local.z, local.y)
 
   setSelectedCoordinates({
-    local: {
-      x: local.x,
-      y: local.y,
-      z: local.z,
-    },
-    utm,
+    x: local.x,
+    y: local.y,
+    z: local.z,
   })
 }
 
-function setSelectedCoordinates(coordinates: MappedCoordinates) {
+function setSelectedCoordinates(coordinates: { x: number, y: number, z: number }) {
   selectedCoordinates.value = coordinates
   isCreateModelOpen.value = false
   isLoginModalOpen.value = false
@@ -129,7 +124,7 @@ function updateMarkerButtonPosition() {
   }
 
   const screen = viewportProjectionPort.projectPoint(
-    selectedCoordinates.value.local,
+    selectedCoordinates.value,
     screenProjection
   )
   if (!screen.visible) {
@@ -167,7 +162,7 @@ onUnmounted(() => {
       :style="markerButtonStyle" @click.stop="openCreateModel">
       Add model
     </button>
-    <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates" @close="closeCreateModel" />
+    <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates!" @close="closeCreateModel" />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
     <mobile-joystick class="island-mobile-joystick" @move="onMobileJoystickMove" />
   </div>

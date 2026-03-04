@@ -17,6 +17,7 @@ export async function createModelFromJob(services: ModelsServices, input: Create
     title,
     outputFolder,
     sourceJobId,
+    coordinates: input.coordinates,
   });
 
   return model;

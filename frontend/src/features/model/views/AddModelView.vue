@@ -14,7 +14,8 @@
       </div>
       <div v-if="trackingError" class="text-error">{{ trackingError }}</div>
 
-      <ModelCreationForm :is-submitting="isSubmitting" submit-label="Upload model" @submit="submitForm" />
+      <model-creation-form :is-submitting="isSubmitting" submit-label="Upload model" @submit="submitForm"
+        :coordinates="{ x: 0, y: 0, z: 0 }" />
     </div>
   </div>
 </template>

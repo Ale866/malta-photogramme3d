@@ -17,6 +17,7 @@ type StartUploadInput = {
   ownerId?: string;
   title: unknown;
   files?: Express.Multer.File[];
+  coordinates: { x: number, y: number, z: number };
 };
 
 const LOG_TAIL_MAX_LINES = 200;
@@ -104,6 +105,7 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
         sourceJobId: job.id,
         outputFolder: prepared.outputFolder,
         title: job.title,
+        coordinates: input.coordinates,
       });
 
       const succeeded = await setModelJobSucceeded(modelJobServices, job.id, { modelId: model.id });

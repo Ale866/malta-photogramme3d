@@ -5,6 +5,7 @@ export type Model = {
   sourceJobId: string | null;
   outputFolder: string;
   createdAt: Date;
+  coordinates: { x: number, y: number, z: number };
 };
 
 export type CreateModelInput = {
@@ -12,6 +13,7 @@ export type CreateModelInput = {
   title: string;
   outputFolder: string;
   sourceJobId?: string | null;
+  coordinates: { x: number, y: number, z: number };
 };
 
 export interface ModelRepository {

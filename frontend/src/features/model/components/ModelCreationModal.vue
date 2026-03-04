@@ -25,7 +25,7 @@
         </div>
         <p v-if="trackingError" class="text-error model-sheet-error">{{ trackingError }}</p>
 
-        <ModelCreationForm :coordinates="coordinates" :is-submitting="isSubmitting" submit-label="Upload model"
+        <model-creation-form :coordinates="coordinates" :is-submitting="isSubmitting" submit-label="Upload model"
           @submit="handleSubmit" />
       </section>
     </div>
@@ -37,13 +37,13 @@ import { onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import ModelCreationForm from '@/features/model/components/ModelCreationForm.vue'
 import { use3dModel } from '@/features/model/application/useModel'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
-import type { ModelCreationDraft, ModelCoordinates } from '@/features/model/domain/ModelCreationDraft'
+import type { ModelCreationDraft } from '@/features/model/domain/ModelCreationDraft'
 
 const props = withDefaults(defineProps<{
   open: boolean
-  coordinates?: ModelCoordinates | null
+  coordinates: { x: number, y: number, z: number }
 }>(), {
-  coordinates: null,
+  coordinates: () => ({ x: 0, y: 0, z: 0 }),
 })
 
 const { open, coordinates } = toRefs(props)
