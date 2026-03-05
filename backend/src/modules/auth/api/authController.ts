@@ -70,8 +70,11 @@ export async function refreshController(req: Request, res: Response) {
       user: result.user,
     });
   } catch (e: any) {
-    clearRefreshCookie(res);
-    return res.status(401).json({ error: e?.message ?? 'Refresh failed' });
+    const message = e?.message ?? 'Refresh failed';
+    if (message === 'Invalid refresh token' || message === 'Refresh token expired') {
+      clearRefreshCookie(res);
+    }
+    return res.status(401).json({ error: message });
   }
 }
 

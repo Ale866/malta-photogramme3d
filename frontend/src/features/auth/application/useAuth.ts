@@ -1,26 +1,18 @@
 import { shallowRef, computed } from 'vue';
-import { AuthApi, type AuthUser } from '../infrastructure/api';
+import { AuthApi, type AuthResponse, type AuthUser } from '../infrastructure/api';
 
 const accessToken = shallowRef<string | null>(null);
 const user = shallowRef<AuthUser | null>(null);
-let hydratePromise: Promise<void> | null = null;
+let refreshPromise: Promise<AuthResponse> | null = null;
 
 export function useAuth() {
   const isAuthenticated = computed(() => !!accessToken.value && !!user.value);
 
   async function hydrateSession() {
     if (isAuthenticated.value) return;
-    if (hydratePromise) return hydratePromise;
-
-    hydratePromise = (async () => {
-      try {
-        await refresh();
-      } catch (err) { }
-    })().finally(() => {
-      hydratePromise = null;
-    });
-
-    return hydratePromise;
+    try {
+      await refresh();
+    } catch (err) { }
   }
 
   async function login(email: string, password: string) {
@@ -38,10 +30,19 @@ export function useAuth() {
   }
 
   async function refresh() {
-    const result = await AuthApi.refresh();
-    accessToken.value = result.accessToken;
-    user.value = result.user;
-    return result;
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = AuthApi.refresh()
+      .then((result) => {
+        accessToken.value = result.accessToken;
+        user.value = result.user;
+        return result;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+
+    return refreshPromise;
   }
 
   async function logout() {
