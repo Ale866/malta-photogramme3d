@@ -45,6 +45,8 @@ export class OceanRenderer {
       uSurfaceColor: { value: this.surfaceColor },
       uColorOffset: { value: 0.1 },
       uColorMultiplier: { value: 2.0 },
+      uIslandMin: { value: new T.Vector2(bboxLocalXZ.minX, bboxLocalXZ.minZ) },
+      uIslandMax: { value: new T.Vector2(bboxLocalXZ.maxX, bboxLocalXZ.maxZ) },
     }
 
     const oceanMaterial = new T.ShaderMaterial({

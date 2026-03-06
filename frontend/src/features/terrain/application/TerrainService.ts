@@ -49,8 +49,10 @@ export class TerrainService {
 
     const terrainWidth = bboxLocalXZ.maxX - bboxLocalXZ.minX
     const terrainDepth = bboxLocalXZ.maxZ - bboxLocalXZ.minZ
-
     const oceanScale = 6.0
+    const oceanWidth = terrainWidth * oceanScale
+    const oceanDepth = terrainDepth * oceanScale
+
     const centerX = (bboxLocalXZ.minX + bboxLocalXZ.maxX) * 0.5
     const centerZ = (bboxLocalXZ.minZ + bboxLocalXZ.maxZ) * 0.5
     const boundHalfWidth = terrainWidth * oceanScale * 0.5 * 0.55
@@ -62,8 +64,6 @@ export class TerrainService {
       maxZ: centerZ + boundHalfDepth,
     })
 
-    const oceanWidth = terrainWidth * oceanScale
-    const oceanDepth = terrainDepth * oceanScale
     const minOceanDim = Math.min(oceanWidth, oceanDepth)
     const fogFar = Math.max(500, Math.min(1400, minOceanDim * 0.5))
     const fogNear = Math.max(200, fogFar * 0.4)

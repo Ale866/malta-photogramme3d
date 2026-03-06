@@ -8,6 +8,8 @@ uniform float uSmallWavesFrequency;
 uniform float uSmallWavesSpeed;
 uniform float uSmallIterations;
 uniform float uDisplacementScale;
+uniform vec2 uIslandMin;
+uniform vec2 uIslandMax;
 
 varying float vElevation;
 varying vec2 vUv;
@@ -98,7 +100,20 @@ float cnoise(vec3 p)
 
 void main()
 {
+    const float ISLAND_WAVE_MIN_FACTOR = 0.25;
     vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+    vec2 islandSize = uIslandMax - uIslandMin;
+    float islandMinDim = min(islandSize.x, islandSize.y);
+    float islandBlendDistance = clamp(islandMinDim * 0.06, 20.0, 120.0);
+    vec2 q = max(
+        vec2(uIslandMin.x - modelPosition.x, modelPosition.x - uIslandMax.x),
+        vec2(uIslandMin.y - modelPosition.z, modelPosition.z - uIslandMax.y)
+    );
+    float outsideDistance = length(max(q, 0.0));
+    float insideDistance = min(max(q.x, q.y), 0.0);
+    float signedDistance = outsideDistance + insideDistance;
+    float bboxBlend = smoothstep(-islandBlendDistance, islandBlendDistance, signedDistance);
+    float waterMask = mix(ISLAND_WAVE_MIN_FACTOR, 1.0, bboxBlend);
 
     float elevation =
         sin(modelPosition.x * uBigWavesFrequency.x + uTime * uBigWavesSpeed) *
@@ -111,7 +126,8 @@ void main()
         elevation -= abs(detail * uSmallWavesElevation / i);
     }
 
-    modelPosition.y += elevation * uDisplacementScale;
+    float displacementElevation = elevation * waterMask;
+    modelPosition.y += displacementElevation * uDisplacementScale;
 
     vec4 mvPosition = viewMatrix * modelPosition;
     vec4 projectedPosition = projectionMatrix * mvPosition;
