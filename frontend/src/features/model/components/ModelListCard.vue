@@ -26,14 +26,7 @@ const statusLabelByStatus = {
 </script>
 
 <template>
-  <article
-    class="model-list-card"
-    :class="`model-list-card--${card.status}`"
-    :role="card.type === 'model' ? 'link' : 'article'"
-    :tabindex="card.type === 'model' ? 0 : -1"
-    :aria-disabled="card.type === 'model' ? 'false' : 'true'"
-    @click="openDetails"
-  >
+  <div class="model-list-card" :class="`model-list-card--${card.status}`" @click="openDetails">
     <header class="model-list-card-header">
       <h2 class="model-list-card-title">{{ card.title }}</h2>
       <span class="model-list-card-status">{{ statusLabelByStatus[card.status] }}</span>
@@ -41,23 +34,19 @@ const statusLabelByStatus = {
 
     <div class="model-list-card-preview">{{ card.modelPlaceholderLabel }}</div>
 
-    <dl class="model-list-card-meta">
+    <div class="model-list-card-meta">
       <div>
-        <dt>Coordinates / Location</dt>
-        <dd>{{ card.coordinatesOrLocationLabel }}</dd>
+        <div>Coordinates</div>
+        <div>{{ card.coordinates }}</div>
       </div>
       <div>
-        <dt>Date</dt>
-        <dd>{{ card.date }}</dd>
+        <div>Date</div>
+        <div>{{ card.date }}</div>
       </div>
-      <div v-if="card.pendingHint">
-        <dt>Status detail</dt>
-        <dd>{{ card.pendingHint }}</dd>
-      </div>
-    </dl>
+    </div>
 
     <button class="btn btn-primary" type="button" :disabled="card.type !== 'model'" @click.stop="viewOnIsland">
       View on island
     </button>
-  </article>
+  </div>
 </template>
