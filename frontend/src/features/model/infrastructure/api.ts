@@ -1,6 +1,7 @@
 import { getErrorMessage, http } from '@/core/api/httpClient';
 import { requireAccessToken } from '@/features/auth/application/useAuth';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
+import type { ModelLibrary, IncompleteModelJobSummary } from '@/features/model/domain/ModelLibrary';
 import type { ModelSummary } from '@/features/model/domain/ModelSummary';
 import type { ModelCreationDraft } from '../domain/ModelCreationDraft';
 
@@ -18,7 +19,22 @@ type ModelDto = {
   outputFolder: string;
   createdAt: string;
   coordinates: { x: number, y: number, z: number };
-  modelJob?: ModelJobSnapshot | null;
+};
+
+type ModelJobDto = {
+  id: string;
+  title: string;
+  status: IncompleteModelJobSummary['status'];
+  stage: string;
+  progress: number;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type ModelLibraryDto = {
+  models: ModelDto[];
+  modelJobs: ModelJobDto[];
 };
 
 function toModelSummary(dto: ModelDto): ModelSummary {
@@ -30,7 +46,20 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     outputFolder: dto.outputFolder,
     createdAt: dto.createdAt,
     coordinates: dto.coordinates,
-    modelJob: dto.modelJob ?? null,
+    modelJob: null,
+  };
+}
+
+function toIncompleteModelJobSummary(dto: ModelJobDto): IncompleteModelJobSummary {
+  return {
+    id: dto.id,
+    title: dto.title,
+    status: dto.status,
+    stage: dto.stage,
+    progress: dto.progress,
+    error: dto.error,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
   };
 }
 
@@ -62,13 +91,32 @@ export const ModelApi = {
     try {
       const token = await requireAccessToken();
 
-      const res = await http.get<ModelDto[]>('/model/list', {
+      const res = await http.get<ModelLibraryDto>('/model/list', {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
 
-      return res.data.map(toModelSummary);
+      return res.data.models.map(toModelSummary);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async getModelLibrary(): Promise<ModelLibrary> {
+    try {
+      const token = await requireAccessToken();
+
+      const res = await http.get<ModelLibraryDto>('/model/list', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+
+      return {
+        models: res.data.models.map(toModelSummary),
+        modelJobs: res.data.modelJobs.map(toIncompleteModelJobSummary),
+      };
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }

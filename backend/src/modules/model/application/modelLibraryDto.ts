@@ -3,6 +3,7 @@ import type { Model } from '../domain/modelRepository';
 
 export type ModelListItemDto = {
   id: string;
+  ownerId: string;
   title: string;
   sourceJobId: string | null;
   outputFolder: string;
@@ -33,6 +34,7 @@ export function toUserModelLibraryDto(input: {
   return {
     models: input.models.map((model) => ({
       id: model.id,
+      ownerId: model.ownerId,
       title: model.title,
       sourceJobId: model.sourceJobId,
       outputFolder: model.outputFolder,
