@@ -1,44 +1,62 @@
+import type { IncompleteModelJobSummary, ModelLibrary } from '@/features/model/domain/ModelLibrary';
 import { getModelLifecycleStatus } from '@/features/model/domain/ModelSummary';
 import type { ModelSummary } from '@/features/model/domain/ModelSummary';
 
 export type ModelCardViewModel = {
   id: string;
+  type: 'model' | 'job';
+  createdAt: string;
   title: string;
   modelPlaceholderLabel: string;
-  coordinatesOrLocationLabel: string;
-  dateLabel: string;
-  statusLabel: string;
-  statusTone: 'ready' | 'pending' | 'failed';
-  pendingHint: string | null;
+  coordinates: string;
+  date: string;
+  status: 'ready' | 'pending' | 'failed';
 };
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: '2-digit',
-});
-
-function formatDate(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Date unavailable';
-  return dateFormatter.format(date);
-}
-
 export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
-  const lifecycle = getModelLifecycleStatus(model);
+  const status = getModelLifecycleStatus(model);
 
   return {
     id: model.id,
+    type: 'model',
+    createdAt: model.createdAt,
     title: model.title,
     modelPlaceholderLabel: '3D preview placeholder',
-    coordinatesOrLocationLabel: `${model.coordinates.x}, ${model.coordinates.y}, ${model.coordinates.z}`,
-    dateLabel: formatDate(model.createdAt),
-    statusLabel: lifecycle === 'pending' ? 'Processing' : lifecycle === 'failed' ? 'Failed' : 'Ready',
-    statusTone: lifecycle,
-    pendingHint: lifecycle === 'pending' ? `Pipeline stage: ${model.modelJob?.stage ?? 'in progress'}` : null,
+    coordinates: `${model.coordinates.x}, ${model.coordinates.y}, ${model.coordinates.z}`,
+    date: model.createdAt,
+    status,
   };
 }
 
 export function toModelCardViewModels(models: readonly ModelSummary[]): ModelCardViewModel[] {
   return models.map(toModelCardViewModel);
+}
+
+function toModelJobCardViewModel(job: IncompleteModelJobSummary): ModelCardViewModel {
+  const status = job.status === 'failed' ? 'failed' : 'pending';
+
+  return {
+    id: job.id,
+    type: 'job',
+    createdAt: job.createdAt,
+    title: job.title,
+    modelPlaceholderLabel: 'Pipeline job',
+    coordinates: 'Not available until processing finishes',
+    date: job.createdAt,
+    status,
+  };
+}
+
+export function toModelLibraryCardViewModels(library: ModelLibrary | null): ModelCardViewModel[] {
+  if (!library) return [];
+
+  return [
+    ...library.models.map(toModelCardViewModel),
+    ...library.modelJobs.map(toModelJobCardViewModel),
+  ].sort((model, modelJob) => {
+    const modelTime = Date.parse(model.createdAt);
+    const modelJobTime = Date.parse(modelJob.createdAt);
+    if (Number.isNaN(modelTime) || Number.isNaN(modelJobTime)) return 0;
+    return modelJobTime - modelTime;
+  });
 }

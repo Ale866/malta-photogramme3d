@@ -87,22 +87,6 @@ export const ModelApi = {
     }
   },
 
-  async getModels(): Promise<ModelSummary[]> {
-    try {
-      const token = await requireAccessToken();
-
-      const res = await http.get<ModelLibraryDto>('/model/list', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-
-      return res.data.models.map(toModelSummary);
-    } catch (err) {
-      throw new Error(getErrorMessage(err));
-    }
-  },
-
   async getModelLibrary(): Promise<ModelLibrary> {
     try {
       const token = await requireAccessToken();
