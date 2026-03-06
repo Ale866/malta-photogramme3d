@@ -51,4 +51,5 @@ export interface ModelJobRepository {
   create(input: CreateModelJobInput): Promise<ModelJob>;
   findById(id: string): Promise<ModelJob | null>;
   updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null>;
+  listIncompleteByOwner(ownerId: string): Promise<ModelJob[]>;
 }

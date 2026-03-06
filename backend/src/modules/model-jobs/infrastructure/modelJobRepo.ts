@@ -95,4 +95,12 @@ export const modelJobRepo: ModelJobRepository = {
 
     return toDomain(doc);
   },
+
+  async listIncompleteByOwner(ownerId: string): Promise<ModelJob[]> {
+    const docs = await ModelJobSchema.find({
+      ownerId,
+      status: { $in: ['queued', 'running'] },
+    }).sort({ createdAt: -1 }).lean();
+    return docs.map((doc) => toDomain(doc));
+  }
 };
