@@ -1,5 +1,6 @@
 import { shallowRef } from 'vue'
 import type { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
+import { IslandModelInteractor } from '@/features/island/infrastructure/IslandModelInteractor'
 import { IslandModelRenderer } from '@/features/island/infrastructure/IslandModelRenderer'
 
 type PositionedModel = {
@@ -8,6 +9,7 @@ type PositionedModel = {
 }
 
 const renderer = shallowRef<IslandModelRenderer | null>(null)
+const interactor = shallowRef<IslandModelInteractor | null>(null)
 
 export function useIslandModelLayer() {
   function ensureRenderer(orchestrator: IslandOrchestrator): IslandModelRenderer {
@@ -21,21 +23,50 @@ export function useIslandModelLayer() {
     ensureRenderer(orchestrator).setModels(models)
   }
 
-  function focusCoordinates(
+  function attachInteractions(
+    orchestrator: IslandOrchestrator,
+    options?: { onModelFocus?: (modelId: string) => void },
+  ) {
+    const currentRenderer = ensureRenderer(orchestrator)
+    if (interactor.value) return
+
+    interactor.value = new IslandModelInteractor(
+      orchestrator.getSceneRenderer().getCamera(),
+      orchestrator.getSceneRenderer().getCanvas(),
+      currentRenderer,
+      {
+        onModelClick: (modelId) => {
+          const coordinates = currentRenderer.getCoordinates(modelId)
+          if (!coordinates) return
+
+          orchestrator.getNavigationService().focusCoordinates(coordinates)
+          orchestrator.getNavigationService().removeMarker()
+          options?.onModelFocus?.(modelId)
+        },
+      }
+    )
+  }
+
+  function focusModel(
     orchestrator: IslandOrchestrator,
     coordinates: { x: number; y: number; z: number },
   ) {
-    return orchestrator.getNavigationService().goToCoordinates(coordinates)
+    const local = orchestrator.getNavigationService().focusCoordinates(coordinates)
+    orchestrator.getNavigationService().removeMarker()
+    return local
   }
 
   function dispose() {
+    interactor.value?.dispose()
+    interactor.value = null
     renderer.value?.dispose()
     renderer.value = null
   }
 
   return {
+    attachInteractions,
     renderModels,
-    focusCoordinates,
+    focusModel,
     dispose,
   }
 }

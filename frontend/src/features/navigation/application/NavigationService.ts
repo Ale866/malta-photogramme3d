@@ -52,6 +52,23 @@ export class NavigationService {
     }
   }
 
+  focusCoordinates(coordinates: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+    const target = new T.Vector3(coordinates.x, coordinates.y, coordinates.z)
+    this.cameraController.flyTo(target, {
+      height: 18,
+      angleX: -Math.PI / 10,
+      angleY: 0,
+      duration: 1.4,
+      targetYOffset: 0,
+    })
+
+    return {
+      x: target.x,
+      y: target.y,
+      z: target.z,
+    }
+  }
+
   private createMarkerAndFlyTo(position: T.Vector3) {
     this.markerRenderer.createMarker(position)
     this.cameraController.flyTo(position)

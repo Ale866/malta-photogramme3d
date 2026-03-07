@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useScene } from '@/features/island/composables/useScene'
 import { useIslandModelLayer } from '@/features/island/composables/useIslandModelLayer'
 import SearchBar from '@/components/SearchBar.vue'
@@ -9,12 +10,16 @@ import type { ViewportProjectionPort } from '@/features/island/domain/ViewportPr
 import type { CameraController } from '@/core/three/controls/CameraController'
 import LoginModal from '@/features/auth/components/LoginModal.vue'
 import { useAuth } from '@/features/auth/application/useAuth'
-import { useRoute } from 'vue-router'
 import { useIslandModelCatalog } from '@/features/model/application/composables/useIslandModelCatalog'
 
+type IslandMode =
+  | { kind: 'idle' }
+  | { kind: 'terrain-selection'; coordinates: { x: number; y: number; z: number } }
+  | { kind: 'focused-model'; modelId: string }
+
 const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
-const { renderModels, focusCoordinates, dispose: disposeIslandModelLayer } = useIslandModelLayer()
-const selectedCoordinates = ref<{ x: number, y: number, z: number } | null>(null)
+const { attachInteractions, renderModels, focusModel, dispose: disposeIslandModelLayer } = useIslandModelLayer()
+const mode = ref<IslandMode>({ kind: 'idle' })
 const isCreateModelOpen = ref(false)
 const isLoginModalOpen = ref(false)
 const markerButtonVisible = ref(false)
@@ -29,6 +34,9 @@ let cameraController: CameraController | null = null
 const auth = useAuth()
 const route = useRoute()
 const { placements, ensureLoaded, findById } = useIslandModelCatalog()
+const terrainSelectionCoordinates = computed(() =>
+  mode.value.kind === 'terrain-selection' ? mode.value.coordinates : null
+)
 
 onMounted(async () => {
   const container = document.getElementById('three-root')!
@@ -48,24 +56,30 @@ onMounted(async () => {
   viewportProjectionPort = getViewportProjectionPort()
   orchestrator.setOnTerrainClick((coordinates) => {
     if (!coordinates) {
-      clearSelectedCoordinates()
+      clearTerrainSelection()
       return
     }
 
-    setSelectedCoordinates(coordinates.local)
+    setTerrainSelection(coordinates.local)
   })
 
   try {
     await ensureLoaded()
     renderModels(orchestrator, placements.value)
+    attachInteractions(orchestrator, {
+      onModelFocus: (modelId) => {
+        clearTerrainSelection()
+        mode.value = { kind: 'focused-model', modelId }
+      },
+    })
 
     const focusedModelId = typeof route.query.modelId === 'string' ? route.query.modelId : null
     if (focusedModelId) {
       const focusedModel = findById(focusedModelId)
       if (focusedModel) {
-        clearSelectedCoordinates()
-        focusCoordinates(orchestrator, focusedModel.coordinates)
-        orchestrator.getNavigationService().removeMarker()
+        clearTerrainSelection()
+        focusModel(orchestrator, focusedModel.coordinates)
+        mode.value = { kind: 'focused-model', modelId: focusedModelId }
       }
     }
   } catch (error) {
@@ -73,7 +87,7 @@ onMounted(async () => {
   }
 
   stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
-    if (selectedCoordinates.value && !isCreateModelOpen.value && !isLoginModalOpen.value) {
+    if (terrainSelectionCoordinates.value && !isCreateModelOpen.value && !isLoginModalOpen.value) {
       updateMarkerButtonPosition()
     }
   })
@@ -81,27 +95,29 @@ onMounted(async () => {
 
 function onSearchSelected(query: SearchEntry) {
   const orchestrator = getOrchestrator()
-  clearSelectedCoordinates()
-  orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
-  orchestrator.getNavigationService().removeMarker()
+  clearTerrainSelection()
+  const coordinates = orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
+  setTerrainSelection(coordinates)
 }
 
-function setSelectedCoordinates(coordinates: { x: number, y: number, z: number }) {
-  selectedCoordinates.value = coordinates
+function setTerrainSelection(coordinates: { x: number, y: number, z: number }) {
+  mode.value = { kind: 'terrain-selection', coordinates }
   isCreateModelOpen.value = false
   isLoginModalOpen.value = false
   updateMarkerButtonPosition()
 }
 
-function clearSelectedCoordinates() {
-  selectedCoordinates.value = null
+function clearTerrainSelection() {
+  if (mode.value.kind === 'terrain-selection') {
+    mode.value = { kind: 'idle' }
+  }
   markerButtonVisible.value = false
   getOrchestrator().getNavigationService().removeMarker()
 }
 
 function closeCreateModel() {
   isCreateModelOpen.value = false
-  if (selectedCoordinates.value) {
+  if (terrainSelectionCoordinates.value) {
     updateMarkerButtonPosition()
   } else {
     markerButtonVisible.value = false
@@ -109,7 +125,7 @@ function closeCreateModel() {
 }
 
 async function openCreateModel() {
-  if (!selectedCoordinates.value) return
+  if (!terrainSelectionCoordinates.value) return
 
   let authenticated = auth.isAuthenticated.value
   if (!authenticated) {
@@ -130,21 +146,21 @@ async function openCreateModel() {
 
 function closeLoginModal() {
   isLoginModalOpen.value = false
-  if (selectedCoordinates.value && !isCreateModelOpen.value) {
+  if (terrainSelectionCoordinates.value && !isCreateModelOpen.value) {
     updateMarkerButtonPosition()
   }
 }
 
 function onLoginSuccess() {
   isLoginModalOpen.value = false
-  if (selectedCoordinates.value) {
+  if (terrainSelectionCoordinates.value) {
     isCreateModelOpen.value = true
     markerButtonVisible.value = false
   }
 }
 
 function updateMarkerButtonPosition() {
-  if (!selectedCoordinates.value || isCreateModelOpen.value || isLoginModalOpen.value) {
+  if (!terrainSelectionCoordinates.value || isCreateModelOpen.value || isLoginModalOpen.value) {
     markerButtonVisible.value = false
     return
   }
@@ -154,7 +170,7 @@ function updateMarkerButtonPosition() {
   }
 
   const screen = viewportProjectionPort.projectPoint(
-    selectedCoordinates.value,
+    terrainSelectionCoordinates.value,
     screenProjection
   )
   if (!screen.visible) {
@@ -193,7 +209,7 @@ onUnmounted(() => {
       :style="markerButtonStyle" @click.stop="openCreateModel">
       Add model
     </button>
-    <model-creation-modal :open="isCreateModelOpen" :coordinates="selectedCoordinates!" @close="closeCreateModel" />
+    <model-creation-modal :open="isCreateModelOpen" :coordinates="terrainSelectionCoordinates!" @close="closeCreateModel" />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
     <mobile-joystick class="island-mobile-joystick" @move="onMobileJoystickMove" />
   </div>
