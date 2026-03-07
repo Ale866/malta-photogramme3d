@@ -25,10 +25,10 @@ function toIslandModelPlacement(model: ModelSummary): IslandModelPlacement {
 }
 
 export function useIslandModelCatalog() {
-  const { getModelLibrary } = use3dModel();
+  const { getPublicModelCatalog } = use3dModel();
 
   async function load() {
-    const library = await getModelLibrary();
+    const library = await getPublicModelCatalog();
     placements.value = library.models.map(toIslandModelPlacement);
     hasLoadedOnce.value = true;
   }
