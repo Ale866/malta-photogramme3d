@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useScene } from '@/features/island/composables/useScene'
+import { useIslandModelLayer } from '@/features/island/composables/useIslandModelLayer'
 import SearchBar from '@/components/SearchBar.vue'
 import ModelCreationModal from '@/features/model/components/ModelCreationModal.vue'
 import MobileJoystick from '@/features/island/components/MobileJoystick.vue'
@@ -8,8 +9,11 @@ import type { ViewportProjectionPort } from '@/features/island/domain/ViewportPr
 import type { CameraController } from '@/core/three/controls/CameraController'
 import LoginModal from '@/features/auth/components/LoginModal.vue'
 import { useAuth } from '@/features/auth/application/useAuth'
+import { useRoute } from 'vue-router'
+import { useIslandModelCatalog } from '@/features/model/application/composables/useIslandModelCatalog'
 
 const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
+const { renderModels, focusCoordinates, dispose: disposeIslandModelLayer } = useIslandModelLayer()
 const selectedCoordinates = ref<{ x: number, y: number, z: number } | null>(null)
 const isCreateModelOpen = ref(false)
 const isLoginModalOpen = ref(false)
@@ -23,6 +27,8 @@ let stopCameraChangeListener: (() => void) | null = null
 let viewportProjectionPort: ViewportProjectionPort | null = null
 let cameraController: CameraController | null = null
 const auth = useAuth()
+const route = useRoute()
+const { placements, ensureLoaded, findById } = useIslandModelCatalog()
 
 onMounted(async () => {
   const container = document.getElementById('three-root')!
@@ -43,6 +49,21 @@ onMounted(async () => {
   orchestrator.setOnTerrainClick((coordinates) => {
     setSelectedCoordinates(coordinates.local)
   })
+
+  try {
+    await ensureLoaded()
+    renderModels(orchestrator, placements.value)
+
+    const focusedModelId = typeof route.query.modelId === 'string' ? route.query.modelId : null
+    if (focusedModelId) {
+      const focusedModel = findById(focusedModelId)
+      if (focusedModel) {
+        setSelectedCoordinates(focusCoordinates(orchestrator, focusedModel.coordinates))
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load island model catalog:', error)
+  }
 
   stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
     if (selectedCoordinates.value && !isCreateModelOpen.value && !isLoginModalOpen.value) {
@@ -142,6 +163,7 @@ function onMobileJoystickMove(input: { x: number; y: number }) {
 }
 
 onUnmounted(() => {
+  disposeIslandModelLayer()
   cameraController?.setMobileMoveInput({ x: 0, y: 0 })
   cameraController = null
 

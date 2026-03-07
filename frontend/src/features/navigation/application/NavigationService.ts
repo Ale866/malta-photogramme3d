@@ -40,6 +40,18 @@ export class NavigationService {
     return position.clone()
   }
 
+  goToCoordinates(coordinates: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+    const local = this.goToPosition(
+      new T.Vector3(coordinates.x, coordinates.y, coordinates.z)
+    )
+
+    return {
+      x: local.x,
+      y: local.y,
+      z: local.z,
+    }
+  }
+
   private createMarkerAndFlyTo(position: T.Vector3) {
     this.markerRenderer.createMarker(position)
     this.cameraController.flyTo(position)
