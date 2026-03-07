@@ -18,7 +18,7 @@ export class IslandOrchestrator {
   private terrainService: TerrainService
   private navigationService: NavigationService | null = null
   private markerRenderer: MarkerRenderer | null = null
-  private onTerrainClick: ((coordinates: MappedCoordinates) => void) | null = null
+  private onTerrainClick: ((coordinates: MappedCoordinates | null) => void) | null = null
 
   constructor() {
     this.sceneRenderer = new SceneRenderer()
@@ -82,6 +82,7 @@ export class IslandOrchestrator {
         this.navigationService?.goToPosition(point)
         this.emitTerrainClick(point)
       },
+      () => { this.emitTerrainClick(null) },
       this.sceneRenderer.getScene(),
       this.terrainService.getTerrainObject() || undefined
     )
@@ -105,7 +106,7 @@ export class IslandOrchestrator {
     return this.navigationService
   }
 
-  setOnTerrainClick(handler: ((coordinates: MappedCoordinates) => void) | null) {
+  setOnTerrainClick(handler: ((coordinates: MappedCoordinates | null) => void) | null) {
     this.onTerrainClick = handler
   }
 
@@ -142,8 +143,12 @@ export class IslandOrchestrator {
     this.sceneRenderer.dispose()
   }
 
-  private emitTerrainClick(point: { x: number; y: number; z: number }) {
+  private emitTerrainClick(point: { x: number; y: number; z: number } | null) {
     if (!this.onTerrainClick) return
+    if (!point) {
+      this.onTerrainClick(null)
+      return
+    }
 
     const utm = this.coordinateMapper.localToUtm(point.x, point.z, point.y)
     this.onTerrainClick({

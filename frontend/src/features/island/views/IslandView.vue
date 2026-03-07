@@ -47,6 +47,11 @@ onMounted(async () => {
   cameraController = orchestrator.getCameraController()
   viewportProjectionPort = getViewportProjectionPort()
   orchestrator.setOnTerrainClick((coordinates) => {
+    if (!coordinates) {
+      clearSelectedCoordinates()
+      return
+    }
+
     setSelectedCoordinates(coordinates.local)
   })
 
@@ -58,7 +63,9 @@ onMounted(async () => {
     if (focusedModelId) {
       const focusedModel = findById(focusedModelId)
       if (focusedModel) {
-        setSelectedCoordinates(focusCoordinates(orchestrator, focusedModel.coordinates))
+        clearSelectedCoordinates()
+        focusCoordinates(orchestrator, focusedModel.coordinates)
+        orchestrator.getNavigationService().removeMarker()
       }
     }
   } catch (error) {
@@ -74,13 +81,9 @@ onMounted(async () => {
 
 function onSearchSelected(query: SearchEntry) {
   const orchestrator = getOrchestrator()
-  const local = orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
-
-  setSelectedCoordinates({
-    x: local.x,
-    y: local.y,
-    z: local.z,
-  })
+  clearSelectedCoordinates()
+  orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
+  orchestrator.getNavigationService().removeMarker()
 }
 
 function setSelectedCoordinates(coordinates: { x: number, y: number, z: number }) {
@@ -88,6 +91,12 @@ function setSelectedCoordinates(coordinates: { x: number, y: number, z: number }
   isCreateModelOpen.value = false
   isLoginModalOpen.value = false
   updateMarkerButtonPosition()
+}
+
+function clearSelectedCoordinates() {
+  selectedCoordinates.value = null
+  markerButtonVisible.value = false
+  getOrchestrator().getNavigationService().removeMarker()
 }
 
 function closeCreateModel() {

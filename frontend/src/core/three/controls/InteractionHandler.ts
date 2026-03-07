@@ -13,6 +13,7 @@ export class InteractionHandler {
 
   setupClickHandler(
     onClick: (point: T.Vector3) => void,
+    onMiss: () => void,
     scene: T.Scene,
     terrainObject?: T.Object3D
   ) {
@@ -40,6 +41,8 @@ export class InteractionHandler {
         const point = this.raycastClick(event.clientX, event.clientY, scene, terrainObject)
         if (point) {
           onClick(point)
+        } else {
+          onMiss()
         }
       }
       this.pointerDownClient = null
