@@ -1,7 +1,7 @@
-import type { Model as DomainModel, ModelRepository, CreateModelInput } from '../domain/modelRepository';
+import type { Model, ModelRepository, CreateModelInput } from '../domain/modelRepository';
 import { ModelSchema } from './db/ModelSchema';
 
-function toDomain(doc: any): DomainModel {
+function toDomain(doc: any): Model {
   return {
     id: doc._id.toString(),
     ownerId: doc.ownerId,
@@ -14,7 +14,7 @@ function toDomain(doc: any): DomainModel {
 }
 
 export const modelRepo: ModelRepository = {
-  async create(input: CreateModelInput): Promise<DomainModel> {
+  async create(input: CreateModelInput): Promise<Model> {
     const created = await ModelSchema.create({
       ownerId: input.ownerId,
       title: input.title,
@@ -26,31 +26,19 @@ export const modelRepo: ModelRepository = {
     return toDomain(created);
   },
 
-  async findById(id: string): Promise<DomainModel | null> {
+  async findById(id: string): Promise<Model | null> {
     const doc = await ModelSchema.findById(id).lean();
     if (!doc) return null;
-
-    return {
-      id: doc._id.toString(),
-      ownerId: doc.ownerId,
-      title: doc.title,
-      sourceJobId: doc.sourceJobId ?? null,
-      outputFolder: doc.outputFolder,
-      createdAt: doc.createdAt,
-      coordinates: doc.coordinates,
-    };
+    return toDomain(doc);
   },
 
-  async listByOwner(ownerId: string): Promise<DomainModel[]> {
+  async listByOwner(ownerId: string): Promise<Model[]> {
     const docs = await ModelSchema.find({ ownerId }).sort({ createdAt: -1 }).lean();
-    return docs.map((d) => ({
-      id: d._id.toString(),
-      ownerId: d.ownerId,
-      title: d.title,
-      sourceJobId: d.sourceJobId ?? null,
-      outputFolder: d.outputFolder,
-      createdAt: d.createdAt,
-      coordinates: d.coordinates,
-    }));
+    return docs.map(toDomain);
   },
+
+  async listAllPublic(): Promise<Model[]> {
+    const docs = await ModelSchema.find().sort({ createdAt: -1 }).lean();
+    return docs.map(toDomain);
+  }
 };

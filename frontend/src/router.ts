@@ -14,7 +14,25 @@ const routes = [
     path: '/model',
     children: [
       { path: 'add', name: "AddModel", meta: { requiresAuth: true }, component: AddModelView },
-      { path: 'list', name: "ListModel", meta: { requiresAuth: true }, component: ListModelView },
+      {
+        path: 'list',
+        name: "ListModel",
+        meta: {
+          requiresAuth: true,
+          modelSource: 'private',
+          title: 'My models',
+        },
+        component: ListModelView,
+      },
+      {
+        path: 'catalog',
+        name: "ModelCatalog",
+        meta: {
+          modelSource: 'public',
+          title: 'All models',
+        },
+        component: ListModelView,
+      },
       { path: ':modelId', name: "ModelDetails", meta: { requiresAuth: true }, component: ModelDetailsView },
     ]
   },

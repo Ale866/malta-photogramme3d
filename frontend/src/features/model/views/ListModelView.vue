@@ -1,26 +1,37 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { use3dModel } from '@/features/model/application/useModel';
 import { toModelLibraryCardViewModels } from '@/features/model/application/presenters/modelCardPresenter';
 import ModelListCard from '@/features/model/components/ModelListCard.vue';
 import type { ModelLibrary } from '../domain/ModelLibrary';
 
+const route = useRoute();
 const router = useRouter();
-const { getModelLibrary } = use3dModel();
+const { getModelLibrary, getPublicModelCatalog } = use3dModel();
 
 const library = ref<ModelLibrary | null>(null);
 const isLoading = ref(false);
 const errorMessage = ref<string | null>(null);
 
+const modelSource = computed(() => route.meta.modelSource as 'private' | 'public' | undefined);
+const pageTitle = computed(() => typeof route.meta.title === 'string' ? route.meta.title : 'Models');
 const cards = computed(() => toModelLibraryCardViewModels(library.value));
 
 async function loadModels() {
+  if (modelSource.value !== 'private' && modelSource.value !== 'public') {
+    library.value = null;
+    errorMessage.value = 'Missing model page source';
+    return;
+  }
+
   isLoading.value = true;
   errorMessage.value = null;
 
   try {
-    library.value = await getModelLibrary();
+    library.value = modelSource.value === 'private'
+      ? await getModelLibrary()
+      : await getPublicModelCatalog();
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Failed to load models';
   } finally {
@@ -37,15 +48,15 @@ function onViewOnIsland(modelId: string) {
   router.push({ name: "Island", query: { modelId } })
 }
 
-onMounted(async () => {
+watch(() => modelSource.value, async () => {
   await loadModels();
-});
+}, { immediate: true });
 </script>
 
 <template>
   <section class="model-list-page">
     <header class="model-list-header">
-      <h1>My models</h1>
+      <h1>{{ pageTitle }}</h1>
     </header>
 
     <div v-if="isLoading" class="text-muted">Loading models...</div>

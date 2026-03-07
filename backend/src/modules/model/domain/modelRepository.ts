@@ -19,5 +19,6 @@ export type CreateModelInput = {
 export interface ModelRepository {
   create(input: CreateModelInput): Promise<Model>;
   findById(id: string): Promise<Model | null>;
+  listAllPublic(): Promise<Model[]>;
   listByOwner(ownerId: string): Promise<Model[]>;
 }

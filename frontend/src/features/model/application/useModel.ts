@@ -18,6 +18,11 @@ export function use3dModel() {
     return result;
   }
 
+  async function getPublicModelCatalog(): Promise<ModelLibrary> {
+    const result = await ModelApi.getPublicModelCatalog();
+    return result;
+  }
+
   async function getModelJobStatus(jobId: string): Promise<ModelJobSnapshot> {
     const result = await ModelApi.getModelJobStatus(jobId);
     return result;
@@ -26,6 +31,7 @@ export function use3dModel() {
   return {
     uploadModel,
     getModelLibrary,
+    getPublicModelCatalog,
     getModelJobStatus,
   }
 }

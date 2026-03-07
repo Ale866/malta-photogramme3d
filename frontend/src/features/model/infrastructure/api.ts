@@ -37,6 +37,8 @@ type ModelLibraryDto = {
   modelJobs: ModelJobDto[];
 };
 
+type PublicModelCatalogDto = ModelDto[];
+
 function toModelSummary(dto: ModelDto): ModelSummary {
   return {
     id: dto.id,
@@ -100,6 +102,19 @@ export const ModelApi = {
       return {
         models: res.data.models.map(toModelSummary),
         modelJobs: res.data.modelJobs.map(toIncompleteModelJobSummary),
+      };
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async getPublicModelCatalog(): Promise<ModelLibrary> {
+    try {
+      const res = await http.get<PublicModelCatalogDto>('/model/catalog');
+
+      return {
+        models: res.data.map(toModelSummary),
+        modelJobs: [],
       };
     } catch (err) {
       throw new Error(getErrorMessage(err));
