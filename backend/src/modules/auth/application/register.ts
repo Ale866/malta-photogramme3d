@@ -40,5 +40,10 @@ export async function register(services: AuthServices, input: RegisterInput) {
 
   const accessToken = services.signAccessToken({ sub: user.id, email: user.email });
 
-  return { accessToken, user, refreshToken };
+  return {
+    accessToken: accessToken.token,
+    accessTokenExpiresAt: accessToken.expiresAt,
+    user,
+    refreshToken,
+  };
 }

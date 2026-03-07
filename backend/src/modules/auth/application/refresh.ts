@@ -37,5 +37,10 @@ export async function refresh(services: AuthServices, input: RefreshInput) {
 
   const accessToken = services.signAccessToken({ sub: user.id, email: user.email });
 
-  return { accessToken, user, refreshToken: newRefreshToken };
+  return {
+    accessToken: accessToken.token,
+    accessTokenExpiresAt: accessToken.expiresAt,
+    user,
+    refreshToken: newRefreshToken,
+  };
 }

@@ -8,7 +8,10 @@ export type AuthServices = {
   hashPassword: (plain: string) => Promise<string>;
   verifyPassword: (plain: string, hash: string) => Promise<boolean>;
 
-  signAccessToken: (payload: { sub: string; email: string }) => string;
+  signAccessToken: (payload: { sub: string; email: string }) => {
+    token: string;
+    expiresAt: Date;
+  };
   verifyAccessToken: (token: string) => { sub: string; email: string };
 
   generateRefreshToken: () => string;

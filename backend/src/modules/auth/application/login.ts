@@ -37,5 +37,10 @@ export async function login(services: AuthServices, input: LoginInput) {
 
   const { passwordHash, ...safeUser } = user;
 
-  return { accessToken, user: safeUser, refreshToken };
+  return {
+    accessToken: accessToken.token,
+    accessTokenExpiresAt: accessToken.expiresAt,
+    user: safeUser,
+    refreshToken,
+  };
 }

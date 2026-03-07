@@ -21,6 +21,7 @@ export async function registerController(req: Request, res: Response) {
 
     return res.status(201).json({
       accessToken: result.accessToken,
+      accessTokenExpiresAt: result.accessTokenExpiresAt,
       user: result.user,
     });
   } catch (e: any) {
@@ -42,6 +43,7 @@ export async function loginController(req: Request, res: Response) {
 
     return res.status(201).json({
       accessToken: result.accessToken,
+      accessTokenExpiresAt: result.accessTokenExpiresAt,
       user: result.user,
     });
   } catch (e: any) {
@@ -67,6 +69,7 @@ export async function refreshController(req: Request, res: Response) {
 
     return res.status(200).json({
       accessToken: result.accessToken,
+      accessTokenExpiresAt: result.accessTokenExpiresAt,
       user: result.user,
     });
   } catch (e: any) {
