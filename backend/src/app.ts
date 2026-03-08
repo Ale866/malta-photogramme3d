@@ -1,7 +1,6 @@
 import express from "express";
 import uploadRoutes from "./modules/upload/api/uploadRoutes";
 import authRoutes from "./modules/auth/api/authRoutes";
-import { connectDb } from "./shared/db/mongoConnection";
 import cookieParser from 'cookie-parser';
 import cors from "cors";
 import modelRoutes from "./modules/model/api/modelRoutes";
@@ -15,8 +14,6 @@ export function createApp() {
     credentials: true
   }));
   app.use(cookieParser());
-
-  connectDb();
 
   app.use(express.json());
   app.use("/upload", uploadRoutes);

@@ -3,24 +3,34 @@ import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { attachModelJobSocketGateway } from "./modules/model-jobs/infrastructure/socket/modelJobSocketGateway";
 import { config } from "./shared/config/env";
+import { connectDb } from "./shared/db/mongoConnection";
 
-const app = createApp();
-const port = config.PORT;
-const httpServer = createServer(app);
+async function startServer() {
+  await connectDb();
 
-const io = new SocketIOServer(httpServer, {
-  cors: {
-    origin: "http://localhost:5173",
-    credentials: true,
-  },
-});
+  const app = createApp();
+  const port = config.PORT;
+  const httpServer = createServer(app);
 
-attachModelJobSocketGateway(io);
+  const io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: "http://localhost:5173",
+      credentials: true,
+    },
+  });
 
-app.get("/", (req, res) => {
-  res.send("Hello from Express + TypeScript + ES Modules!");
-});
+  attachModelJobSocketGateway(io);
 
-httpServer.listen(port, () => {
-  console.log(`Express server running at http://localhost:${port}`);
+  app.get("/", (req, res) => {
+    res.send("Hello from Express + TypeScript + ES Modules!");
+  });
+
+  httpServer.listen(port, () => {
+    console.log(`Express server running at http://localhost:${port}`);
+  });
+}
+
+void startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
 });

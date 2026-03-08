@@ -33,7 +33,5 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     coordinates: input.coordinates,
   });
 
-  void services.processNextQueuedModelJob();
-
   return { jobId: job.id };
 }

@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "npm run dev:server",
+    "dev:server": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "npm run start:server",
+    "start:server": "node dist/server.js",
+    "start:worker": "node dist/worker.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

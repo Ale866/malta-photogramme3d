@@ -21,7 +21,7 @@ export const pipelineExecutionServices: ExecuteModelJobServices = {
 };
 
 type ProcessNextQueuedModelJobRunner = {
-  processNextQueuedModelJob: () => Promise<void>;
+  processNextQueuedModelJob: () => Promise<boolean>;
 };
 
 const pipelineProcessServices: ExecuteModelJobServices & {

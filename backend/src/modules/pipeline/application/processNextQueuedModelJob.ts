@@ -16,9 +16,10 @@ type ProcessNextQueuedModelJobServices = {
 
 export async function processNextQueuedModelJob(
   services: ProcessNextQueuedModelJobServices
-): Promise<void> {
+): Promise<boolean> {
   const job = await claimNextQueuedJob({ modelJobs: services.modelJobs });
-  if (!job) return;
+  if (!job) return false;
 
   await executeModelJob(services, { jobId: job.id });
+  return true;
 }

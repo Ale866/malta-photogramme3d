@@ -13,5 +13,4 @@ export type UploadServices = {
       imagePaths: string[];
     };
   };
-  processNextQueuedModelJob: () => Promise<void>;
 };
