@@ -1,11 +1,8 @@
 import type { ModelJobRepository } from "../../model-jobs/domain/modelJobRepository";
-import type { ModelRepository } from "../../model/domain/modelRepository";
-import type { PipelineServices } from "../../pipeline/application/ports";
-import type { ModelJobStatusDto } from "../../model-jobs/application/jobStatusDto";
+import type { ExecuteModelJobInput } from "../../pipeline/application/executeModelJob";
 
 export type UploadServices = {
   modelJobs: ModelJobRepository;
-  models: ModelRepository;
   fileStorage: {
     stageUpload: (
       baseUpload: string,
@@ -17,9 +14,5 @@ export type UploadServices = {
       imagePaths: string[];
     };
   };
-
-  pipeline: PipelineServices;
-  jobRealtime?: {
-    emitUpdate: (job: ModelJobStatusDto) => void;
-  };
+  executeModelJob: (input: ExecuteModelJobInput) => Promise<void>;
 };

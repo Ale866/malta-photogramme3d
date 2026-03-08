@@ -13,10 +13,7 @@ export type CreateQueuedModelJobInput = {
   outputFolder: string;
 };
 
-export async function createQueuedModelJob(
-  services: ModelJobServices,
-  input: CreateQueuedModelJobInput
-): Promise<ModelJob> {
+export async function createQueuedModelJob(services: ModelJobServices, input: CreateQueuedModelJobInput): Promise<ModelJob> {
   if (!input.ownerId) throw new Error("Missing ownerId");
 
   const title = typeof input.title === "string" ? input.title.trim() : "";
@@ -49,10 +46,7 @@ function requireJobId(jobId: string) {
   return normalized;
 }
 
-export async function setModelJobRunning(
-  services: ModelJobServices,
-  jobId: string
-): Promise<ModelJob> {
+export async function setModelJobRunning(services: ModelJobServices, jobId: string): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const job = await requireExistingJob(services, normalizedJobId);
 
@@ -75,11 +69,7 @@ export type UpdateModelJobRuntimeInput = {
   logTail?: string[];
 };
 
-export async function updateModelJobRuntime(
-  services: ModelJobServices,
-  jobId: string,
-  input: UpdateModelJobRuntimeInput
-): Promise<ModelJob> {
+export async function updateModelJobRuntime(services: ModelJobServices, jobId: string, input: UpdateModelJobRuntimeInput): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const job = await requireExistingJob(services, normalizedJobId);
 
@@ -99,11 +89,7 @@ export async function updateModelJobRuntime(
   return updated;
 }
 
-export async function setModelJobSucceeded(
-  services: ModelJobServices,
-  jobId: string,
-  input: { modelId: string }
-): Promise<ModelJob> {
+export async function setModelJobSucceeded(services: ModelJobServices, jobId: string, input: { modelId: string }): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const modelId = typeof input.modelId === "string" ? input.modelId.trim() : "";
   if (!modelId) throw new Error("Missing modelId");
@@ -124,11 +110,7 @@ export async function setModelJobSucceeded(
   return updated;
 }
 
-export async function setModelJobFailed(
-  services: ModelJobServices,
-  jobId: string,
-  input?: { error?: string }
-): Promise<ModelJob> {
+export async function setModelJobFailed(services: ModelJobServices, jobId: string, input?: { error?: string }): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const job = await requireExistingJob(services, normalizedJobId);
 
