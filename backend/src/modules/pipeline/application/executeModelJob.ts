@@ -1,6 +1,4 @@
 import { createModelFromJob } from "../../model/application/createModelFromJob";
-import type { ModelJobStatusDto } from "../../model-jobs/application/jobStatusDto";
-import { toModelJobStatusDto } from "../../model-jobs/application/jobStatusDto";
 import {
   setModelJobFailed,
   setModelJobRunning,
@@ -20,9 +18,6 @@ export type ExecuteModelJobServices = {
   modelJobs: ModelJobRepository;
   models: ModelRepository;
   pipeline: PipelineServices;
-  jobRealtime?: {
-    emitUpdate: (job: ModelJobStatusDto) => void;
-  };
 };
 
 const LOG_TAIL_MAX_LINES = 200;
@@ -39,12 +34,11 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
   let logTail: string[] = [];
 
   const persistRuntime = async () => {
-    const updated = await updateModelJobRuntime({ modelJobs: services.modelJobs }, job.id, {
+    await updateModelJobRuntime({ modelJobs: services.modelJobs }, job.id, {
       stage,
       progress,
       logTail: [...logTail],
     });
-    services.jobRealtime?.emitUpdate(toModelJobStatusDto(updated));
   };
 
   const interval = setInterval(() => {
@@ -69,8 +63,7 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
   };
 
   try {
-    const runningJob = await setModelJobRunning({ modelJobs: services.modelJobs }, job.id);
-    services.jobRealtime?.emitUpdate(toModelJobStatusDto(runningJob));
+    await setModelJobRunning({ modelJobs: services.modelJobs }, job.id);
     captureRuntime({ stage: "starting", progress: 1 });
 
     await runMeshroomPipeline(
@@ -103,15 +96,13 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
       }
     );
 
-    const succeeded = await setModelJobSucceeded({ modelJobs: services.modelJobs }, job.id, {
+    await setModelJobSucceeded({ modelJobs: services.modelJobs }, job.id, {
       modelId: model.id,
     });
-    services.jobRealtime?.emitUpdate(toModelJobStatusDto(succeeded));
   } catch (error) {
-    const failed = await setModelJobFailed({ modelJobs: services.modelJobs }, job.id, {
+    await setModelJobFailed({ modelJobs: services.modelJobs }, job.id, {
       error: toErrorMessage(error),
     });
-    services.jobRealtime?.emitUpdate(toModelJobStatusDto(failed));
   } finally {
     clearInterval(interval);
   }

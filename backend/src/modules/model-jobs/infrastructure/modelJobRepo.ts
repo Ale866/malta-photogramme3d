@@ -2,46 +2,11 @@ import type {
   ModelJobRepository,
   CreateModelJobInput,
   ModelJob,
-  ModelJobCoordinates,
   UpdateModelJobStateInput,
 } from '../domain/modelJobRepository';
-import { clampProgress, normalizeModelJobStatus } from '../domain/modelJobState';
+import { clampProgress } from '../domain/modelJobState';
 import { ModelJobSchema } from './db/ModelJobSchema';
-
-function toCoordinates(value: any): ModelJobCoordinates | null {
-  if (!value || typeof value !== 'object') return null;
-
-  const x = value.x;
-  const y = value.y;
-  const z = value.z;
-  if (![x, y, z].every((coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate))) {
-    return null;
-  }
-
-  return { x, y, z };
-}
-
-function toDomain(doc: any): ModelJob {
-  return {
-    id: doc._id.toString(),
-    ownerId: doc.ownerId,
-    title: doc.title,
-    inputFolder: doc.inputFolder ?? '',
-    outputFolder: doc.outputFolder ?? '',
-    imagePaths: doc.imagePaths ?? [],
-    coordinates: toCoordinates(doc.coordinates),
-    status: normalizeModelJobStatus(doc.status),
-    stage: doc.stage ?? 'starting',
-    progress: clampProgress(doc.progress ?? 0),
-    logTail: Array.isArray(doc.logTail) ? doc.logTail : [],
-    error: doc.error ?? null,
-    modelId: doc.modelId ?? null,
-    startedAt: doc.startedAt ?? null,
-    finishedAt: doc.finishedAt ?? null,
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt,
-  };
-}
+import { toModelJobDomain } from './modelJobMapper';
 
 export const modelJobRepo: ModelJobRepository = {
   async create(input: CreateModelJobInput): Promise<ModelJob> {
@@ -62,32 +27,14 @@ export const modelJobRepo: ModelJobRepository = {
       finishedAt: input.finishedAt ?? null,
     });
 
-    return toDomain(created);
+    return toModelJobDomain(created);
   },
 
   async findById(id: string): Promise<ModelJob | null> {
     const doc = await ModelJobSchema.findById(id).lean();
     if (!doc) return null;
 
-    return {
-      id: doc._id.toString(),
-      ownerId: doc.ownerId,
-      title: doc.title,
-      inputFolder: doc.inputFolder ?? '',
-      outputFolder: doc.outputFolder ?? '',
-      imagePaths: doc.imagePaths ?? [],
-      coordinates: toCoordinates(doc.coordinates),
-      status: normalizeModelJobStatus(doc.status),
-      stage: doc.stage ?? 'starting',
-      progress: clampProgress(doc.progress ?? 0),
-      logTail: Array.isArray(doc.logTail) ? doc.logTail : [],
-      error: doc.error ?? null,
-      modelId: doc.modelId ?? null,
-      startedAt: doc.startedAt ?? null,
-      finishedAt: doc.finishedAt ?? null,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    };
+    return toModelJobDomain(doc);
   },
 
   async claimNextQueued(): Promise<ModelJob | null> {
@@ -110,7 +57,7 @@ export const modelJobRepo: ModelJobRepository = {
     ).lean();
 
     if (!doc) return null;
-    return toDomain(doc);
+    return toModelJobDomain(doc);
   },
 
   async updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null> {
@@ -133,7 +80,7 @@ export const modelJobRepo: ModelJobRepository = {
     const doc = await ModelJobSchema.findByIdAndUpdate(jobId, { $set: update }, { returnDocument: 'after' }).lean();
     if (!doc) return null;
 
-    return toDomain(doc);
+    return toModelJobDomain(doc);
   },
 
   async listIncompleteByOwner(ownerId: string): Promise<ModelJob[]> {
@@ -141,6 +88,6 @@ export const modelJobRepo: ModelJobRepository = {
       ownerId,
       status: { $in: ['queued', 'running'] },
     }).sort({ createdAt: -1 }).lean();
-    return docs.map((doc) => toDomain(doc));
+    return docs.map((doc) => toModelJobDomain(doc));
   }
 };

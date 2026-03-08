@@ -15,3 +15,10 @@ export async function connectDb() {
     throw err;
   }
 }
+
+export async function disconnectDb() {
+  if (!connected) return;
+
+  await mongoose.disconnect();
+  connected = false;
+}

@@ -1,5 +1,5 @@
 import { pipelineQueueRunner } from "./modules/pipeline/infrastructure/pipelineServices";
-import { connectDb } from "./shared/db/mongoConnection";
+import { connectDb, disconnectDb } from "./shared/db/mongoConnection";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -32,6 +32,7 @@ async function startWorker(): Promise<void> {
     }
   }
 
+  await disconnectDb();
   console.log("Model job worker stopped");
 }
 

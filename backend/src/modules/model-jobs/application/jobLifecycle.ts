@@ -1,4 +1,4 @@
-import type { ModelJob } from "../domain/modelJobRepository";
+import type { ModelJob, UpdateModelJobStateInput } from "../domain/modelJobRepository";
 import {
   assertModelJobStatusTransition,
   clampProgress,
@@ -83,7 +83,7 @@ export async function updateModelJobRuntime(services: ModelJobServices, jobId: s
     return job;
   }
 
-  const patch: Parameters<ModelJobServices["modelJobs"]["updateState"]>[1] = {};
+  const patch: UpdateModelJobStateInput = {};
 
   if (typeof input.stage === "string" && input.stage.trim()) patch.stage = input.stage.trim();
   if (typeof input.progress === "number") patch.progress = clampProgress(input.progress);
