@@ -1,5 +1,4 @@
 import type { ModelJobRepository } from "../../model-jobs/domain/modelJobRepository";
-import type { ExecuteModelJobInput } from "../../pipeline/application/executeModelJob";
 
 export type UploadServices = {
   modelJobs: ModelJobRepository;
@@ -14,5 +13,5 @@ export type UploadServices = {
       imagePaths: string[];
     };
   };
-  executeModelJob: (input: ExecuteModelJobInput) => Promise<void>;
+  processNextQueuedModelJob: () => Promise<void>;
 };

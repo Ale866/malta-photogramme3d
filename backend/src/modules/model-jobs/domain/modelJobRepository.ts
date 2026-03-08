@@ -1,5 +1,11 @@
 export type ModelJobStatus = "queued" | "running" | "succeeded" | "failed";
 
+export type ModelJobCoordinates = {
+  x: number;
+  y: number;
+  z: number;
+};
+
 export interface ModelJob {
   id: string;
   ownerId: string;
@@ -7,6 +13,7 @@ export interface ModelJob {
   inputFolder: string;
   outputFolder: string;
   imagePaths: string[];
+  coordinates: ModelJobCoordinates | null;
   status: ModelJobStatus;
   stage: string;
   progress: number;
@@ -26,6 +33,7 @@ export type CreateModelJobInput = {
   inputFolder?: string;
   outputFolder?: string;
   imagePaths?: string[];
+  coordinates?: ModelJobCoordinates | null;
   stage?: string;
   progress?: number;
   logTail?: string[];
@@ -50,6 +58,7 @@ export type UpdateModelJobStateInput = {
 export interface ModelJobRepository {
   create(input: CreateModelJobInput): Promise<ModelJob>;
   findById(id: string): Promise<ModelJob | null>;
+  claimNextQueued(): Promise<ModelJob | null>;
   updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null>;
   listIncompleteByOwner(ownerId: string): Promise<ModelJob[]>;
 }

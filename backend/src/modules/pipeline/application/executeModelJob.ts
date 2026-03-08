@@ -12,15 +12,8 @@ import type { ModelRepository } from "../../model/domain/modelRepository";
 import { runMeshroomPipeline } from "./runMeshroomPipeline";
 import type { PipelineServices } from "./ports";
 
-type ModelCoordinates = {
-  x: number;
-  y: number;
-  z: number;
-};
-
 export type ExecuteModelJobInput = {
   jobId: string;
-  coordinates: ModelCoordinates;
 };
 
 export type ExecuteModelJobServices = {
@@ -39,6 +32,7 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
   const jobId = requireJobId(input.jobId);
   const job = await services.modelJobs.findById(jobId);
   if (!job) throw new Error("Job not found");
+  if (!job.coordinates) throw new Error("Missing job coordinates");
 
   let stage = "starting";
   let progress = 1;
@@ -105,7 +99,7 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
         sourceJobId: job.id,
         outputFolder: job.outputFolder,
         title: job.title,
-        coordinates: input.coordinates,
+        coordinates: job.coordinates,
       }
     );
 

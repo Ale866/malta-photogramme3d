@@ -11,6 +11,11 @@ export type CreateQueuedModelJobInput = {
   imagePaths: string[];
   inputFolder: string;
   outputFolder: string;
+  coordinates: {
+    x: number;
+    y: number;
+    z: number;
+  };
 };
 
 export async function createQueuedModelJob(services: ModelJobServices, input: CreateQueuedModelJobInput): Promise<ModelJob> {
@@ -30,6 +35,7 @@ export async function createQueuedModelJob(services: ModelJobServices, input: Cr
     imagePaths: input.imagePaths,
     inputFolder: input.inputFolder,
     outputFolder: input.outputFolder,
+    coordinates: input.coordinates,
     stage: "starting",
     progress: 0,
     logTail: [],

@@ -30,12 +30,10 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     imagePaths: prepared.imagePaths,
     inputFolder: prepared.inputFolder,
     outputFolder: prepared.outputFolder,
-  });
-
-  void services.executeModelJob({
-    jobId: job.id,
     coordinates: input.coordinates,
   });
+
+  void services.processNextQueuedModelJob();
 
   return { jobId: job.id };
 }

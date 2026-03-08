@@ -27,6 +27,20 @@ const modelJobSchema = new Schema(
       required: true,
       default: []
     },
+    coordinates: {
+      x: {
+        type: Number,
+        required: false,
+      },
+      y: {
+        type: Number,
+        required: false,
+      },
+      z: {
+        type: Number,
+        required: false,
+      },
+    },
     status: {
       type: String,
       required: true,

@@ -2,10 +2,24 @@ import type {
   ModelJobRepository,
   CreateModelJobInput,
   ModelJob,
+  ModelJobCoordinates,
   UpdateModelJobStateInput,
 } from '../domain/modelJobRepository';
 import { clampProgress, normalizeModelJobStatus } from '../domain/modelJobState';
 import { ModelJobSchema } from './db/ModelJobSchema';
+
+function toCoordinates(value: any): ModelJobCoordinates | null {
+  if (!value || typeof value !== 'object') return null;
+
+  const x = value.x;
+  const y = value.y;
+  const z = value.z;
+  if (![x, y, z].every((coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate))) {
+    return null;
+  }
+
+  return { x, y, z };
+}
 
 function toDomain(doc: any): ModelJob {
   return {
@@ -15,6 +29,7 @@ function toDomain(doc: any): ModelJob {
     inputFolder: doc.inputFolder ?? '',
     outputFolder: doc.outputFolder ?? '',
     imagePaths: doc.imagePaths ?? [],
+    coordinates: toCoordinates(doc.coordinates),
     status: normalizeModelJobStatus(doc.status),
     stage: doc.stage ?? 'starting',
     progress: clampProgress(doc.progress ?? 0),
@@ -37,6 +52,7 @@ export const modelJobRepo: ModelJobRepository = {
       inputFolder: input.inputFolder ?? '',
       outputFolder: input.outputFolder ?? '',
       imagePaths: input.imagePaths ?? [],
+      coordinates: input.coordinates ?? null,
       stage: input.stage ?? 'starting',
       progress: clampProgress(input.progress ?? 0),
       logTail: input.logTail ?? [],
@@ -60,6 +76,7 @@ export const modelJobRepo: ModelJobRepository = {
       inputFolder: doc.inputFolder ?? '',
       outputFolder: doc.outputFolder ?? '',
       imagePaths: doc.imagePaths ?? [],
+      coordinates: toCoordinates(doc.coordinates),
       status: normalizeModelJobStatus(doc.status),
       stage: doc.stage ?? 'starting',
       progress: clampProgress(doc.progress ?? 0),
@@ -71,6 +88,29 @@ export const modelJobRepo: ModelJobRepository = {
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
+  },
+
+  async claimNextQueued(): Promise<ModelJob | null> {
+    const startedAt = new Date();
+    const doc = await ModelJobSchema.findOneAndUpdate(
+      { status: 'queued' },
+      {
+        $set: {
+          status: 'running',
+          stage: 'starting',
+          progress: 1,
+          error: null,
+          startedAt,
+        },
+      },
+      {
+        sort: { createdAt: 1, _id: 1 },
+        returnDocument: 'after',
+      }
+    ).lean();
+
+    if (!doc) return null;
+    return toDomain(doc);
   },
 
   async updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null> {

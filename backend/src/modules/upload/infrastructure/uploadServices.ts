@@ -1,7 +1,6 @@
 import type { UploadServices } from "../application/ports";
-import { executeModelJob } from "../../pipeline/application/executeModelJob";
 import { modelJobServices } from "../../model-jobs/infrastructure/modelJobServices";
-import { pipelineExecutionServices } from "../../pipeline/infrastructure/pipelineServices";
+import { pipelineQueueRunner } from "../../pipeline/infrastructure/pipelineServices";
 import { FileStorage } from "./fileStorage";
 
 export const uploadServices: UploadServices = {
@@ -10,5 +9,5 @@ export const uploadServices: UploadServices = {
     stageUpload: (baseUpload, title, files) =>
       FileStorage.stageUpload(baseUpload, title, files),
   },
-  executeModelJob: (input) => executeModelJob(pipelineExecutionServices, input),
+  processNextQueuedModelJob: () => pipelineQueueRunner.processNextQueuedModelJob(),
 };
