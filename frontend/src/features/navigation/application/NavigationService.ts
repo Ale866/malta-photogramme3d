@@ -40,6 +40,24 @@ export class NavigationService {
     return position.clone()
   }
 
+  previewTerrainSelection(coordinates: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+    const target = new T.Vector3(coordinates.x, coordinates.y, coordinates.z)
+    this.markerRenderer.createMarker(target)
+    this.cameraController.flyTo(target, {
+      height: 34,
+      angleX: -Math.PI / 6.2,
+      angleY: -Math.PI / 7,
+      duration: 1.7,
+      targetYOffset: -8,
+    })
+
+    return {
+      x: target.x,
+      y: target.y,
+      z: target.z,
+    }
+  }
+
   goToCoordinates(coordinates: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
     const local = this.goToPosition(
       new T.Vector3(coordinates.x, coordinates.y, coordinates.z)

@@ -2,6 +2,7 @@
 @import './styles/base.css';
 @import './styles/utilities.css';
 @import './styles/components/search-bar.css';
+@import './styles/components/app-menu.css';
 @import './styles/features/auth.css';
 @import './styles/features/model.css';
 @import './styles/features/island.css';

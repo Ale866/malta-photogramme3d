@@ -8,6 +8,7 @@ import ModelCreationModal from '@/features/model/components/ModelCreationModal.v
 import MobileJoystick from '@/features/island/components/MobileJoystick.vue'
 import type { ViewportProjectionPort } from '@/features/island/domain/ViewportProjectionPort'
 import type { CameraController } from '@/core/three/controls/CameraController'
+import type { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
 import LoginModal from '@/features/auth/components/LoginModal.vue'
 import { useAuth } from '@/features/auth/application/useAuth'
 import { useIslandModelCatalog } from '@/features/model/application/composables/useIslandModelCatalog'
@@ -31,6 +32,8 @@ const screenProjection = { x: 0, y: 0, visible: false }
 let stopCameraChangeListener: (() => void) | null = null
 let viewportProjectionPort: ViewportProjectionPort | null = null
 let cameraController: CameraController | null = null
+let islandOrchestrator: IslandOrchestrator | null = null
+let isViewActive = true
 const auth = useAuth()
 const route = useRoute()
 const { placements, ensureLoaded, findById } = useIslandModelCatalog()
@@ -41,32 +44,35 @@ const terrainSelectionCoordinates = computed(() =>
 onMounted(async () => {
   const container = document.getElementById('three-root')!
 
-  await initScene(container, {
-    terrainUrl: '/terrain/malta.glb',
-    utmBbox: {
-      minE: 426480.6836,
-      minN: 3960443.4018,
-      maxE: 461756.6479,
-      maxN: 3993330.0808,
-    },
-  })
+  try {
+    islandOrchestrator = await initScene(container, {
+      terrainUrl: '/terrain/malta.glb',
+      utmBbox: {
+        minE: 426480.6836,
+        minN: 3960443.4018,
+        maxE: 461756.6479,
+        maxN: 3993330.0808,
+      },
+    })
 
-  const orchestrator = getOrchestrator()
-  cameraController = orchestrator.getCameraController()
-  viewportProjectionPort = getViewportProjectionPort()
-  orchestrator.setOnTerrainClick((coordinates) => {
-    if (!coordinates) {
-      clearTerrainSelection()
+    if (!isViewActive || !islandOrchestrator) {
       return
     }
 
-    setTerrainSelection(coordinates.local)
-  })
+    cameraController = islandOrchestrator.getCameraController()
+    viewportProjectionPort = getViewportProjectionPort()
+    islandOrchestrator.setOnTerrainClick((coordinates) => {
+      if (!coordinates) {
+        clearTerrainSelection()
+        return
+      }
 
-  try {
+      setTerrainSelection(coordinates.local)
+    })
+
     await ensureLoaded()
-    renderModels(orchestrator, placements.value)
-    attachInteractions(orchestrator, {
+    renderModels(islandOrchestrator, placements.value)
+    attachInteractions(islandOrchestrator, {
       onModelFocus: (modelId) => {
         clearTerrainSelection()
         mode.value = { kind: 'focused-model', modelId }
@@ -78,23 +84,23 @@ onMounted(async () => {
       const focusedModel = findById(focusedModelId)
       if (focusedModel) {
         clearTerrainSelection()
-        focusModel(orchestrator, focusedModel.coordinates)
+        focusModel(islandOrchestrator, focusedModel.coordinates)
         mode.value = { kind: 'focused-model', modelId: focusedModelId }
       }
     }
-  } catch (error) {
-    console.error('Failed to load island model catalog:', error)
-  }
 
-  stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
-    if (terrainSelectionCoordinates.value && !isCreateModelOpen.value && !isLoginModalOpen.value) {
-      updateMarkerButtonPosition()
-    }
-  })
+    stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
+      if (terrainSelectionCoordinates.value && !isCreateModelOpen.value && !isLoginModalOpen.value) {
+        updateMarkerButtonPosition()
+      }
+    })
+  } catch (error) {
+    console.error('Failed to initialize island view:', error)
+  }
 })
 
 function onSearchSelected(query: SearchEntry) {
-  const orchestrator = getOrchestrator()
+  const orchestrator = islandOrchestrator ?? getOrchestrator()
   clearTerrainSelection()
   const coordinates = orchestrator.getNavigationService().goToLatLon(query.lat, query.lon)
   setTerrainSelection(coordinates)
@@ -112,7 +118,7 @@ function clearTerrainSelection() {
     mode.value = { kind: 'idle' }
   }
   markerButtonVisible.value = false
-  getOrchestrator().getNavigationService().removeMarker()
+  islandOrchestrator?.getNavigationService().removeMarker()
 }
 
 function closeCreateModel() {
@@ -188,16 +194,18 @@ function onMobileJoystickMove(input: { x: number; y: number }) {
 }
 
 onUnmounted(() => {
+  isViewActive = false
   disposeIslandModelLayer()
   cameraController?.setMobileMoveInput({ x: 0, y: 0 })
   cameraController = null
 
   if (stopCameraChangeListener) {
-    stopCameraChangeListener()
+    stopCameraChangeListener()  
     stopCameraChangeListener = null
   }
   viewportProjectionPort = null
-  getOrchestrator().setOnTerrainClick(null)
+  islandOrchestrator?.setOnTerrainClick(null)
+  islandOrchestrator = null
 })
 
 </script>
