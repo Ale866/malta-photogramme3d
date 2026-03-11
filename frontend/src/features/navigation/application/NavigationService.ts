@@ -25,22 +25,13 @@ export class NavigationService {
 
   goToLatLon(lat: number, lon: number): T.Vector3 {
     const { easting, northing } = latLonToUTM(lat, lon)
-    return this.goToUTM(easting, northing)
-  }
-
-  goToUTM(easting: number, northing: number): T.Vector3 {
     const local = this.coordinateMapper.utmToLocal(easting, northing, 0)
     local.y = this.terrainService.sampleHeight(local.x, local.z)
-    this.createMarkerAndFlyTo(local)
+    this.selectTerrainCoordinates(local)
     return local.clone()
   }
 
-  goToPosition(position: T.Vector3): T.Vector3 {
-    this.createMarkerAndFlyTo(position)
-    return position.clone()
-  }
-
-  previewTerrainSelection(coordinates: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+  selectTerrainCoordinates(coordinates: { x: number; y: number; z: number }) {
     const target = new T.Vector3(coordinates.x, coordinates.y, coordinates.z)
     this.markerRenderer.createMarker(target)
     this.cameraController.flyTo(target, {
@@ -50,27 +41,9 @@ export class NavigationService {
       duration: 1.7,
       targetYOffset: -8,
     })
-
-    return {
-      x: target.x,
-      y: target.y,
-      z: target.z,
-    }
   }
 
-  goToCoordinates(coordinates: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
-    const local = this.goToPosition(
-      new T.Vector3(coordinates.x, coordinates.y, coordinates.z)
-    )
-
-    return {
-      x: local.x,
-      y: local.y,
-      z: local.z,
-    }
-  }
-
-  focusCoordinates(coordinates: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+  focusCoordinates(coordinates: { x: number; y: number; z: number }) {
     const target = new T.Vector3(coordinates.x, coordinates.y, coordinates.z)
     this.cameraController.flyTo(target, {
       height: 18,
@@ -79,17 +52,6 @@ export class NavigationService {
       duration: 1.4,
       targetYOffset: 0,
     })
-
-    return {
-      x: target.x,
-      y: target.y,
-      z: target.z,
-    }
-  }
-
-  private createMarkerAndFlyTo(position: T.Vector3) {
-    this.markerRenderer.createMarker(position)
-    this.cameraController.flyTo(position)
   }
 
   getMarkerPosition() {

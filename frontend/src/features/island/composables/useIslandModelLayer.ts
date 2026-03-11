@@ -51,9 +51,8 @@ export function useIslandModelLayer() {
     orchestrator: IslandOrchestrator,
     coordinates: { x: number; y: number; z: number },
   ) {
-    const local = orchestrator.getNavigationService().focusCoordinates(coordinates)
+    orchestrator.getNavigationService().focusCoordinates(coordinates)
     orchestrator.getNavigationService().removeMarker()
-    return local
   }
 
   function dispose() {

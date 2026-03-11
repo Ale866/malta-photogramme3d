@@ -79,7 +79,7 @@ export class IslandOrchestrator {
 
     this.interactionHandler.setupClickHandler(
       (point) => {
-        this.navigationService?.previewTerrainSelection(point)
+        this.navigationService?.selectTerrainCoordinates(point)
         this.emitTerrainClick(point)
       },
       () => { this.emitTerrainClick(null) },
