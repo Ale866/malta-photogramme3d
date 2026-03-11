@@ -8,6 +8,7 @@ export class CameraController {
   private mobileMoveInput = new T.Vector2()
   private lastUpdateTs = 0
   private maxZoomDistance = 260
+  private minZoomDistance = 18
   private movementBounds: {
     minX: number
     minZ: number
@@ -21,9 +22,9 @@ export class CameraController {
   constructor(camera: T.PerspectiveCamera, domElement: HTMLElement) {
     this.camera = camera
     this.controls = new OrbitControls(camera, domElement)
-    this.controls.minDistance = 10
+    this.controls.minDistance = this.minZoomDistance
     this.controls.maxDistance = this.maxZoomDistance
-    this.controls.maxPolarAngle = Math.PI / 2.1
+    this.controls.maxPolarAngle = Math.PI / 2.35
     this.controls.enableDamping = true
     this.controls.screenSpacePanning = true
   }
@@ -76,10 +77,7 @@ export class CameraController {
     this.controls.maxDistance = this.maxZoomDistance
   }
 
-  frameObject(
-    object: T.Object3D,
-    yRange?: { min: number; max: number }
-  ) {
+  frameObject(object: T.Object3D, yRange?: { min: number; max: number }) {
     const box = new T.Box3().setFromObject(object)
     const center = new T.Vector3()
     const size = new T.Vector3()

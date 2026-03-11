@@ -39,7 +39,7 @@ export class NavigationService {
       angleX: -Math.PI / 6.2,
       angleY: -Math.PI / 7,
       duration: 1.7,
-      targetYOffset: -8,
+      targetYOffset: 0,
     })
   }
 
