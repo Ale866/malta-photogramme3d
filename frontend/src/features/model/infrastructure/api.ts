@@ -1,5 +1,4 @@
 import { getErrorMessage, http } from '@/core/api/httpClient';
-import { requireAccessToken } from '@/features/auth/application/useAuth';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 import type { ModelLibrary, IncompleteModelJobSummary } from '@/features/model/domain/ModelLibrary';
 import type { ModelSummary } from '@/features/model/domain/ModelSummary';
@@ -66,10 +65,8 @@ function toIncompleteModelJobSummary(dto: ModelJobDto): IncompleteModelJobSummar
 }
 
 export const ModelApi = {
-  async upload(input: ModelCreationDraft): Promise<UploadResponse> {
+  async upload(input: ModelCreationDraft, accessToken: string): Promise<UploadResponse> {
     try {
-      const token = await requireAccessToken();
-
       const formData = new FormData();
       formData.append('title', input.title);
       input.files.forEach((f) => formData.append('files', f));
@@ -79,7 +76,7 @@ export const ModelApi = {
 
       const res = await http.post<UploadResponse>('/upload', formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
@@ -89,13 +86,11 @@ export const ModelApi = {
     }
   },
 
-  async getModelLibrary(): Promise<ModelLibrary> {
+  async getModelLibrary(accessToken: string): Promise<ModelLibrary> {
     try {
-      const token = await requireAccessToken();
-
       const res = await http.get<ModelLibraryDto>('/model/list', {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         }
       });
 
@@ -121,15 +116,14 @@ export const ModelApi = {
     }
   },
 
-  async getModelJobStatus(jobId: string): Promise<ModelJobSnapshot> {
+  async getModelJobStatus(jobId: string, accessToken: string): Promise<ModelJobSnapshot> {
     try {
-      const token = await requireAccessToken();
       const normalizedJobId = jobId.trim();
       if (!normalizedJobId) throw new Error('Job ID is required');
 
       const res = await http.get<ModelJobSnapshot>(`/model-jobs/${normalizedJobId}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
