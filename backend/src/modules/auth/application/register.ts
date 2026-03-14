@@ -18,6 +18,7 @@ export async function register(services: AuthServices, input: RegisterInput) {
   if (!email) throw new Error('Email is required');
   if (!password) throw new Error('Password is required');
   if (!nickname) throw new Error('Nickname is required');
+  if (nickname.length < 3) throw new Error('Nickname must be at least 3 characters');
   if (password.length < 6) throw new Error('Password must be at least 6 characters');
 
   const existing = await services.users.findByEmail(email);

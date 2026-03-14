@@ -26,7 +26,10 @@ const mode = ref<AuthMode>(props.initialMode)
 const nickname = ref('')
 const email = ref('')
 const password = ref('')
-const error = ref<string | null>(null)
+const nicknameError = ref<string | null>(null)
+const emailError = ref<string | null>(null)
+const passwordError = ref<string | null>(null)
+const formError = ref<string | null>(null)
 const isLoading = ref(false)
 
 const title = computed(() =>
@@ -39,14 +42,63 @@ const submitLabel = computed(() =>
   mode.value === 'login' ? 'Login' : 'Create account'
 )
 
+function clearErrors() {
+  nicknameError.value = null
+  emailError.value = null
+  passwordError.value = null
+  formError.value = null
+}
+
 function switchMode(nextMode: AuthMode) {
   if (isLoading.value || mode.value === nextMode) return
   mode.value = nextMode
-  error.value = null
+  clearErrors()
+}
+
+function validate(): boolean {
+  clearErrors()
+
+  if (mode.value === 'register' && nickname.value.trim().length < 3) {
+    nicknameError.value = 'Nickname must be at least 3 characters'
+  }
+
+  if (!email.value.trim()) {
+    emailError.value = 'Email is required'
+  }
+
+  if (!password.value) {
+    passwordError.value = 'Password is required'
+  } else if (mode.value === 'register' && password.value.length < 6) {
+    passwordError.value = 'Password must be at least 6 characters'
+  }
+
+  return !nicknameError.value && !emailError.value && !passwordError.value
+}
+
+function applySubmitError(message: string) {
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes('nickname')) {
+    nicknameError.value = message
+    return
+  }
+
+  if (normalized.includes('email')) {
+    emailError.value = message
+    return
+  }
+
+  if (normalized.includes('password')) {
+    passwordError.value = message
+    return
+  }
+
+  formError.value = message
 }
 
 async function onSubmit() {
-  error.value = null
+  if (!validate()) return
+
   isLoading.value = true
 
   try {
@@ -58,7 +110,7 @@ async function onSubmit() {
 
     emit('success', mode.value)
   } catch (e: any) {
-    error.value = e?.message ?? 'Authentication failed'
+    applySubmitError(e?.message ?? 'Authentication failed')
   } finally {
     isLoading.value = false
   }
@@ -87,20 +139,23 @@ async function onSubmit() {
       <label v-if="mode === 'register'" class="form-field">
         <span class="form-label">Nickname</span>
         <input v-model="nickname" class="form-input" type="text" autocomplete="nickname" required />
+        <p v-if="nicknameError" class="auth-field-error">{{ nicknameError }}</p>
       </label>
 
       <label class="form-field">
         <span class="form-label">Email</span>
         <input v-model="email" class="form-input" type="email" autocomplete="email" required />
+        <p v-if="emailError" class="auth-field-error">{{ emailError }}</p>
       </label>
 
       <label class="form-field">
         <span class="form-label">Password</span>
         <input v-model="password" class="form-input" type="password"
           :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" required />
+        <p v-if="passwordError" class="auth-field-error">{{ passwordError }}</p>
       </label>
 
-      <p v-if="error" class="text-error">{{ error }}</p>
+      <p v-if="formError" class="auth-field-error">{{ formError }}</p>
 
       <button class="btn btn-primary btn-block" type="submit" :disabled="isLoading">
         {{ isLoading ? 'Submitting...' : submitLabel }}
