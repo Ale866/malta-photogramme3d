@@ -1,7 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import type { ModelJobSnapshot } from "../domain/ModelJob";
-
-const SOCKET_URL = "http://localhost:3000";
+import { runtimeConfig } from "@/core/config/runtime";
 
 type JobSocketHandlers = {
   onSnapshot: (snapshot: ModelJobSnapshot) => void;
@@ -17,7 +16,7 @@ export type JobSocketClient = {
 };
 
 export function createJobSocketClient(token: string, handlers: JobSocketHandlers): JobSocketClient {
-  const socket: Socket = io(SOCKET_URL, {
+  const socket: Socket = io(runtimeConfig.socketUrl, {
     auth: { token },
   });
 

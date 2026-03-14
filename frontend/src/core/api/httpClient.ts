@@ -1,4 +1,5 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios';
+import { runtimeConfig } from '@/core/config/runtime';
 
 export function getErrorMessage(err: unknown): string {
   const ax = err as AxiosError<any>;
@@ -6,6 +7,6 @@ export function getErrorMessage(err: unknown): string {
 }
 
 export const http: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: runtimeConfig.apiBaseUrl,
   withCredentials: true,
 });

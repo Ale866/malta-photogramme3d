@@ -8,6 +8,7 @@ function requireEnv(name: string): string {
 
 export const config = {
   PORT: Number(process.env.PORT ?? 3000),
+  FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
 
   OUTPUT_DIR: process.env.OUTPUT_DIR ?? 'output',
   UPLOAD_TMP: process.env.UPLOAD_TMP ?? 'uploads/tmp',

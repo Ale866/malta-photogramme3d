@@ -15,7 +15,7 @@ async function startServer() {
 
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: config.FRONTEND_ORIGIN,
       credentials: true,
     },
   });

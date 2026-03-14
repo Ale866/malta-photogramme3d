@@ -5,12 +5,13 @@ import cookieParser from 'cookie-parser';
 import cors from "cors";
 import modelRoutes from "./modules/model/api/modelRoutes";
 import modelJobRoutes from "./modules/model-jobs/api/modelJobRoutes";
+import { config } from "./shared/config/env";
 
 export function createApp() {
   const app = express();
 
   app.use(cors({
-    origin: "http://localhost:5173",
+    origin: config.FRONTEND_ORIGIN,
     credentials: true
   }));
   app.use(cookieParser());
