@@ -1,7 +1,7 @@
 import type { Server, Socket } from "socket.io";
 import { authServices } from "../../../auth/infrastructure/authServices";
 import { toModelJobStatusDto, type ModelJobStatusDto } from "../../application/jobStatusDto";
-import { modelJobServices } from "../modelJobServices";
+import { modelJobRepo } from "../modelJobRepo";
 
 const JOB_ROOM_PREFIX = "job:";
 
@@ -48,7 +48,7 @@ export function attachModelJobSocketGateway(io: Server): ModelJobSocketGateway {
       const jobId = typeof payload?.jobId === "string" ? payload.jobId.trim() : "";
       if (!jobId) return;
 
-      const job = await modelJobServices.modelJobs.findById(jobId);
+      const job = await modelJobRepo.findById(jobId);
       if (!job) return;
       if (job.ownerId !== socket.data.userId) return;
 

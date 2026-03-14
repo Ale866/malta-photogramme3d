@@ -1,7 +1,17 @@
-import { pipelineQueueRunner } from "./modules/pipeline/infrastructure/pipelineServices";
+import { processNextQueuedModelJob } from "./modules/pipeline/application/processNextQueuedModelJob";
+import { runMeshroom } from "./modules/pipeline/infrastructure/meshroomRunner";
+import { modelRepo } from "./modules/model/infrastructure/modelRepo";
+import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
 import { connectDb, disconnectDb } from "./shared/db/mongoConnection";
 
 const POLL_INTERVAL_MS = 3000;
+const workerDependencies = {
+  modelJobs: modelJobRepo,
+  models: modelRepo,
+  pipeline: {
+    runMeshroom,
+  },
+};
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
@@ -22,7 +32,7 @@ async function startWorker(): Promise<void> {
 
   while (keepRunning) {
     try {
-      const processedJob = await pipelineQueueRunner.processNextQueuedModelJob();
+      const processedJob = await processNextQueuedModelJob(workerDependencies);
       if (!processedJob) {
         await sleep(POLL_INTERVAL_MS);
       }
