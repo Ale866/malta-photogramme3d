@@ -1,19 +1,21 @@
 import type { ModelsServices } from './ports';
 import type { CreateModelInput, Model } from '../domain/modelRepository';
+import { badRequest } from '../../../shared/errors/applicationError';
 
 export async function createModelFromJob(services: ModelsServices, input: CreateModelInput): Promise<Model> {
-  if (!input.ownerId) throw new Error('Missing ownerId');
+  const ownerId = typeof input.ownerId === 'string' ? input.ownerId.trim() : '';
+  if (!ownerId) throw badRequest('Missing ownerId', 'owner_id_required');
 
   const title = typeof input.title === 'string' ? input.title.trim() : '';
-  if (!title) throw new Error('Title is required');
+  if (!title) throw badRequest('Title is required', 'title_required');
 
   const outputFolder = typeof input.outputFolder === 'string' ? input.outputFolder.trim() : '';
-  if (!outputFolder) throw new Error('outputFolder is required');
+  if (!outputFolder) throw badRequest('outputFolder is required', 'output_folder_required');
 
   const sourceJobId = input.sourceJobId ?? null;
 
   const model = await services.models.create({
-    ownerId: input.ownerId,
+    ownerId,
     title,
     outputFolder,
     sourceJobId,

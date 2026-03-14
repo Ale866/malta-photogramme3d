@@ -23,7 +23,7 @@ export async function getAllModelsController(req: AuthedRequest, res: Response) 
   try {
     const catalog = await getAllModels(modelServices);
     return res.status(200).json(catalog);
-  } catch (err) {
-    return res.status(500).json({ error: "Server error" });
+  } catch (error) {
+    return sendErrorResponse(res, error);
   }
 }
