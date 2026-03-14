@@ -10,6 +10,7 @@ import type { ViewportProjectionPort } from '@/features/island/domain/ViewportPr
 import type { CameraController } from '@/core/three/controls/CameraController'
 import type { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
 import LoginModal from '@/features/auth/components/LoginModal.vue'
+import ProfileDock from '@/features/auth/components/ProfileDock.vue'
 import { useAuth } from '@/features/auth/application/useAuth'
 import { useIslandModelCatalog } from '@/features/model/application/composables/useIslandModelCatalog'
 
@@ -219,6 +220,7 @@ onUnmounted(() => {
     </button>
     <model-creation-modal :open="isCreateModelOpen" :coordinates="terrainSelectionCoordinates!" @close="closeCreateModel" />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
+    <profile-dock />
     <mobile-joystick class="island-mobile-joystick" @move="onMobileJoystickMove" />
   </div>
 </template>

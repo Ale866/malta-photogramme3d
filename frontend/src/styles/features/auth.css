@@ -10,6 +10,50 @@
   margin: 0 0 12px;
 }
 
+.auth-card {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.auth-card-header {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.auth-card-title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.auth-card-subtitle {
+  margin: 0;
+}
+
+.auth-card-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+
+.auth-card-switch-button {
+  min-height: 38px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.auth-card-switch-button.is-active {
+  background: var(--surface-4);
+  color: var(--text-primary);
+}
+
 .auth-modal-overlay {
   position: fixed;
   inset: 0;
@@ -36,6 +80,11 @@
   gap: var(--space-3);
 }
 
+.auth-modal-header--end {
+  justify-content: flex-end;
+  margin-bottom: var(--space-2);
+}
+
 .auth-modal-title {
   margin: 0;
   font-size: 1.1rem;
@@ -48,4 +97,117 @@
 
 .auth-modal-subtitle {
   margin: 0.45rem 0 0.9rem;
+}
+
+.profile-dock {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: var(--z-app-menu);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.profile-dock-panel {
+  width: min(340px, calc(100vw - 2rem));
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: rgb(26 26 26 / 0.94);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(16px);
+}
+
+.profile-dock-trigger {
+  width: 50px;
+  height: 50px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgb(38 38 38 / 0.96), rgb(20 20 20 / 0.96));
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+
+.profile-dock-trigger-label {
+  display: inline-grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--space-1);
+  font-size: 0.76rem;
+  line-height: 1.05;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.profile-summary {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.profile-summary-header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.profile-summary-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-info);
+}
+
+.profile-summary-name,
+.profile-summary-email {
+  margin: 0;
+}
+
+.profile-summary-meta {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.profile-summary-meta div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.profile-summary-meta dt {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.profile-summary-meta dd {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .profile-dock {
+    right: var(--space-3);
+    bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    left: auto;
+  }
+
+  .profile-dock-panel {
+    width: min(320px, calc(100vw - 1.25rem));
+    max-height: min(62vh, 520px);
+    padding: var(--space-3);
+  }
+
+  .profile-dock-trigger {
+    width: 46px;
+    height: 46px;
+  }
+
+  .profile-dock-trigger-label {
+    font-size: 0.68rem;
+  }
 }
