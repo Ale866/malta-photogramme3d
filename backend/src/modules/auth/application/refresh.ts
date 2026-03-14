@@ -2,19 +2,18 @@ import type { AuthServices } from './ports';
 import { ttlToMs } from '../../../shared/utils/timestamp';
 import { config } from '../../../shared/config/env';
 import {
-  badRequest,
   notFound,
   unauthorized,
 } from '../../../shared/errors/applicationError';
 
 type RefreshInput = {
-  refreshToken: string;
+  refreshToken?: string;
   userAgent?: string;
 };
 
 export async function refresh(services: AuthServices, input: RefreshInput) {
   const token = input.refreshToken;
-  if (!token) throw badRequest('Missing refresh token', 'refresh_token_required');
+  if (!token) throw unauthorized('Not authenticated', 'refresh_token_required');
 
   const hash = services.hashRefreshToken(token);
 

@@ -58,11 +58,7 @@ export async function loginController(req: Request, res: Response) {
 export async function refreshController(req: Request, res: Response) {
   try {
     const cookieName = getRefreshCookieName();
-    const refreshToken = req.cookies?.[cookieName];
-
-    if (!refreshToken) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
+    const refreshToken = req.cookies?.[cookieName] as string | undefined;
 
     const result = await refresh(authServices, {
       refreshToken,
