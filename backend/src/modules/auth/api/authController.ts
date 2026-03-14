@@ -5,6 +5,10 @@ import { authServices } from '../infrastructure/authServices';
 import { clearRefreshCookie, setRefreshCookie, getRefreshCookieName } from './refreshCookie';
 import { refresh } from '../application/refresh';
 import { logout } from '../application/logout';
+import {
+  isApplicationError,
+  sendErrorResponse,
+} from '../../../shared/errors/applicationError';
 
 export async function registerController(req: Request, res: Response) {
   try {
@@ -24,8 +28,8 @@ export async function registerController(req: Request, res: Response) {
       accessTokenExpiresAt: result.accessTokenExpiresAt,
       user: result.user,
     });
-  } catch (e: any) {
-    return res.status(401).json({ error: e?.message ?? 'Register failed' });
+  } catch (error) {
+    return sendErrorResponse(res, error, 'Register failed');
   }
 }
 
@@ -41,13 +45,13 @@ export async function loginController(req: Request, res: Response) {
 
     setRefreshCookie(res, result.refreshToken);
 
-    return res.status(201).json({
+    return res.status(200).json({
       accessToken: result.accessToken,
       accessTokenExpiresAt: result.accessTokenExpiresAt,
       user: result.user,
     });
-  } catch (e: any) {
-    return res.status(401).json({ error: e?.message ?? 'Login failed' });
+  } catch (error) {
+    return sendErrorResponse(res, error, 'Login failed');
   }
 }
 
@@ -72,12 +76,18 @@ export async function refreshController(req: Request, res: Response) {
       accessTokenExpiresAt: result.accessTokenExpiresAt,
       user: result.user,
     });
-  } catch (e: any) {
-    const message = e?.message ?? 'Refresh failed';
-    if (message === 'Invalid refresh token' || message === 'Refresh token expired') {
+  } catch (error) {
+    if (
+      isApplicationError(error)
+      && (
+        error.code === 'invalid_refresh_token'
+        || error.code === 'refresh_token_expired'
+        || error.code === 'refresh_token_revoked'
+      )
+    ) {
       clearRefreshCookie(res);
     }
-    return res.status(401).json({ error: message });
+    return sendErrorResponse(res, error, 'Refresh failed');
   }
 }
 
@@ -90,7 +100,7 @@ export async function logoutController(req: Request, res: Response) {
     clearRefreshCookie(res);
 
     return res.status(204).send()
-  } catch (e: any) {
-    return res.status(500).json({ error: e?.message ?? 'Logout failed' });
+  } catch (error) {
+    return sendErrorResponse(res, error, 'Logout failed');
   }
 }

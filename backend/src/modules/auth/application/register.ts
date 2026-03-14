@@ -1,6 +1,7 @@
 import type { AuthServices } from './ports';
 import { ttlToMs } from '../../../shared/utils/timestamp';
 import { config } from '../../../shared/config/env';
+import { badRequest, conflict } from '../../../shared/errors/applicationError';
 
 type RegisterInput = {
   email: string;
@@ -15,14 +16,14 @@ export async function register(services: AuthServices, input: RegisterInput) {
   const password = input.password;
   const nickname = input.nickname.trim();
 
-  if (!email) throw new Error('Email is required');
-  if (!password) throw new Error('Password is required');
-  if (!nickname) throw new Error('Nickname is required');
-  if (nickname.length < 3) throw new Error('Nickname must be at least 3 characters');
-  if (password.length < 6) throw new Error('Password must be at least 6 characters');
+  if (!email) throw badRequest('Email is required', 'email_required');
+  if (!password) throw badRequest('Password is required', 'password_required');
+  if (!nickname) throw badRequest('Nickname is required', 'nickname_required');
+  if (nickname.length < 3) throw badRequest('Nickname must be at least 3 characters', 'nickname_too_short');
+  if (password.length < 6) throw badRequest('Password must be at least 6 characters', 'password_too_short');
 
   const existing = await services.users.findByEmail(email);
-  if (existing) throw new Error('Email already in use');
+  if (existing) throw conflict('Email already in use', 'email_in_use');
 
   const passwordHash = await services.hashPassword(password);
   const user = await services.users.create({ email, passwordHash, nickname });

@@ -1,6 +1,11 @@
 import type { AuthServices } from './ports';
 import { ttlToMs } from '../../../shared/utils/timestamp';
 import { config } from '../../../shared/config/env';
+import {
+  badRequest,
+  notFound,
+  unauthorized,
+} from '../../../shared/errors/applicationError';
 
 type RefreshInput = {
   refreshToken: string;
@@ -9,15 +14,15 @@ type RefreshInput = {
 
 export async function refresh(services: AuthServices, input: RefreshInput) {
   const token = input.refreshToken;
-  if (!token) throw new Error('Missing refresh token');
+  if (!token) throw badRequest('Missing refresh token', 'refresh_token_required');
 
   const hash = services.hashRefreshToken(token);
 
   const session = await services.sessions.findByRefreshTokenHash(hash);
-  if (!session) throw new Error('Invalid refresh token');
+  if (!session) throw unauthorized('Invalid refresh token', 'invalid_refresh_token');
 
-  if (session.revokedAt) throw new Error('Refresh token revoked');
-  if (session.expiresAt.getTime() < Date.now()) throw new Error('Refresh token expired');
+  if (session.revokedAt) throw unauthorized('Refresh token revoked', 'refresh_token_revoked');
+  if (session.expiresAt.getTime() < Date.now()) throw unauthorized('Refresh token expired', 'refresh_token_expired');
 
   await services.sessions.revoke(session.id);
 
@@ -33,7 +38,7 @@ export async function refresh(services: AuthServices, input: RefreshInput) {
   });
 
   const user = await services.users.findById(session.userId);
-  if (!user) throw new Error('User not found');
+  if (!user) throw notFound('User not found', 'user_not_found');
 
   const accessToken = services.signAccessToken({ sub: user.id, email: user.email });
 

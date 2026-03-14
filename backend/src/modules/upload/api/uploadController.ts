@@ -2,12 +2,26 @@ import { Response } from "express";
 import type { AuthedRequest } from "../../../shared/authenticate";
 import { startUpload } from "../application/upload";
 import { uploadServices } from "../infrastructure/uploadServices";
+import {
+  badRequest,
+  sendErrorResponse,
+} from "../../../shared/errors/applicationError";
+
+function parseCoordinates(input: unknown) {
+  if (typeof input !== "string") return input;
+
+  try {
+    return JSON.parse(input);
+  } catch {
+    throw badRequest("Invalid coordinates JSON", "invalid_coordinates_json");
+  }
+}
 
 export async function uploadController(req: AuthedRequest, res: Response) {
   try {
     const files = req.files as Express.Multer.File[];
     const { title, coordinates } = req.body ?? {};
-    const parsedCoordinates = typeof coordinates === "string" ? JSON.parse(coordinates) : coordinates;
+    const parsedCoordinates = parseCoordinates(coordinates);
 
     const result = await startUpload(uploadServices, {
       ownerId: req.user?.sub,
@@ -21,22 +35,7 @@ export async function uploadController(req: AuthedRequest, res: Response) {
       message: "Upload accepted",
       jobId: result.jobId,
     });
-  } catch (err) {
-    if (err instanceof Error) {
-      if (err.message === "Not authenticated") {
-        return res.status(401).json({ error: err.message });
-      }
-
-      if (
-        err.message === "Title is required" ||
-        err.message === "No images uploaded" ||
-        err.message.includes("JSON")
-      ) {
-        return res.status(400).json({ error: err.message });
-      }
-    }
-
-    console.error(err);
-    return res.status(500).json({ error: "Server error" });
+  } catch (error) {
+    return sendErrorResponse(res, error);
   }
 }

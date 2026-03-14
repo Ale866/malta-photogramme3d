@@ -1,6 +1,7 @@
 import type { AuthServices } from './ports';
 import { ttlToMs } from '../../../shared/utils/timestamp';
 import { config } from '../../../shared/config/env';
+import { badRequest, unauthorized } from '../../../shared/errors/applicationError';
 
 type LoginInput = {
   email: string;
@@ -12,14 +13,14 @@ export async function login(services: AuthServices, input: LoginInput) {
   const email = input.email.trim().toLowerCase();
   const password = input.password;
 
-  if (!email) throw new Error('Email is required');
-  if (!password) throw new Error('Password is required');
+  if (!email) throw badRequest('Email is required', 'email_required');
+  if (!password) throw badRequest('Password is required', 'password_required');
 
   const user = await services.users.findByEmailWithPassword(email);
-  if (!user) throw new Error('Email does not exist');
+  if (!user) throw unauthorized('Invalid credentials', 'invalid_credentials');
 
   const ok = await services.verifyPassword(password, user.passwordHash);
-  if (!ok) throw new Error('Invalid password');
+  if (!ok) throw unauthorized('Invalid credentials', 'invalid_credentials');
 
   const refreshToken = services.generateRefreshToken();
   const refreshTokenHash = services.hashRefreshToken(refreshToken);
