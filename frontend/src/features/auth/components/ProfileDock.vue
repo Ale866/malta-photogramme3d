@@ -11,8 +11,8 @@ const isLoggingOut = ref(false)
 const isAuthenticated = computed(() => auth.isAuthenticated.value)
 const currentUser = computed(() => auth.user.value)
 
-const triggerLabel = computed(() => {
-  if (!isAuthenticated.value) return 'Login'
+const triggerInitial = computed(() => {
+  if (!isAuthenticated.value) return null
 
   const nicknameInitial = currentUser.value?.nickname?.trim().charAt(0)
   if (nicknameInitial) return nicknameInitial.toUpperCase()
@@ -49,6 +49,11 @@ function toggleOpen() {
   error.value = null
 }
 
+function closePanel() {
+  isOpen.value = false
+  error.value = null
+}
+
 function onAuthSuccess() {
   error.value = null
 }
@@ -69,6 +74,25 @@ async function onLogout() {
 
 <template>
   <div class="profile-dock">
+    <button type="button" class="profile-dock-trigger" :aria-expanded="isOpen" aria-label="Toggle profile panel"
+      @click="toggleOpen">
+      <span v-if="triggerInitial" class="profile-dock-trigger-label">{{ triggerInitial }}</span>
+      <svg v-else class="profile-dock-trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 12.25a4.25 4.25 0 1 0-4.25-4.25A4.25 4.25 0 0 0 12 12.25Zm0 1.5c-4.15 0-7.5 2.37-7.5 5.29a.75.75 0 0 0 1.5 0c0-1.87 2.57-3.79 6-3.79s6 1.92 6 3.79a.75.75 0 0 0 1.5 0c0-2.92-3.35-5.29-7.5-5.29Z"
+          fill="currentColor"
+        />
+      </svg>
+    </button>
+
+    <button
+      v-if="isOpen"
+      type="button"
+      class="profile-dock-backdrop"
+      aria-label="Close profile panel"
+      @click="closePanel"
+    ></button>
+
     <section v-if="isOpen" class="profile-dock-panel" aria-label="User profile panel">
       <div v-if="isHydrating && !currentUser" class="text-muted">Checking session...</div>
 
@@ -105,10 +129,5 @@ async function onLogout() {
         login-subtitle="Login to manage your profile and upload models."
         register-subtitle="Create an account to upload models and manage your profile." @success="onAuthSuccess" />
     </section>
-
-    <button type="button" class="profile-dock-trigger" :aria-expanded="isOpen" aria-label="Toggle profile panel"
-      @click="toggleOpen">
-      <span class="profile-dock-trigger-label">{{ triggerLabel }}</span>
-    </button>
   </div>
 </template>

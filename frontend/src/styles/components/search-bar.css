@@ -76,3 +76,12 @@
 .search-results::-webkit-scrollbar-track {
   background: transparent;
 }
+
+@media (max-width: 700px) {
+  .search {
+    top: 12px;
+    left: 12px;
+    width: calc(100vw - 4.75rem);
+    max-width: 20rem;
+  }
+}

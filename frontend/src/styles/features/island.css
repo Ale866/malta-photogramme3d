@@ -31,5 +31,6 @@
 @media (hover: none) {
   .island-mobile-joystick {
     display: block;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
   }
 }
