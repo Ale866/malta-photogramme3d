@@ -1,5 +1,5 @@
 import { createWebHistory, createRouter } from 'vue-router'
-import { useAuth } from './features/auth/application/useAuth'
+import { authStore } from './features/auth/application/useAuth'
 
 const IslandView = () => import('@/features/island/views/IslandView.vue')
 const LoginView = () => import('@/features/auth/views/LoginView.vue')
@@ -45,11 +45,10 @@ export const router = createRouter({
 router.beforeEach(async (to) => {
   if (!to.meta.requiresAuth) return true
 
-  const auth = useAuth()
-  if (auth.isAuthenticated.value) return true
+  if (authStore.isAuthenticated.value) return true
 
-  await auth.hydrateSession()
-  if (auth.isAuthenticated.value) {
+  await authStore.hydrateSession()
+  if (authStore.isAuthenticated.value) {
     return true
   }
 

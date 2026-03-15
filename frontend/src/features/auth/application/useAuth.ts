@@ -1,36 +1,36 @@
 import { shallowRef, computed } from 'vue';
 import { AuthApi, type AuthResponse, type AuthUser } from '../infrastructure/api';
 
-const accessToken = shallowRef<string | null>(null);
-const accessTokenExpiresAt = shallowRef<number | null>(null);
-const user = shallowRef<AuthUser | null>(null);
-let refreshPromise: Promise<AuthResponse> | null = null;
-
 function parseAccessTokenExpiry(expiresAt: string): number | null {
   const parsed = Date.parse(expiresAt);
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function setAuthenticatedState(result: AuthResponse) {
-  accessToken.value = result.accessToken;
-  accessTokenExpiresAt.value = parseAccessTokenExpiry(result.accessTokenExpiresAt);
-  user.value = result.user;
-}
+function createAuthStore() {
+  const accessToken = shallowRef<string | null>(null);
+  const accessTokenExpiresAt = shallowRef<number | null>(null);
+  const user = shallowRef<AuthUser | null>(null);
+  let refreshPromise: Promise<AuthResponse> | null = null;
 
-function clearAuthenticatedState() {
-  accessToken.value = null;
-  accessTokenExpiresAt.value = null;
-  user.value = null;
-}
+  function setAuthenticatedState(result: AuthResponse) {
+    accessToken.value = result.accessToken;
+    accessTokenExpiresAt.value = parseAccessTokenExpiry(result.accessTokenExpiresAt);
+    user.value = result.user;
+  }
 
-function hasValidAccessToken() {
-  return !!accessToken.value
-    && !!user.value
-    && accessTokenExpiresAt.value !== null
-    && accessTokenExpiresAt.value > Date.now();
-}
+  function clearAuthenticatedState() {
+    accessToken.value = null;
+    accessTokenExpiresAt.value = null;
+    user.value = null;
+  }
 
-export function useAuth() {
+  function hasValidAccessToken() {
+    return !!accessToken.value
+      && !!user.value
+      && accessTokenExpiresAt.value !== null
+      && accessTokenExpiresAt.value > Date.now();
+  }
+
   const isAuthenticated = computed(() => hasValidAccessToken());
 
   async function hydrateSession() {
@@ -106,14 +106,18 @@ export function useAuth() {
   };
 }
 
-export async function requireAccessToken(): Promise<string> {
-  const auth = useAuth();
+export const authStore = createAuthStore();
 
-  let token = auth.getAccessToken();
+export function useAuth() {
+  return authStore;
+}
+
+export async function requireAccessToken(): Promise<string> {
+  let token = authStore.getAccessToken();
   if (token) return token;
 
-  await auth.hydrateSession();
-  token = auth.getAccessToken();
+  await authStore.hydrateSession();
+  token = authStore.getAccessToken();
 
   if (!token) throw new Error("Not authenticated (missing access token)");
   return token;

@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { useAuth } from '@/features/auth/application/useAuth'
+import { authStore } from '@/features/auth/application/useAuth'
 import type { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
 import type { ViewportProjectionPort } from '@/features/island/domain/ViewportProjectionPort'
 
@@ -11,7 +11,6 @@ type UseIslandSelectionFlowOptions = {
 }
 
 export function useIslandSelectionFlow(options: UseIslandSelectionFlowOptions) {
-  const auth = useAuth()
   const terrainSelectionCoordinates = ref<Coordinates3D | null>(null)
   const isCreateModelOpen = ref(false)
   const isLoginModalOpen = ref(false)
@@ -55,10 +54,10 @@ export function useIslandSelectionFlow(options: UseIslandSelectionFlowOptions) {
   async function openCreateModel() {
     if (!terrainSelectionCoordinates.value) return
 
-    let authenticated = auth.isAuthenticated.value
+    let authenticated = authStore.isAuthenticated.value
     if (!authenticated) {
-      await auth.hydrateSession()
-      authenticated = auth.isAuthenticated.value
+      await authStore.hydrateSession()
+      authenticated = authStore.isAuthenticated.value
     }
 
     if (!authenticated) {

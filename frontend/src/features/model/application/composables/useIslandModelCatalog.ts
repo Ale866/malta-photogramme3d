@@ -9,12 +9,6 @@ export type IslandModelPlacement = {
   assetUrl: string | null;
 };
 
-const placements = shallowRef<IslandModelPlacement[]>([]);
-const isLoading = shallowRef(false);
-const error = shallowRef<string | null>(null);
-const hasLoadedOnce = shallowRef(false);
-let loadPromise: Promise<void> | null = null;
-
 function toIslandModelPlacement(model: ModelSummary): IslandModelPlacement {
   return {
     id: model.id,
@@ -24,7 +18,12 @@ function toIslandModelPlacement(model: ModelSummary): IslandModelPlacement {
   };
 }
 
-export function useIslandModelCatalog() {
+function createIslandModelCatalogStore() {
+  const placements = shallowRef<IslandModelPlacement[]>([]);
+  const isLoading = shallowRef(false);
+  const error = shallowRef<string | null>(null);
+  const hasLoadedOnce = shallowRef(false);
+  let loadPromise: Promise<void> | null = null;
   const { getPublicModelCatalog } = use3dModel();
 
   async function load() {
@@ -72,4 +71,10 @@ export function useIslandModelCatalog() {
     refresh,
     findById,
   };
+}
+
+export const islandModelCatalogStore = createIslandModelCatalogStore();
+
+export function useIslandModelCatalog() {
+  return islandModelCatalogStore;
 }

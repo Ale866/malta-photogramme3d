@@ -12,7 +12,7 @@ import type { CameraController } from '@/core/three/controls/CameraController'
 import type { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
 import LoginModal from '@/features/auth/components/LoginModal.vue'
 import ProfileDock from '@/features/auth/components/ProfileDock.vue'
-import { useIslandModelCatalog } from '@/features/model/application/composables/useIslandModelCatalog'
+import { islandModelCatalogStore } from '@/features/model/application/composables/useIslandModelCatalog'
 
 const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
 const { attachInteractions, renderModels, focusModel, dispose: disposeIslandModelLayer } = useIslandModelLayer()
@@ -22,7 +22,7 @@ let cameraController: CameraController | null = null
 let islandOrchestrator: IslandOrchestrator | null = null
 let isViewActive = true
 const route = useRoute()
-const { placements, ensureLoaded, findById } = useIslandModelCatalog()
+const { placements, ensureLoaded, findById } = islandModelCatalogStore
 const {
   terrainSelectionCoordinates,
   isCreateModelOpen,
