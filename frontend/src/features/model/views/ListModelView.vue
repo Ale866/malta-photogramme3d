@@ -44,7 +44,6 @@ function openDetails(modelId: string) {
 }
 
 function onViewOnIsland(modelId: string) {
-  console.log("viewmodel, ", modelId);
   router.push({ name: "Island", query: { modelId } })
 }
 

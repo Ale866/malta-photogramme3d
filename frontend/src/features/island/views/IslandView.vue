@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { inject, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useScene } from '@/features/island/composables/useScene'
 import { useIslandModelLayer } from '@/features/island/composables/useIslandModelLayer'
@@ -21,6 +21,7 @@ let viewportProjectionPort: ViewportProjectionPort | null = null
 let cameraController: CameraController | null = null
 let islandOrchestrator: IslandOrchestrator | null = null
 let isViewActive = true
+const sceneRoot = inject('sceneRoot') as { value: HTMLElement | null } | null
 const route = useRoute()
 const { placements, ensureLoaded, findById } = islandModelCatalogStore
 const {
@@ -43,7 +44,10 @@ const {
 })
 
 onMounted(async () => {
-  const container = document.getElementById('three-root')!
+  const container = sceneRoot?.value
+  if (!container) {
+    throw new Error('Scene root is not available.')
+  }
 
   try {
     islandOrchestrator = await initScene(container, {
