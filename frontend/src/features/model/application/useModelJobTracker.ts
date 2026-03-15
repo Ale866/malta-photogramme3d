@@ -45,6 +45,7 @@ export function useModelJobTracker() {
     stopPolling();
     activeJobId = null;
     realtime.disconnect();
+    trackingError.value = null;
     isSocketConnected.value = false;
     mode.value = "idle";
     isTracking.value = false;

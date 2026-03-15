@@ -2,15 +2,15 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-modal-sheet);
-  pointer-events: none;
+  pointer-events: auto;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: calc(env(safe-area-inset-top, 0px) + 0.65rem) 0.75rem 0;
+  background: rgb(0 0 0 / 0.22);
 }
 
 .model-sheet {
-  pointer-events: auto;
   width: min(640px, 100%);
   min-height: 180px;
   overflow: auto;
@@ -164,16 +164,63 @@
   font-size: 0.82rem;
 }
 
-.add-model-job-status {
+.model-job-status {
   margin: 0 0 var(--space-4);
   padding: var(--space-3);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: var(--surface-2);
 }
 
-.add-model-job-status p {
-  margin: 0.2rem 0;
+.model-job-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.model-job-status-title,
+.model-job-status-stage,
+.model-job-status-progress-label {
+  margin: 0;
+}
+
+.model-job-status-title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.model-job-status-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  font-size: 0.78rem;
+  text-transform: capitalize;
+}
+
+.model-job-status-stage {
+  margin-top: var(--space-2);
+}
+
+.model-job-status-progress {
+  margin-top: var(--space-3);
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+}
+
+.model-job-status-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgb(13 121 255 / 0.95), rgb(84 171 255 / 0.9));
+}
+
+.model-job-status-progress-label {
+  margin-top: var(--space-2);
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
 
 .model-list-page {

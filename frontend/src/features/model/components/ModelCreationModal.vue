@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
-    <div v-if="open" class="model-sheet-host">
-      <section ref="sheetRef" class="model-sheet" role="dialog" aria-modal="true" aria-label="Create model">
+    <div v-if="open" class="model-sheet-host" @click.self="close">
+      <section class="model-sheet" role="dialog" aria-modal="true" aria-label="Create model" @click.stop>
         <header class="model-sheet-header">
           <div>
             <h2 class="model-sheet-title">Create Model</h2>
@@ -13,19 +13,21 @@
         </header>
 
         <p v-if="errorMessage" class="text-error model-sheet-error">{{ errorMessage }}</p>
-        <div v-if="jobStatus" class="add-model-job-status">
-          <p><strong>Job:</strong> {{ jobStatus.jobId }}</p>
-          <p><strong>Status:</strong> {{ jobStatus.status }}</p>
-          <p><strong>Stage:</strong> {{ jobStatus.stage }}</p>
-          <p><strong>Progress:</strong> {{ jobStatus.progress }}%</p>
-          <p><strong>Mode:</strong> {{ mode }}</p>
-          <p><strong>Socket:</strong> {{ isSocketConnected ? 'connected' : 'disconnected' }}</p>
-          <p v-if="jobStatus.modelId"><strong>Model ID:</strong> {{ jobStatus.modelId }}</p>
-          <p v-if="jobStatus.error" class="text-error"><strong>Error:</strong> {{ jobStatus.error }}</p>
+        <div v-if="jobStatus" class="model-job-status">
+          <div class="model-job-status-header">
+            <p class="model-job-status-title">Processing model</p>
+            <span class="model-job-status-badge">{{ jobStatus.status }}</span>
+          </div>
+          <p class="text-muted model-job-status-stage">{{ jobStatus.stage }}</p>
+          <div class="model-job-status-progress" aria-hidden="true">
+            <span :style="{ width: `${jobStatus.progress}%` }"></span>
+          </div>
+          <p class="model-job-status-progress-label">{{ jobStatus.progress }}%</p>
+          <p v-if="jobStatus.error" class="text-error model-sheet-error">{{ jobStatus.error }}</p>
         </div>
         <p v-if="trackingError" class="text-error model-sheet-error">{{ trackingError }}</p>
 
-        <model-creation-form :coordinates="coordinates" :is-submitting="isSubmitting" submit-label="Upload model"
+        <model-creation-form :coordinates="props.coordinates" :is-submitting="isSubmitting" submit-label="Upload model"
           @submit="handleSubmit" />
       </section>
     </div>
@@ -33,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { ref, watch } from 'vue'
 import ModelCreationForm from '@/features/model/components/ModelCreationForm.vue'
 import { use3dModel } from '@/features/model/application/useModel'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
@@ -46,9 +48,6 @@ const props = withDefaults(defineProps<{
   coordinates: () => ({ x: 0, y: 0, z: 0 }),
 })
 
-const { open, coordinates } = toRefs(props)
-const sheetRef = ref<HTMLElement | null>(null)
-
 const emit = defineEmits<{
   close: []
   submitted: [jobId: string]
@@ -58,50 +57,26 @@ const { uploadModel } = use3dModel()
 const {
   job: jobStatus,
   trackingError,
-  mode,
-  isSocketConnected,
   start: startTracking,
   stop: stopTracking,
 } = useModelJobTracker()
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 
-const close = () => {
+function resetModalState() {
   stopTracking()
   jobStatus.value = null
   errorMessage.value = null
+}
+
+const close = () => {
+  resetModalState()
   emit('close')
 }
 
-const handleOutsideClick = (event: MouseEvent) => {
-  if (!open.value) return
-
-  const target = event.target as Node | null
-  const sheet = sheetRef.value
-  if (!target || !sheet) return
-
-  if (sheet.contains(target)) return
-
-  const sceneRoot = document.getElementById('three-root')
-  const isSceneClick = !!sceneRoot && sceneRoot.contains(target)
-  if (isSceneClick) return
-
-  close()
-}
-
-onMounted(() => {
-  window.addEventListener('click', handleOutsideClick, true)
-})
-
-onUnmounted(() => {
-  stopTracking()
-  window.removeEventListener('click', handleOutsideClick, true)
-})
-
-watch(open, (isOpen) => {
+watch(() => props.open, (isOpen) => {
   if (isOpen) return
-  stopTracking()
-  jobStatus.value = null
+  resetModalState()
 })
 
 const handleSubmit = async (draft: ModelCreationDraft) => {
