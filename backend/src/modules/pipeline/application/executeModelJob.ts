@@ -9,6 +9,7 @@ import type { ModelJobRepository } from "../../model-jobs/domain/modelJobReposit
 import type { ModelRepository } from "../../model/domain/modelRepository";
 import { runMeshroomPipeline } from "./runMeshroomPipeline";
 import type { PipelineServices } from "./ports";
+import { badRequest, notFound, } from "../../../shared/errors/applicationError";
 
 export type ExecuteModelJobInput = {
   jobId: string;
@@ -26,8 +27,8 @@ const JOB_UPDATE_THROTTLE_MS = 1000;
 export async function executeModelJob(services: ExecuteModelJobServices, input: ExecuteModelJobInput): Promise<void> {
   const jobId = requireJobId(input.jobId);
   const job = await services.modelJobs.findById(jobId);
-  if (!job) throw new Error("Job not found");
-  if (!job.coordinates) throw new Error("Missing job coordinates");
+  if (!job) throw notFound("Job not found", "job_not_found");
+  if (!job.coordinates) throw badRequest("Missing job coordinates", "job_coordinates_required");
 
   let stage = "starting";
   let progress = 1;
@@ -110,7 +111,7 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
 
 function requireJobId(jobId: string): string {
   const normalized = typeof jobId === "string" ? jobId.trim() : "";
-  if (!normalized) throw new Error("Missing jobId");
+  if (!normalized) throw badRequest("Missing jobId", "job_id_required");
   return normalized;
 }
 

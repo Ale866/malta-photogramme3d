@@ -4,6 +4,7 @@ import {
   clampProgress,
 } from "../domain/modelJobState";
 import type { ModelJobServices } from "./ports";
+import { badRequest, notFound, } from "../../../shared/errors/applicationError";
 
 export type CreateQueuedModelJobInput = {
   ownerId: string;
@@ -19,17 +20,18 @@ export type CreateQueuedModelJobInput = {
 };
 
 export async function createQueuedModelJob(services: ModelJobServices, input: CreateQueuedModelJobInput): Promise<ModelJob> {
-  if (!input.ownerId) throw new Error("Missing ownerId");
+  const ownerId = typeof input.ownerId === "string" ? input.ownerId.trim() : "";
+  if (!ownerId) throw badRequest("Missing ownerId", "owner_id_required");
 
   const title = typeof input.title === "string" ? input.title.trim() : "";
-  if (!title) throw new Error("Title is required");
+  if (!title) throw badRequest("Title is required", "title_required");
 
   if (!Array.isArray(input.imagePaths) || input.imagePaths.length === 0) {
-    throw new Error("No images uploaded");
+    throw badRequest("No images uploaded", "images_required");
   }
 
   return services.modelJobs.create({
-    ownerId: input.ownerId,
+    ownerId,
     title,
     status: "queued",
     imagePaths: input.imagePaths,
@@ -48,7 +50,7 @@ export async function createQueuedModelJob(services: ModelJobServices, input: Cr
 
 function requireJobId(jobId: string) {
   const normalized = typeof jobId === "string" ? jobId.trim() : "";
-  if (!normalized) throw new Error("Missing jobId");
+  if (!normalized) throw badRequest("Missing jobId", "job_id_required");
   return normalized;
 }
 
@@ -65,7 +67,7 @@ export async function setModelJobRunning(services: ModelJobServices, jobId: stri
     startedAt: job.startedAt ?? new Date(),
   });
 
-  if (!updated) throw new Error("Job not found");
+  if (!updated) throw notFound("Job not found", "job_not_found");
   return updated;
 }
 
@@ -90,7 +92,7 @@ export async function updateModelJobRuntime(services: ModelJobServices, jobId: s
   if (Array.isArray(input.logTail)) patch.logTail = input.logTail;
 
   const updated = await services.modelJobs.updateState(normalizedJobId, patch);
-  if (!updated) throw new Error("Job not found");
+  if (!updated) throw notFound("Job not found", "job_not_found");
 
   return updated;
 }
@@ -98,7 +100,7 @@ export async function updateModelJobRuntime(services: ModelJobServices, jobId: s
 export async function setModelJobSucceeded(services: ModelJobServices, jobId: string, input: { modelId: string }): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const modelId = typeof input.modelId === "string" ? input.modelId.trim() : "";
-  if (!modelId) throw new Error("Missing modelId");
+  if (!modelId) throw badRequest("Missing modelId", "model_id_required");
 
   const job = await requireExistingJob(services, normalizedJobId);
   assertModelJobStatusTransition(job.status, "succeeded");
@@ -112,7 +114,7 @@ export async function setModelJobSucceeded(services: ModelJobServices, jobId: st
     finishedAt: new Date(),
   });
 
-  if (!updated) throw new Error("Job not found");
+  if (!updated) throw notFound("Job not found", "job_not_found");
   return updated;
 }
 
@@ -131,12 +133,12 @@ export async function setModelJobFailed(services: ModelJobServices, jobId: strin
     finishedAt: new Date(),
   });
 
-  if (!updated) throw new Error("Job not found");
+  if (!updated) throw notFound("Job not found", "job_not_found");
   return updated;
 }
 
 async function requireExistingJob(services: ModelJobServices, jobId: string): Promise<ModelJob> {
   const job = await services.modelJobs.findById(jobId);
-  if (!job) throw new Error("Job not found");
+  if (!job) throw notFound("Job not found", "job_not_found");
   return job;
 }
