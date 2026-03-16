@@ -1,4 +1,4 @@
-import type { IncompleteModelJobSummary, ModelLibrary } from '@/features/model/domain/ModelLibrary';
+import type { NonCompletedModelJobSummary, ModelLibrary } from '@/features/model/domain/ModelLibrary';
 import { getModelLifecycleStatus } from '@/features/model/domain/ModelSummary';
 import type { ModelSummary } from '@/features/model/domain/ModelSummary';
 
@@ -32,7 +32,7 @@ export function toModelCardViewModels(models: readonly ModelSummary[]): ModelCar
   return models.map(toModelCardViewModel);
 }
 
-function toModelJobCardViewModel(job: IncompleteModelJobSummary): ModelCardViewModel {
+function toModelJobCardViewModel(job: NonCompletedModelJobSummary): ModelCardViewModel {
   const status = job.status === 'failed' ? 'failed' : 'pending';
 
   return {

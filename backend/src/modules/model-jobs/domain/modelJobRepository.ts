@@ -60,5 +60,5 @@ export interface ModelJobRepository {
   findById(id: string): Promise<ModelJob | null>;
   claimNextQueued(): Promise<ModelJob | null>;
   updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null>;
-  listIncompleteByOwner(ownerId: string): Promise<ModelJob[]>;
+  listNonCompletedByOwner(ownerId: string): Promise<ModelJob[]>;
 }

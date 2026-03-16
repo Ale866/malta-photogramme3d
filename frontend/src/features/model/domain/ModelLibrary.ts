@@ -1,7 +1,7 @@
 import type { ModelJobStatus } from './ModelJob';
 import type { ModelSummary } from './ModelSummary';
 
-export type IncompleteModelJobSummary = {
+export type NonCompletedModelJobSummary = {
   id: string;
   title: string;
   status: ModelJobStatus;
@@ -14,5 +14,5 @@ export type IncompleteModelJobSummary = {
 
 export type ModelLibrary = {
   models: ModelSummary[];
-  modelJobs: IncompleteModelJobSummary[];
+  modelJobs: NonCompletedModelJobSummary[];
 };

@@ -1,6 +1,6 @@
 import { getErrorMessage, http } from '@/core/api/httpClient';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
-import type { ModelLibrary, IncompleteModelJobSummary } from '@/features/model/domain/ModelLibrary';
+import type { ModelLibrary, NonCompletedModelJobSummary } from '@/features/model/domain/ModelLibrary';
 import type { ModelSummary } from '@/features/model/domain/ModelSummary';
 import type { ModelCreationDraft } from '../domain/ModelCreationDraft';
 
@@ -23,7 +23,7 @@ type ModelDto = {
 type ModelJobDto = {
   id: string;
   title: string;
-  status: IncompleteModelJobSummary['status'];
+  status: NonCompletedModelJobSummary['status'];
   stage: string;
   progress: number;
   error: string | null;
@@ -51,7 +51,7 @@ function toModelSummary(dto: ModelDto): ModelSummary {
   };
 }
 
-function toIncompleteModelJobSummary(dto: ModelJobDto): IncompleteModelJobSummary {
+function toNonCompletedModelJobSummary(dto: ModelJobDto): NonCompletedModelJobSummary {
   return {
     id: dto.id,
     title: dto.title,
@@ -96,7 +96,7 @@ export const ModelApi = {
 
       return {
         models: res.data.models.map(toModelSummary),
-        modelJobs: res.data.modelJobs.map(toIncompleteModelJobSummary),
+        modelJobs: res.data.modelJobs.map(toNonCompletedModelJobSummary),
       };
     } catch (err) {
       throw new Error(getErrorMessage(err));

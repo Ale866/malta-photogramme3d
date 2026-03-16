@@ -8,7 +8,7 @@ export async function getUserModelLibrary(services: ModelLibraryServices, input:
 
   const [models, modelJobs] = await Promise.all([
     services.models.listByOwner(ownerId),
-    services.modelJobs.listIncompleteByOwner(ownerId),
+    services.modelJobs.listNonCompletedByOwner(ownerId),
   ]);
 
   return toUserModelLibraryDto({ models, modelJobs });
