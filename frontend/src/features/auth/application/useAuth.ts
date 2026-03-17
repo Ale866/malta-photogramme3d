@@ -97,6 +97,7 @@ function createAuthStore() {
     user,
     accessToken,
     isAuthenticated,
+    clearSession: clearAuthenticatedState,
     hydrateSession,
     login,
     register,

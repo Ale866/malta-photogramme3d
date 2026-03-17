@@ -3,6 +3,8 @@ import { authStore } from './features/auth/application/useAuth'
 
 const IslandView = () => import('@/features/island/views/IslandView.vue')
 const LoginView = () => import('@/features/auth/views/LoginView.vue')
+const ForgotPasswordView = () => import('@/features/auth/views/ForgotPasswordView.vue')
+const ResetPasswordView = () => import('@/features/auth/views/ResetPasswordView.vue')
 
 const ListModelView = () => import('@/features/model/views/ListModelView.vue')
 const ModelDetailsView = () => import('@/features/model/views/ModelDetailsView.vue')
@@ -35,6 +37,8 @@ const routes = [
     ]
   },
   { path: '/login', name: "Login", component: LoginView },
+  { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPasswordView },
+  { path: '/reset-password', name: 'ResetPassword', component: ResetPasswordView },
 ]
 
 export const router = createRouter({

@@ -9,6 +9,11 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
 }
 
+function smoothstep(edge0: number, edge1: number, x: number) {
+  const t = clamp((x - edge0) / Math.max(edge1 - edge0, 1e-6), 0, 1)
+  return t * t * (3 - 2 * t)
+}
+
 function lerpColor(a: T.Color, b: T.Color, t: number) {
   return new T.Color(
     lerp(a.r, b.r, t),
@@ -18,13 +23,13 @@ function lerpColor(a: T.Color, b: T.Color, t: number) {
 }
 
 function heightToColor(h01: number) {
-  const sand = new T.Color(0xcdbb8a)
-  const grass = new T.Color(0x2f7d32)
-  const rock = new T.Color(0x6d6a63)
+  const grass = new T.Color(0x5b7f42)
+  const hill = new T.Color(0xc8b06f)
+  const rock = new T.Color(0x9b7a5e)
 
-  if (h01 < 0.18) return lerpColor(sand, grass, h01 / 0.18)
-  if (h01 < 0.75) return lerpColor(grass, rock, (h01 - 0.18) / (0.75 - 0.18))
-  return rock
+  if (h01 < 0.16) return lerpColor(grass, hill, smoothstep(0, 0.16, h01))
+  if (h01 < 0.78) return lerpColor(hill, hill.clone().offsetHSL(0, -0.04, 0.04), smoothstep(0.16, 0.78, h01))
+  return lerpColor(hill, rock, smoothstep(0.78, 1, h01))
 }
 
 export type TerrainModelResult = {

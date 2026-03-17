@@ -12,7 +12,7 @@ async function onSuccess() {
 </script>
 
 <template>
-  <div class="login-page">
+  <div class="auth-page">
     <auth-form
       login-title="Login"
       register-title="Create account"

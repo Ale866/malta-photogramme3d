@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuth } from '@/features/auth/application/useAuth'
 import type { AuthMode } from '@/features/auth/domain/AuthMode'
 
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   success: [mode: AuthMode]
 }>()
 
+const route = useRoute()
 const auth = useAuth()
 const mode = ref<AuthMode>(props.initialMode)
 const nickname = ref('')
@@ -41,6 +43,13 @@ const subtitle = computed(() =>
 const submitLabel = computed(() =>
   mode.value === 'login' ? 'Login' : 'Create account'
 )
+const forgotPasswordRoute = computed(() => {
+  const next = typeof route.query.next === 'string' ? route.query.next : undefined
+
+  return next
+    ? { name: 'ForgotPassword', query: { next } }
+    : { name: 'ForgotPassword' }
+})
 
 function clearErrors() {
   nicknameError.value = null
@@ -154,6 +163,12 @@ async function onSubmit() {
           :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" required />
         <p v-if="passwordError" class="auth-field-error">{{ passwordError }}</p>
       </label>
+
+      <div v-if="mode === 'login'" class="auth-card-actions">
+        <RouterLink class="auth-inline-link" :to="forgotPasswordRoute">
+          Forgot password?
+        </RouterLink>
+      </div>
 
       <p v-if="formError" class="auth-field-error">{{ formError }}</p>
 

@@ -1,4 +1,4 @@
-.login-page {
+.auth-page {
   max-width: 420px;
   margin: 64px auto;
   padding: var(--space-4);
@@ -29,11 +29,42 @@
   margin: 0;
 }
 
+.auth-card-status {
+  margin: 0;
+  line-height: 1.5;
+}
+
 .auth-field-error {
   margin: 0;
   font-size: 0.78rem;
   line-height: 1.25;
   color: var(--feedback-error);
+}
+
+.auth-inline-link {
+  color: var(--accent-info);
+  text-decoration: none;
+}
+
+.auth-inline-link:hover {
+  text-decoration: underline;
+}
+
+.auth-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.auth-card-footer {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.auth-password-hint,
+.auth-token-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .auth-card-switch {
