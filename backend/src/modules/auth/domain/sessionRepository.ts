@@ -20,4 +20,5 @@ export interface SessionRepository {
   create(input: CreateSessionInput): Promise<Session>;
   findByRefreshTokenHash(hash: string): Promise<SessionWithHash | null>;
   revoke(sessionId: string): Promise<void>;
+  revokeAllForUser(userId: string): Promise<void>;
 }

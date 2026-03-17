@@ -38,4 +38,11 @@ export const sessionRepo = {
       { $set: { revokedAt: new Date() } }
     );
   },
+
+  async revokeAllForUser(userId: string): Promise<void> {
+    await SessionSchema.updateMany(
+      { userId, revokedAt: null },
+      { $set: { revokedAt: new Date() } }
+    );
+  },
 };

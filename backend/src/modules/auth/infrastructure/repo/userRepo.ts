@@ -57,4 +57,11 @@ export const userRepo = {
       updatedAt: doc.updatedAt,
     };
   },
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await UserSchema.updateOne(
+      { _id: userId },
+      { $set: { passwordHash, updatedAt: new Date() } }
+    );
+  },
 };

@@ -2,6 +2,7 @@ import type { AuthServices } from './ports';
 import { ttlToMs } from '../../../shared/utils/timestamp';
 import { config } from '../../../shared/config/env';
 import { badRequest, conflict } from '../../../shared/errors/applicationError';
+import { validatePasswordOrThrow } from './passwordPolicy';
 
 type RegisterInput = {
   email: string;
@@ -11,16 +12,14 @@ type RegisterInput = {
 };
 
 export async function register(services: AuthServices, input: RegisterInput) {
-
   const email = input.email.trim().toLowerCase();
   const password = input.password;
   const nickname = input.nickname.trim();
 
   if (!email) throw badRequest('Email is required', 'email_required');
-  if (!password) throw badRequest('Password is required', 'password_required');
   if (!nickname) throw badRequest('Nickname is required', 'nickname_required');
   if (nickname.length < 3) throw badRequest('Nickname must be at least 3 characters', 'nickname_too_short');
-  if (password.length < 6) throw badRequest('Password must be at least 6 characters', 'password_too_short');
+  validatePasswordOrThrow(password);
 
   const existing = await services.users.findByEmail(email);
   if (existing) throw conflict('Email already in use', 'email_in_use');
@@ -41,6 +40,19 @@ export async function register(services: AuthServices, input: RegisterInput) {
   });
 
   const accessToken = services.signAccessToken({ sub: user.id, email: user.email });
+
+  try {
+    await services.authEmailService.sendWelcomeEmail({
+      to: user.email,
+      nickname: user.nickname,
+    });
+  } catch (error) {
+    console.error('Failed to send welcome email', {
+      userId: user.id,
+      email: user.email,
+      reason: error instanceof Error ? error.message : 'unknown_error',
+    });
+  }
 
   return {
     accessToken: accessToken.token,
