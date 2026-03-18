@@ -5,6 +5,7 @@ import { attachModelJobSocketGateway } from "./modules/model-jobs/infrastructure
 import { MongoModelJobChangeStreamSubscriber } from "./modules/model-jobs/infrastructure/realtime/mongoModelJobChangeStreamSubscriber";
 import { config } from "./shared/config/env";
 import { connectDb, disconnectDb } from "./shared/db/mongoConnection";
+import { verifyMailer } from "./shared/services/mailService";
 
 async function startServer() {
   await connectDb();
@@ -48,6 +49,14 @@ async function startServer() {
   process.once("SIGTERM", () => {
     void shutdown("SIGTERM").finally(() => process.exit(0));
   });
+
+  void verifyMailer()
+    .then(() => {
+      console.log("SMTP mailer verified");
+    })
+    .catch((error) => {
+      console.error("SMTP verification failed:", error);
+    });
 
   httpServer.listen(port, () => {
     console.log(`Express server running at http://localhost:${port}`);

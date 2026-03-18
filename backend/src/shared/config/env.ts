@@ -11,6 +11,11 @@ function parsePositiveInteger(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function parseBoolean(value: string | undefined, fallback: boolean) {
+  if (typeof value !== 'string' || value.trim() === '') return fallback;
+  return value.trim().toLowerCase() === 'true';
+}
+
 export const config = {
   PORT: Number(process.env.PORT ?? 3000),
   FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
@@ -28,7 +33,10 @@ export const config = {
     process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES,
     60
   ),
-  RESEND_API_KEY: process.env.RESEND_API_KEY ?? '',
-  RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL ?? '',
-  RESEND_FROM_NAME: process.env.RESEND_FROM_NAME ?? '',
+  SMTP_HOST: process.env.SMTP_HOST ?? 'smtp.gmail.com',
+  SMTP_PORT: parsePositiveInteger(process.env.SMTP_PORT, 465),
+  SMTP_SECURE: parseBoolean(process.env.SMTP_SECURE, true),
+  SMTP_USER: process.env.SMTP_USER ?? '',
+  SMTP_PASS: process.env.SMTP_PASS ?? '',
+  MAIL_FROM: process.env.MAIL_FROM ?? '',
 };

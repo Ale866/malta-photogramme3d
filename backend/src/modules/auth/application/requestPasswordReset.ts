@@ -42,21 +42,19 @@ export async function requestPasswordReset(
     expiresAt,
   });
 
-  try {
-    await services.authEmailService.sendPasswordResetEmail({
-      to: user.email,
-      nickname: user.nickname,
-      resetLink: buildPasswordResetLink(rawToken),
-      expiresInMinutes: config.PASSWORD_RESET_TOKEN_TTL_MINUTES,
-    });
-  } catch (error) {
+  void services.authEmailService.sendPasswordResetEmail({
+    to: user.email,
+    nickname: user.nickname,
+    resetLink: buildPasswordResetLink(rawToken),
+    expiresInMinutes: config.PASSWORD_RESET_TOKEN_TTL_MINUTES,
+  }).catch(async (error) => {
     await services.passwordResetTokens.invalidate(passwordResetToken.id, new Date());
     console.error('Failed to send password reset email', {
       userId: user.id,
       email: user.email,
       reason: error instanceof Error ? error.message : 'unknown_error',
     });
-  }
+  });
 
   return { message: GENERIC_PASSWORD_RESET_MESSAGE };
 }

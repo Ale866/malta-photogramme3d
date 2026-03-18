@@ -41,18 +41,16 @@ export async function register(services: AuthServices, input: RegisterInput) {
 
   const accessToken = services.signAccessToken({ sub: user.id, email: user.email });
 
-  try {
-    await services.authEmailService.sendWelcomeEmail({
-      to: user.email,
-      nickname: user.nickname,
-    });
-  } catch (error) {
+  void services.authEmailService.sendWelcomeEmail({
+    to: user.email,
+    nickname: user.nickname,
+  }).catch((error) => {
     console.error('Failed to send welcome email', {
       userId: user.id,
       email: user.email,
       reason: error instanceof Error ? error.message : 'unknown_error',
     });
-  }
+  });
 
   return {
     accessToken: accessToken.token,
