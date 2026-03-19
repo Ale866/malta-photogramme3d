@@ -1,9 +1,12 @@
 .auth-page {
-  max-width: 420px;
-  margin: 64px auto;
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  background: rgb(28 28 28 / 0.84);
+  width: min(560px, calc(100vw - 2rem));
+  margin: 48px auto;
+  padding: clamp(1rem, 1.8vw, 1.5rem);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgb(28 28 28 / 0.88), rgb(18 18 18 / 0.92));
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(18px);
 }
 
 .login-page-title {
@@ -13,6 +16,10 @@
 .auth-card {
   display: grid;
   gap: var(--space-4);
+}
+
+.auth-card--register {
+  gap: var(--space-3);
 }
 
 .auth-card-header {
@@ -27,6 +34,7 @@
 
 .auth-card-subtitle {
   margin: 0;
+  max-width: 52ch;
 }
 
 .auth-card-status {
@@ -53,6 +61,19 @@
 .auth-card-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.auth-form-grid {
+  gap: var(--space-3);
+}
+
+.auth-form-grid--register {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.auth-form-span-full {
+  grid-column: 1 / -1;
 }
 
 .auth-card-footer {
@@ -103,7 +124,9 @@
 }
 
 .auth-modal {
-  width: min(420px, 100%);
+  width: min(560px, 100%);
+  max-height: min(90vh, 760px);
+  overflow: auto;
   position: relative;
   background: var(--surface-1);
   color: var(--text-primary);
@@ -249,6 +272,16 @@
 }
 
 @media (max-width: 700px) {
+  .auth-page {
+    width: min(100vw - 1rem, 560px);
+    margin: 20px auto;
+    padding: var(--space-3);
+  }
+
+  .auth-form-grid--register {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .profile-dock {
     top: var(--space-3);
     right: var(--space-3);
