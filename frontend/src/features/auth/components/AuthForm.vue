@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthForm } from '@/features/auth/application/useAuthForm'
+import PasswordField from '@/features/auth/components/PasswordField.vue'
 import type { AuthMode } from '@/features/auth/domain/AuthMode'
 
 const props = withDefaults(defineProps<{
@@ -109,20 +110,26 @@ async function onSubmit() {
         <p v-if="confirmEmailError" class="auth-field-error">{{ confirmEmailError }}</p>
       </label>
 
-      <label class="form-field">
-        <span class="form-label">Password</span>
-        <input v-model="password" class="form-input" type="password"
-          :autocomplete="mode === 'login' ? 'current-password' : 'new-password'" required
-          @input="markFieldTouched('password')" @blur="markFieldTouched('password')" />
-        <p v-if="passwordError" class="auth-field-error">{{ passwordError }}</p>
-      </label>
+      <PasswordField
+        v-model="password"
+        label="Password"
+        :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+        :error="passwordError"
+        required
+        @input="markFieldTouched('password')"
+        @blur="markFieldTouched('password')"
+      />
 
-      <label v-if="mode === 'register'" class="form-field">
-        <span class="form-label">Confirm password</span>
-        <input v-model="confirmPassword" class="form-input" type="password" autocomplete="new-password" required
-          @input="markFieldTouched('confirmPassword')" @blur="markFieldTouched('confirmPassword')" />
-        <p v-if="confirmPasswordError" class="auth-field-error">{{ confirmPasswordError }}</p>
-      </label>
+      <PasswordField
+        v-if="mode === 'register'"
+        v-model="confirmPassword"
+        label="Confirm password"
+        autocomplete="new-password"
+        :error="confirmPasswordError"
+        required
+        @input="markFieldTouched('confirmPassword')"
+        @blur="markFieldTouched('confirmPassword')"
+      />
 
       <div v-if="mode === 'login'" class="auth-card-actions auth-form-span-full">
         <RouterLink class="auth-inline-link" :to="forgotPasswordRoute">

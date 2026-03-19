@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useRoute } from 'vue-router'
 import { useAuth } from '@/features/auth/application/useAuth'
+import password-field from '@/features/auth/components/password-field.vue'
 import { AuthApi, AuthApiError } from '@/features/auth/infrastructure/api'
 
 const route = useRoute()
@@ -182,30 +183,11 @@ watch(
           This link expires on {{ expiresAtLabel }}.
         </p>
 
-        <label class="form-field">
-          <span class="form-label">New password</span>
-          <input
-            v-model="password"
-            class="form-input"
-            type="password"
-            autocomplete="new-password"
-            required
-          />
-          <p class="text-muted auth-password-hint">Use at least 6 characters.</p>
-          <p v-if="passwordError" class="auth-field-error">{{ passwordError }}</p>
-        </label>
+        <password-field v-model="password" label="New password" autocomplete="new-password" :error="passwordError"
+          required />
 
-        <label class="form-field">
-          <span class="form-label">Confirm new password</span>
-          <input
-            v-model="confirmPassword"
-            class="form-input"
-            type="password"
-            autocomplete="new-password"
-            required
-          />
-          <p v-if="confirmPasswordError" class="auth-field-error">{{ confirmPasswordError }}</p>
-        </label>
+        <password-field v-model="confirmPassword" label="Confirm new password" autocomplete="new-password"
+          :error="confirmPasswordError" required />
 
         <p v-if="formError" class="auth-field-error">{{ formError }}</p>
 
