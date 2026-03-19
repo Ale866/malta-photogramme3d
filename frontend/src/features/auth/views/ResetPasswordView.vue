@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useRoute } from 'vue-router'
 import { useAuth } from '@/features/auth/application/useAuth'
-import password-field from '@/features/auth/components/password-field.vue'
+import PasswordField from '@/features/auth/components/PasswordField.vue'
 import { AuthApi, AuthApiError } from '@/features/auth/infrastructure/api'
 
 const route = useRoute()
