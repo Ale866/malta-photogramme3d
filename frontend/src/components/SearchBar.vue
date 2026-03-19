@@ -1,11 +1,21 @@
 <template>
   <div ref="rootRef" class="search">
-    <input
-      v-model="inputText"
-      class="form-input search-input"
-      placeholder="Search"
-      @keyup.enter="selectResult()"
-    />
+    <div class="search-field">
+      <input
+        v-model="inputText"
+        class="form-input search-input"
+        placeholder="Search"
+        @keyup.enter="selectResult()"
+      />
+      <span class="search-icon" aria-hidden="true">
+        <svg class="search-icon-svg" viewBox="0 0 24 24">
+          <path
+            d="M10.5 4.75a5.75 5.75 0 1 0 0 11.5a5.75 5.75 0 0 0 0-11.5Zm0-1.5a7.25 7.25 0 1 1 0 14.5a7.25 7.25 0 0 1 0-14.5Zm6.02 12.21l4.01 4.01a.75.75 0 1 1-1.06 1.06l-4.01-4.01a.75.75 0 0 1 1.06-1.06Z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+    </div>
 
     <div v-if="results.length" class="search-results">
       <button
@@ -105,30 +115,58 @@ function rankResults(entries: SearchEntry[], query: string): SearchResult[] {
 
   const queryTokens = normalizedQuery.split(/\s+/)
 
+  function scoreTokens(candidateTokens: string[]) {
+    let score = 0
+
+    for (const queryToken of queryTokens) {
+      let bestTokenScore = 0
+
+      for (const candidateToken of candidateTokens) {
+        if (candidateToken === queryToken) {
+          bestTokenScore = Math.max(bestTokenScore, 12)
+        } else if (candidateToken.startsWith(queryToken)) {
+          bestTokenScore = Math.max(bestTokenScore, 8)
+        } else if (candidateToken.includes(queryToken)) {
+          bestTokenScore = Math.max(bestTokenScore, 5)
+        } else {
+          const distance = levenshtein(queryToken, candidateToken)
+          if (distance === 1) bestTokenScore = Math.max(bestTokenScore, 4)
+          else if (distance === 2) bestTokenScore = Math.max(bestTokenScore, 2)
+        }
+      }
+
+      score += bestTokenScore
+    }
+
+    return score
+  }
+
   return entries
     .map((entry) => {
-      const nameTokens = normalize(entry.name).split(/\s+/)
+      const normalizedName = normalize(entry.name)
+      const normalizedCity = normalize(entry.city)
+      const nameTokens = normalizedName.split(/\s+/)
+      const cityTokens = normalizedCity.split(/\s+/)
       let score = 0
 
-      for (const queryToken of queryTokens) {
-        let bestTokenScore = 0
-
-        for (const nameToken of nameTokens) {
-          if (nameToken === queryToken) {
-            bestTokenScore = Math.max(bestTokenScore, 12)
-          } else if (nameToken.startsWith(queryToken)) {
-            bestTokenScore = Math.max(bestTokenScore, 8)
-          } else if (nameToken.includes(queryToken)) {
-            bestTokenScore = Math.max(bestTokenScore, 5)
-          } else {
-            const distance = levenshtein(queryToken, nameToken)
-            if (distance === 1) bestTokenScore = Math.max(bestTokenScore, 4)
-            else if (distance === 2) bestTokenScore = Math.max(bestTokenScore, 2)
-          }
-        }
-
-        score += bestTokenScore
+      if (normalizedName === normalizedQuery) {
+        score += 500
+      } else if (normalizedName.startsWith(normalizedQuery)) {
+        score += 300
+      } else if (normalizedName.includes(normalizedQuery)) {
+        score += 150
       }
+
+      if (normalizedCity === normalizedQuery) {
+        score += 700
+      } else if (normalizedCity.startsWith(normalizedQuery)) {
+        score += 120
+      } else if (normalizedCity.includes(normalizedQuery)) {
+        score += 60
+      }
+
+      score += scoreTokens(nameTokens)
+      score += Math.round(scoreTokens(cityTokens) * 0.45)
 
       if (score > 0 && queryTokens.length > 1) {
         score += 2
@@ -137,7 +175,12 @@ function rankResults(entries: SearchEntry[], query: string): SearchResult[] {
       return score > 0 ? { ...entry, score } : null
     })
     .filter((entry): entry is SearchResult => entry !== null)
-    .sort((left, right) => right.score - left.score)
+    .sort((left, right) =>
+      right.score - left.score ||
+      (right.rank ?? 0) - (left.rank ?? 0) ||
+      left.name.length - right.name.length ||
+      left.name.localeCompare(right.name)
+    )
     .slice(0, 8)
 }
 
