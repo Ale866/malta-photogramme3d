@@ -12,11 +12,37 @@
   white-space: nowrap;
 }
 
+.island-focus-exit {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 5.75rem);
+  right: calc(env(safe-area-inset-right, 0px) + 1rem);
+  z-index: var(--z-marker-button);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: var(--radius-pill);
+  background: rgb(18 18 18 / 0.82);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  padding: 0.55rem 0.95rem;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+}
+
+.island-focus-exit:hover {
+  background: rgb(28 28 28 / 0.9);
+}
+
 @media (max-width: 700px) {
   .island-marker-add-model {
     transform: translate(-50%, -165%);
     padding: 0.38rem 0.75rem;
     font-size: 0.9rem;
+  }
+
+  .island-focus-exit {
+    top: calc(env(safe-area-inset-top, 0px) + 4.9rem);
+    right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+    padding: 0.5rem 0.8rem;
+    font-size: 0.92rem;
   }
 }
 

@@ -1,4 +1,4 @@
-import { shallowRef } from 'vue'
+import { computed, shallowRef } from 'vue'
 import type { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'
 import { IslandModelInteractor } from '@/features/island/infrastructure/IslandModelInteractor'
 import { IslandModelRenderer } from '@/features/island/infrastructure/IslandModelRenderer'
@@ -10,6 +10,9 @@ type PositionedModel = {
 
 const renderer = shallowRef<IslandModelRenderer | null>(null)
 const interactor = shallowRef<IslandModelInteractor | null>(null)
+const focusedModelId = shallowRef<string | null>(null)
+let onModelFocus: ((modelId: string) => void) | null = null
+let onModelBlur: (() => void) | null = null
 
 export function useIslandModelLayer() {
   function ensureRenderer(orchestrator: IslandOrchestrator): IslandModelRenderer {
@@ -20,14 +23,21 @@ export function useIslandModelLayer() {
   }
 
   function renderModels(orchestrator: IslandOrchestrator, models: PositionedModel[]) {
+    focusedModelId.value = null
+    orchestrator.setTerrainClickEnabled(true)
     ensureRenderer(orchestrator).setModels(models)
   }
 
   function attachInteractions(
     orchestrator: IslandOrchestrator,
-    options?: { onModelFocus?: (modelId: string) => void },
+    options?: {
+      onModelFocus?: (modelId: string) => void
+      onModelBlur?: () => void
+    },
   ) {
     const currentRenderer = ensureRenderer(orchestrator)
+    onModelFocus = options?.onModelFocus ?? null
+    onModelBlur = options?.onModelBlur ?? null
     if (interactor.value) return
 
     interactor.value = new IslandModelInteractor(
@@ -36,12 +46,10 @@ export function useIslandModelLayer() {
       currentRenderer,
       {
         onModelClick: (modelId) => {
-          const coordinates = currentRenderer.getCoordinates(modelId)
-          if (!coordinates) return
-
-          orchestrator.getNavigationService().focusCoordinates(coordinates)
-          orchestrator.getNavigationService().removeMarker()
-          options?.onModelFocus?.(modelId)
+          focusModel(orchestrator, modelId)
+        },
+        onEmptyClick: () => {
+          exitFocusMode(orchestrator)
         },
       }
     )
@@ -49,15 +57,37 @@ export function useIslandModelLayer() {
 
   function focusModel(
     orchestrator: IslandOrchestrator,
-    coordinates: { x: number; y: number; z: number },
+    model: PositionedModel | string,
   ) {
-    orchestrator.getNavigationService().focusCoordinates(coordinates)
+    const currentRenderer = ensureRenderer(orchestrator)
+    const modelId = typeof model === 'string' ? model : model.id
+    const modelObject = currentRenderer.getModelObject(modelId)
+    if (!modelObject) return
+
+    focusedModelId.value = modelId
+    orchestrator.setTerrainClickEnabled(false)
+    currentRenderer.focusModel(modelId)
+    orchestrator.getCameraController().focusObject(modelObject)
     orchestrator.getNavigationService().removeMarker()
+    onModelFocus?.(modelId)
+  }
+
+  function exitFocusMode(orchestrator: IslandOrchestrator) {
+    if (!focusedModelId.value && !orchestrator.getCameraController().hasFocusView()) return
+
+    focusedModelId.value = null
+    renderer.value?.clearFocus()
+    orchestrator.getCameraController().restoreFocusView()
+    orchestrator.setTerrainClickEnabled(true)
+    onModelBlur?.()
   }
 
   function dispose() {
     interactor.value?.dispose()
     interactor.value = null
+    focusedModelId.value = null
+    onModelFocus = null
+    onModelBlur = null
     renderer.value?.dispose()
     renderer.value = null
   }
@@ -66,6 +96,9 @@ export function useIslandModelLayer() {
     attachInteractions,
     renderModels,
     focusModel,
+    exitFocusMode,
+    focusedModelId: computed(() => focusedModelId.value),
+    isFocusModeActive: computed(() => focusedModelId.value !== null),
     dispose,
   }
 }

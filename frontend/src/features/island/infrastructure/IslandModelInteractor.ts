@@ -3,6 +3,7 @@ import { IslandModelRenderer } from './IslandModelRenderer'
 
 type IslandModelInteractorOptions = {
   onModelClick?: (modelId: string) => void;
+  onEmptyClick?: () => void;
 }
 
 export class IslandModelInteractor {
@@ -10,9 +11,12 @@ export class IslandModelInteractor {
   private readonly canvas: HTMLCanvasElement
   private readonly renderer: IslandModelRenderer
   private readonly onModelClick: ((modelId: string) => void) | null
+  private readonly onEmptyClick: (() => void) | null
   private readonly raycaster = new T.Raycaster()
   private readonly pointer = new T.Vector2()
   private pointerDownClient: { x: number; y: number } | null = null
+  private rotatePointerId: number | null = null
+  private pointerDownModelId: string | null = null
   private isDragging = false
 
   constructor(
@@ -25,22 +29,25 @@ export class IslandModelInteractor {
     this.canvas = canvas
     this.renderer = renderer
     this.onModelClick = options?.onModelClick ?? null
+    this.onEmptyClick = options?.onEmptyClick ?? null
 
-    this.canvas.addEventListener('pointerdown', this.handlePointerDown)
-    this.canvas.addEventListener('pointermove', this.handlePointerMove)
-    this.canvas.addEventListener('pointerup', this.handlePointerUp)
-    this.canvas.addEventListener('pointerleave', this.handlePointerLeave)
-    this.canvas.addEventListener('pointercancel', this.handlePointerLeave)
+    this.canvas.addEventListener('pointerdown', this.handlePointerDown, { capture: true })
+    this.canvas.addEventListener('pointermove', this.handlePointerMove, { capture: true })
+    this.canvas.addEventListener('pointerup', this.handlePointerUp, { capture: true })
+    this.canvas.addEventListener('pointerleave', this.handlePointerLeave, { capture: true })
+    this.canvas.addEventListener('pointercancel', this.handlePointerLeave, { capture: true })
   }
 
   dispose() {
-    this.canvas.removeEventListener('pointerdown', this.handlePointerDown)
-    this.canvas.removeEventListener('pointermove', this.handlePointerMove)
-    this.canvas.removeEventListener('pointerup', this.handlePointerUp)
-    this.canvas.removeEventListener('pointerleave', this.handlePointerLeave)
-    this.canvas.removeEventListener('pointercancel', this.handlePointerLeave)
+    this.canvas.removeEventListener('pointerdown', this.handlePointerDown, { capture: true })
+    this.canvas.removeEventListener('pointermove', this.handlePointerMove, { capture: true })
+    this.canvas.removeEventListener('pointerup', this.handlePointerUp, { capture: true })
+    this.canvas.removeEventListener('pointerleave', this.handlePointerLeave, { capture: true })
+    this.canvas.removeEventListener('pointercancel', this.handlePointerLeave, { capture: true })
 
     this.pointerDownClient = null
+    this.pointerDownModelId = null
+    this.rotatePointerId = null
     this.isDragging = false
     this.renderer.setHoveredModel(null)
   }
@@ -50,7 +57,14 @@ export class IslandModelInteractor {
     if (event.pointerType === 'mouse' && event.button !== 0) return
 
     this.pointerDownClient = { x: event.clientX, y: event.clientY }
+    this.pointerDownModelId = this.pickModelId(event.clientX, event.clientY)
     this.isDragging = false
+
+    if (this.renderer.hasFocusedModel() && this.pointerDownModelId === this.renderer.getSelectedModelId()) {
+      event.stopPropagation()
+      this.rotatePointerId = event.pointerId
+      this.canvas.setPointerCapture(event.pointerId)
+    }
   }
 
   private readonly handlePointerMove = (event: PointerEvent) => {
@@ -60,6 +74,17 @@ export class IslandModelInteractor {
       if (Math.hypot(dx, dy) > 4) {
         this.isDragging = true
       }
+
+      if (
+        this.rotatePointerId === event.pointerId &&
+        this.renderer.hasFocusedModel() &&
+        this.pointerDownModelId === this.renderer.getSelectedModelId()
+      ) {
+        event.stopPropagation()
+        this.renderer.rotateFocusedModel(dx, dy)
+        this.pointerDownClient = { x: event.clientX, y: event.clientY }
+        return
+      }
     }
 
     this.renderer.setHoveredModel(this.pickModelId(event.clientX, event.clientY))
@@ -68,19 +93,42 @@ export class IslandModelInteractor {
   private readonly handlePointerUp = (event: PointerEvent) => {
     if (!event.isPrimary) return
 
+    const wasFocusedRotationInteraction =
+      this.rotatePointerId === event.pointerId &&
+      this.renderer.hasFocusedModel() &&
+      this.pointerDownModelId === this.renderer.getSelectedModelId()
+
+    if (wasFocusedRotationInteraction) {
+      event.stopPropagation()
+      this.releaseRotatePointer(event.pointerId)
+      this.pointerDownClient = null
+      this.pointerDownModelId = null
+      this.isDragging = false
+      return
+    }
+
     if (!this.isDragging) {
       const modelId = this.pickModelId(event.clientX, event.clientY)
       if (modelId) {
         this.onModelClick?.(modelId)
+      } else {
+        this.onEmptyClick?.()
       }
     }
 
+    this.releaseRotatePointer(event.pointerId)
     this.pointerDownClient = null
+    this.pointerDownModelId = null
     this.isDragging = false
   }
 
   private readonly handlePointerLeave = () => {
+    if (this.rotatePointerId !== null) {
+      this.releaseRotatePointer(this.rotatePointerId)
+    }
+
     this.pointerDownClient = null
+    this.pointerDownModelId = null
     this.isDragging = false
     this.renderer.setHoveredModel(null)
   }
@@ -96,5 +144,15 @@ export class IslandModelInteractor {
     const intersects = this.raycaster.intersectObjects(this.renderer.getInteractiveObjects(), true)
     const firstHit = intersects[0]?.object ?? null
     return this.renderer.getModelIdFromObject(firstHit)
+  }
+
+  private releaseRotatePointer(pointerId: number) {
+    if (this.rotatePointerId !== pointerId) return
+
+    if (this.canvas.hasPointerCapture(pointerId)) {
+      this.canvas.releasePointerCapture(pointerId)
+    }
+
+    this.rotatePointerId = null
   }
 }

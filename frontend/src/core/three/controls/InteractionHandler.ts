@@ -15,7 +15,7 @@ export class InteractionHandler {
     onClick: (point: T.Vector3) => void,
     onMiss: () => void,
     scene: T.Scene,
-    terrainObject?: T.Object3D
+    terrainObject?: T.Object3D,
   ) {
     this.canvas.addEventListener('pointerdown', (event) => {
       if (!event.isPrimary) return

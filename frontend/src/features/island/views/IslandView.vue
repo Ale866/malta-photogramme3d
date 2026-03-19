@@ -15,7 +15,14 @@ import ProfileDock from '@/features/auth/components/ProfileDock.vue'
 import { islandModelCatalogStore } from '@/features/model/application/composables/useIslandModelCatalog'
 
 const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
-const { attachInteractions, renderModels, focusModel, dispose: disposeIslandModelLayer } = useIslandModelLayer()
+const {
+  attachInteractions,
+  renderModels,
+  focusModel,
+  exitFocusMode,
+  isFocusModeActive,
+  dispose: disposeIslandModelLayer,
+} = useIslandModelLayer()
 let stopCameraChangeListener: (() => void) | null = null
 let viewportProjectionPort: ViewportProjectionPort | null = null
 let cameraController: CameraController | null = null
@@ -43,7 +50,28 @@ const {
   getViewportProjectionPort: () => viewportProjectionPort,
 })
 
+function handleSearchSelected(query: SearchEntry) {
+  if (isFocusModeActive.value && islandOrchestrator) {
+    exitFocusMode(islandOrchestrator)
+  }
+
+  onSearchSelected(query)
+}
+
+function exitFocusedModel() {
+  if (!islandOrchestrator) return
+
+  exitFocusMode(islandOrchestrator)
+}
+
+function handleWindowKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !isFocusModeActive.value || !islandOrchestrator) return
+
+  exitFocusMode(islandOrchestrator)
+}
+
 onMounted(async () => {
+  window.addEventListener('keydown', handleWindowKeydown)
   const container = sceneRoot?.value
   if (!container) {
     throw new Error('Scene root is not available.')
@@ -88,7 +116,7 @@ onMounted(async () => {
       const focusedModel = findById(focusedModelId)
       if (focusedModel) {
         clearTerrainSelection()
-        focusModel(islandOrchestrator, focusedModel.coordinates)
+        focusModel(islandOrchestrator, focusedModel)
       }
     }
 
@@ -105,6 +133,7 @@ function onMobileJoystickMove(input: { x: number; y: number }) {
 }
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleWindowKeydown)
   isViewActive = false
   disposeIslandModelLayer()
   cameraController?.setMobileMoveInput({ x: 0, y: 0 })
@@ -123,10 +152,18 @@ onUnmounted(() => {
 
 <template>
   <div class="island-view-root">
-    <search-bar @search-selected="onSearchSelected"></search-bar>
+    <search-bar @search-selected="handleSearchSelected"></search-bar>
     <button v-if="markerButtonVisible" class="btn btn-primary btn-pill island-marker-add-model" type="button"
       :style="markerButtonStyle" @click.stop="openCreateModel">
       Add model
+    </button>
+    <button
+      v-if="isFocusModeActive"
+      class="btn island-focus-exit"
+      type="button"
+      @click.stop="exitFocusedModel"
+    >
+      Back to island
     </button>
     <model-creation-modal :open="isCreateModelOpen" :coordinates="terrainSelectionCoordinates!" @close="closeCreateModel" />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />

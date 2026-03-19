@@ -19,6 +19,7 @@ export class IslandOrchestrator {
   private navigationService: NavigationService | null = null
   private markerRenderer: MarkerRenderer | null = null
   private onTerrainClick: ((coordinates: MappedCoordinates | null) => void) | null = null
+  private terrainClicksEnabled = true
 
   constructor() {
     this.sceneRenderer = new SceneRenderer()
@@ -79,12 +80,16 @@ export class IslandOrchestrator {
 
     this.interactionHandler.setupClickHandler(
       (point) => {
+        if (!this.terrainClicksEnabled) return
         this.navigationService?.selectTerrainCoordinates(point)
         this.emitTerrainClick(point)
       },
-      () => { this.emitTerrainClick(null) },
+      () => {
+        if (!this.terrainClicksEnabled) return
+        this.emitTerrainClick(null)
+      },
       this.sceneRenderer.getScene(),
-      this.terrainService.getTerrainObject() || undefined
+      this.terrainService.getTerrainObject() || undefined,
     )
 
     this.sceneRenderer.startRenderLoop(
@@ -108,6 +113,10 @@ export class IslandOrchestrator {
 
   setOnTerrainClick(handler: ((coordinates: MappedCoordinates | null) => void) | null) {
     this.onTerrainClick = handler
+  }
+
+  setTerrainClickEnabled(enabled: boolean) {
+    this.terrainClicksEnabled = enabled
   }
 
   getCoordinateMapper() {
