@@ -1,6 +1,7 @@
 import { ModelApi } from "../infrastructure/api";
 import { requireAccessToken } from "@/features/auth/application/useAuth";
 import type { ModelCreationDraft } from "../domain/ModelCreationDraft";
+import type { ModelJobDetails } from "../domain/ModelJobDetails";
 import type { ModelLibrary } from "../domain/ModelLibrary";
 import type { ModelJobSnapshot } from "../domain/ModelJob";
 
@@ -32,10 +33,17 @@ export function use3dModel() {
     return result;
   }
 
+  async function getModelJobDetails(jobId: string): Promise<ModelJobDetails> {
+    const accessToken = await requireAccessToken();
+    const result = await ModelApi.getModelJobDetails(jobId, accessToken);
+    return result;
+  }
+
   return {
     uploadModel,
     getModelLibrary,
     getPublicModelCatalog,
     getModelJobStatus,
+    getModelJobDetails,
   }
 }

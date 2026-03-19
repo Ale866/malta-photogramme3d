@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { use3dModel } from '@/features/model/application/useModel';
 import { useModelLibraryAutoRefresh } from '@/features/model/application/useModelLibraryAutoRefresh';
-import { toModelLibraryCardViewModels } from '@/features/model/application/presenters/modelCardPresenter';
+import { toModelLibraryCardViewModels, type ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter';
 import ModelListCard from '@/features/model/components/ModelListCard.vue';
 import type { ModelLibrary } from '../domain/ModelLibrary';
 
@@ -50,8 +50,13 @@ async function loadModels() {
   }
 }
 
-function openDetails(modelId: string) {
-  void router.push({ name: 'ModelDetails', params: { modelId } });
+function openDetails(card: ModelCardViewModel) {
+  if (card.type === 'job') {
+    void router.push({ name: 'ModelJobDetails', params: { jobId: card.id } });
+    return;
+  }
+
+  void router.push({ name: 'ModelDetails', params: { modelId: card.id } });
 }
 
 function onViewOnIsland(modelId: string) {

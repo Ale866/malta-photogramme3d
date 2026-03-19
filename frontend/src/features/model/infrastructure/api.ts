@@ -1,4 +1,5 @@
 import { getErrorMessage, http } from '@/core/api/httpClient';
+import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 import type { ModelLibrary, NonCompletedModelJobSummary } from '@/features/model/domain/ModelLibrary';
 import type { ModelSummary } from '@/features/model/domain/ModelSummary';
@@ -31,6 +32,22 @@ type ModelJobDto = {
   updatedAt: string;
 };
 
+type ModelJobDetailsDto = {
+  jobId: string;
+  title: string;
+  status: ModelJobSnapshot['status'];
+  stage: string;
+  progress: number;
+  error: string | null;
+  modelId: string | null;
+  coordinates: { x: number, y: number, z: number } | null;
+  imageCount: number;
+  createdAt: string;
+  updatedAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+};
+
 type ModelLibraryDto = {
   models: ModelDto[];
   modelJobs: ModelJobDto[];
@@ -61,6 +78,24 @@ function toNonCompletedModelJobSummary(dto: ModelJobDto): NonCompletedModelJobSu
     error: dto.error,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
+  };
+}
+
+function toModelJobDetails(dto: ModelJobDetailsDto): ModelJobDetails {
+  return {
+    jobId: dto.jobId,
+    title: dto.title,
+    status: dto.status,
+    stage: dto.stage,
+    progress: dto.progress,
+    error: dto.error ?? undefined,
+    modelId: dto.modelId ?? undefined,
+    coordinates: dto.coordinates,
+    imageCount: dto.imageCount,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    startedAt: dto.startedAt ?? undefined,
+    finishedAt: dto.finishedAt ?? undefined,
   };
 }
 
@@ -128,6 +163,23 @@ export const ModelApi = {
       });
 
       return res.data;
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async getModelJobDetails(jobId: string, accessToken: string): Promise<ModelJobDetails> {
+    try {
+      const normalizedJobId = jobId.trim();
+      if (!normalizedJobId) throw new Error('Job ID is required');
+
+      const res = await http.get<ModelJobDetailsDto>(`/model-jobs/${normalizedJobId}/details`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return toModelJobDetails(res.data);
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }

@@ -33,6 +33,7 @@ const routes = [
         },
         component: ListModelView,
       },
+      { path: 'jobs/:jobId', name: "ModelJobDetails", meta: { requiresAuth: true }, component: ModelDetailsView },
       { path: ':modelId', name: "ModelDetails", meta: { requiresAuth: true }, component: ModelDetailsView },
     ]
   },

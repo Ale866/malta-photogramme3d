@@ -13,18 +13,7 @@
         </header>
 
         <p v-if="errorMessage" class="text-error model-sheet-error">{{ errorMessage }}</p>
-        <div v-if="jobStatus" class="model-job-status">
-          <div class="model-job-status-header">
-            <p class="model-job-status-title">Processing model</p>
-            <span class="model-job-status-badge">{{ jobStatus.status }}</span>
-          </div>
-          <p class="text-muted model-job-status-stage">{{ jobStatus.stage }}</p>
-          <div class="model-job-status-progress" aria-hidden="true">
-            <span :style="{ width: `${jobStatus.progress}%` }"></span>
-          </div>
-          <p class="model-job-status-progress-label">{{ jobStatus.progress }}%</p>
-          <p v-if="jobStatus.error" class="text-error model-sheet-error">{{ jobStatus.error }}</p>
-        </div>
+        <model-job-status-panel v-if="jobStatus" :job="jobStatus" />
         <p v-if="trackingError" class="text-error model-sheet-error">{{ trackingError }}</p>
 
         <model-creation-form :coordinates="props.coordinates" :is-submitting="isSubmitting" submit-label="Upload model"
@@ -37,6 +26,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import ModelCreationForm from '@/features/model/components/ModelCreationForm.vue'
+import ModelJobStatusPanel from '@/features/model/components/ModelJobStatusPanel.vue'
 import { use3dModel } from '@/features/model/application/useModel'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelCreationDraft } from '@/features/model/domain/ModelCreationDraft'

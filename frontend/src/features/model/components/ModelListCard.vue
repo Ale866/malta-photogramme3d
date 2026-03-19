@@ -4,13 +4,12 @@ import type { ModelCardViewModel } from '@/features/model/application/presenters
 const props = defineProps<{ card: ModelCardViewModel }>();
 
 const emit = defineEmits<{
-  (event: 'open-details', modelId: string): void;
+  (event: 'open-details', card: ModelCardViewModel): void;
   (event: 'view-on-island', modelId: string): void;
 }>();
 
 const openDetails = () => {
-  if (props.card.type !== 'model') return;
-  emit('open-details', props.card.id);
+  emit('open-details', props.card);
 };
 
 const viewOnIsland = () => {
