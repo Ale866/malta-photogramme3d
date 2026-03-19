@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { use3dModel } from '@/features/model/application/useModel';
+import { useModelLibraryAutoRefresh } from '@/features/model/application/useModelLibraryAutoRefresh';
 import { toModelLibraryCardViewModels } from '@/features/model/application/presenters/modelCardPresenter';
 import ModelListCard from '@/features/model/components/ModelListCard.vue';
 import type { ModelLibrary } from '../domain/ModelLibrary';
@@ -17,6 +18,16 @@ const errorMessage = ref<string | null>(null);
 const modelSource = computed(() => route.meta.modelSource as 'private' | 'public' | undefined);
 const pageTitle = computed(() => typeof route.meta.title === 'string' ? route.meta.title : 'Models');
 const cards = computed(() => toModelLibraryCardViewModels(library.value));
+const pendingJobIds = computed(() => {
+  if (modelSource.value !== 'private' || !library.value) return [];
+
+  return library.value.modelJobs
+    .filter((job) => job.status === 'queued' || job.status === 'running')
+    .map((job) => job.id);
+});
+const autoRefresh = useModelLibraryAutoRefresh({
+  onRefresh: loadModels,
+});
 
 async function loadModels() {
   if (modelSource.value !== 'private' && modelSource.value !== 'public') {
@@ -50,6 +61,19 @@ function onViewOnIsland(modelId: string) {
 watch(() => modelSource.value, async () => {
   await loadModels();
 }, { immediate: true });
+
+watch(
+  () => pendingJobIds.value,
+  async (jobIds) => {
+    if (modelSource.value !== 'private') {
+      autoRefresh.stop();
+      return;
+    }
+
+    await autoRefresh.watchJobs(jobIds);
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
