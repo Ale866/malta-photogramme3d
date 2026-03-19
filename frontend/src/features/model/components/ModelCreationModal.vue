@@ -3,12 +3,13 @@
     <div v-if="open" class="model-sheet-host" @click.self="close">
       <section class="model-sheet" role="dialog" aria-modal="true" aria-label="Create model" @click.stop>
         <header class="model-sheet-header">
-          <div>
-            <h2 class="model-sheet-title">Create Model</h2>
-            <p class="text-muted model-sheet-subtitle">Tap on the map to change selection at any time.</p>
-          </div>
+          <h2 class="model-sheet-title">Create Model</h2>
           <button type="button" class="btn btn-icon model-sheet-close" aria-label="Close popup" @click="close">
-            X
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 6 6 18" />
+              <path d="M6 6l12 12" />
+            </svg>
           </button>
         </header>
 

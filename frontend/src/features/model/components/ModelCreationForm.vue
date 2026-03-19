@@ -10,31 +10,70 @@
     </div>
 
     <div class="model-form-upload" @dragover.prevent @drop.prevent="handleDrop">
-      <p>Drag and drop images here, or click to select files</p>
+      <div class="model-form-upload-copy">
+        <span class="model-form-upload-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 16V5" />
+            <path d="m7.5 9.5 4.5-4.5 4.5 4.5" />
+            <path d="M5 19h14" />
+          </svg>
+        </span>
+        <p class="model-form-upload-title">Add reconstruction images</p>
+        <p class="model-form-upload-hint">Drag and drop images here, or click to browse files.</p>
+        <p v-if="files.length > 0" class="model-form-upload-count">
+          {{ files.length }} {{ files.length === 1 ? 'image selected' : 'images selected' }}
+        </p>
+      </div>
       <input class="model-form-upload-input" type="file" multiple accept="image/*" @change="handleFileSelect" />
     </div>
 
     <div v-if="files.length > 0" class="model-form-carousel">
-      <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Previous slide"
-        @click="showPrevious">
-        &lt;
-      </button>
+      <div class="model-form-carousel-track">
+        <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Previous slide"
+          :disabled="totalPages <= 1" @click="showPrevious">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
 
-      <div class="model-form-carousel-slide">
-        <div class="model-form-carousel-grid" :style="{ '--carousel-columns': String(columnsPerSlide) }">
-          <div v-for="entry in visibleFiles" :key="entry.index" class="model-form-image-wrap">
-            <img class="model-form-image" :src="entry.file.preview" alt="preview" />
-            <button type="button" class="model-form-delete" aria-label="Remove image" @click="removeFile(entry.index)">
-              x
-            </button>
+        <div class="model-form-carousel-slide">
+          <div class="model-form-carousel-grid" :style="{ '--carousel-columns': String(columnsPerSlide) }">
+            <div v-for="entry in visibleFiles" :key="entry.index" class="model-form-image-wrap">
+              <div class="model-form-image-frame">
+                <img class="model-form-image" :src="entry.file.preview" alt="preview" />
+                <div class="model-form-image-overlay">
+                  <span class="model-form-image-name">{{ entry.file.file.name }}</span>
+                </div>
+              </div>
+              <button type="button" class="model-form-delete" aria-label="Remove image"
+                @click="removeFile(entry.index)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6 6 18" />
+                  <path d="M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
-        <p class="text-muted model-form-counter">Slide {{ currentPage + 1 }} / {{ totalPages }}</p>
+
+        <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Next slide"
+          :disabled="totalPages <= 1" @click="showNext">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
       </div>
 
-      <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Next slide" @click="showNext">
-        &gt;
-      </button>
+      <div v-if="totalPages > 1" class="model-form-pagination" aria-label="Image pages">
+        <button v-for="page in pageIndexes" :key="page" type="button" class="model-form-pagination-dot"
+          :class="{ 'model-form-pagination-dot--active': page === currentPage }"
+          :aria-label="`Go to image page ${page + 1}`" :aria-current="page === currentPage ? 'true' : undefined"
+          @click="goToPage(page)" />
+      </div>
     </div>
 
     <button class="btn btn-primary btn-block" type="submit" :disabled="isSubmitting">{{ submitLabel }}</button>
@@ -81,6 +120,10 @@ const itemsPerSlide = computed(() => columnsPerSlide.value)
 
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(files.value.length / itemsPerSlide.value))
+)
+
+const pageIndexes = computed(() =>
+  Array.from({ length: totalPages.value }, (_, index) => index)
 )
 
 const visibleFiles = computed(() => {
@@ -164,6 +207,11 @@ const showPrevious = () => {
 const showNext = () => {
   if (totalPages.value <= 1) return
   currentPage.value = (currentPage.value + 1) % totalPages.value
+}
+
+const goToPage = (page: number) => {
+  if (page < 0 || page >= totalPages.value) return
+  currentPage.value = page
 }
 
 const submitForm = () => {
