@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import type { ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter';
 
 const props = defineProps<{ card: ModelCardViewModel }>();
@@ -22,6 +23,8 @@ const statusLabelByStatus = {
   pending: 'Processing',
   failed: 'Failed',
 } as const;
+
+const { placeLabel } = usePlaceLabel(() => props.card.locationCoordinates)
 </script>
 
 <template>
@@ -35,8 +38,8 @@ const statusLabelByStatus = {
 
     <div class="model-list-card-meta">
       <div>
-        <div>Coordinates</div>
-        <div>{{ card.coordinates }}</div>
+        <div>Location</div>
+        <div>{{ placeLabel }}</div>
       </div>
       <div>
         <div>Date</div>

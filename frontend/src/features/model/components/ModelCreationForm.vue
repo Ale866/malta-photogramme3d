@@ -6,7 +6,7 @@
     </div>
 
     <div v-if="coordinates" class="model-form-coordinates">
-      {{ coordinates.x }}, {{ coordinates.y }}, {{ coordinates.z }}
+      Selected area: {{ placeLabel }}
     </div>
 
     <div class="model-form-upload" @dragover.prevent @drop.prevent="handleDrop">
@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
+import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import type { ModelCreationDraft } from '@/features/model/domain/ModelCreationDraft'
 
 interface UploadedFile {
@@ -100,6 +101,7 @@ const props = withDefaults(defineProps<{
 })
 
 const { coordinates, isSubmitting, submitLabel } = toRefs(props)
+const { placeLabel } = usePlaceLabel(() => coordinates.value)
 
 const emit = defineEmits<{
   submit: [payload: ModelCreationDraft]

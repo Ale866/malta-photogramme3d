@@ -1,0 +1,13 @@
+export const MALTA_TERRAIN_UTM_BBOX = {
+  minE: 426480.6836,
+  minN: 3960443.4018,
+  maxE: 461756.6479,
+  maxN: 3993330.0808,
+} as const
+
+export const MALTA_TERRAIN_LOCAL_BBOX = {
+  minX: -149.9267506586036,
+  maxX: 149.92675065860362,
+  minZ: -139.8315887451172,
+  maxZ: 139.8315887451172,
+} as const

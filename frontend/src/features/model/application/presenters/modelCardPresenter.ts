@@ -8,7 +8,8 @@ export type ModelCardViewModel = {
   createdAt: string;
   title: string;
   modelPlaceholderLabel: string;
-  coordinates: string;
+  locationCoordinates: { x: number; y: number; z: number } | null;
+  locationLabel: string;
   date: string;
   status: 'ready' | 'pending' | 'failed';
 };
@@ -22,7 +23,8 @@ export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
     createdAt: model.createdAt,
     title: model.title,
     modelPlaceholderLabel: '3D preview placeholder',
-    coordinates: `${model.coordinates.x}, ${model.coordinates.y}, ${model.coordinates.z}`,
+    locationCoordinates: model.coordinates,
+    locationLabel: 'Resolving location...',
     date: model.createdAt,
     status,
   };
@@ -41,7 +43,8 @@ function toModelJobCardViewModel(job: NonCompletedModelJobSummary): ModelCardVie
     createdAt: job.createdAt,
     title: job.title,
     modelPlaceholderLabel: 'Pipeline job',
-    coordinates: 'Not available until processing finishes',
+    locationCoordinates: null,
+    locationLabel: 'Not available until processing finishes',
     date: job.createdAt,
     status,
   };

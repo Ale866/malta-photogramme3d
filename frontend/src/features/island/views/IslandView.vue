@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inject, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { MALTA_TERRAIN_UTM_BBOX } from '@/core/config/maltaTerrainBounds'
 import { useScene } from '@/features/island/composables/useScene'
 import { useIslandModelLayer } from '@/features/island/composables/useIslandModelLayer'
 import { useIslandSelectionFlow } from '@/features/island/composables/useIslandSelectionFlow'
@@ -80,12 +81,7 @@ onMounted(async () => {
   try {
     islandOrchestrator = await initScene(container, {
       terrainUrl: '/terrain/malta.glb',
-      utmBbox: {
-        minE: 426480.6836,
-        minN: 3960443.4018,
-        maxE: 461756.6479,
-        maxN: 3993330.0808,
-      },
+      utmBbox: MALTA_TERRAIN_UTM_BBOX,
     })
 
     if (!isViewActive || !islandOrchestrator) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
 
 const props = defineProps<{
@@ -14,15 +15,6 @@ const emit = defineEmits<{
 
 const openGeneratedModel = () => {
   emit('open-generated-model')
-}
-
-const coordinateFormatter = new Intl.NumberFormat(undefined, {
-  maximumFractionDigits: 3,
-})
-
-function formatCoordinates(coordinates: { x: number; y: number; z: number } | null | undefined) {
-  if (!coordinates) return 'Not available'
-  return `${coordinateFormatter.format(coordinates.x)}, ${coordinateFormatter.format(coordinates.y)}, ${coordinateFormatter.format(coordinates.z)}`
 }
 
 function formatDate(value: string | undefined) {
@@ -53,6 +45,7 @@ function clampProgress(progress: number) {
 
 const progressValue = computed(() => clampProgress(props.job.progress))
 const stageLabel = computed(() => formatLabel(props.job.stage))
+const { placeLabel } = usePlaceLabel(() => props.job.coordinates!)
 
 const summary = computed(() => {
   switch (props.job.status) {
@@ -69,7 +62,7 @@ const summary = computed(() => {
 
 const details = computed(() => [
   { label: 'Images', value: String(props.job.imageCount) },
-  { label: 'Coordinates', value: formatCoordinates(props.job.coordinates) },
+  { label: 'Location', value: placeLabel.value },
   { label: 'Created', value: formatDate(props.job.createdAt) },
 ])
 </script>

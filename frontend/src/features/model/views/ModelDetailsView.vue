@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import { useAuth } from '@/features/auth/application/useAuth'
 import ModelJobDetailsPage from '@/features/model/components/ModelJobDetailsPage.vue'
 import ModelPreviewViewport from '@/features/model/components/ModelPreviewViewport.vue'
@@ -20,15 +21,6 @@ const {
 
 const auth = useAuth()
 
-const coordinateFormatter = new Intl.NumberFormat(undefined, {
-  maximumFractionDigits: 3,
-})
-
-function formatCoordinates(coordinates: { x: number; y: number; z: number } | null | undefined) {
-  if (!coordinates) return 'Not available'
-  return `${coordinateFormatter.format(coordinates.x)}, ${coordinateFormatter.format(coordinates.y)}, ${coordinateFormatter.format(coordinates.z)}`
-}
-
 function formatDate(value: string) {
   const parsed = Date.parse(value)
   if (Number.isNaN(parsed)) return value
@@ -40,6 +32,7 @@ function formatDate(value: string) {
 }
 
 const backLabel = computed(() => detailSource.value === 'catalog' ? 'Back to catalog' : 'Back to my models')
+const { placeLabel: modelLocationLabel } = usePlaceLabel(() => modelDetails.value!.coordinates)
 
 const ownerName = computed(() => {
   const model = modelDetails.value
@@ -57,7 +50,7 @@ const modelMeta = computed(() => {
   return [
     { label: 'Creator', value: ownerName.value },
     { label: 'Published', value: formatDate(model.createdAt) },
-    { label: 'Coordinates', value: formatCoordinates(model.coordinates) },
+    { label: 'Location', value: modelLocationLabel.value },
   ]
 })
 </script>
