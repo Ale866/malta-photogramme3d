@@ -2,7 +2,7 @@ import { ref, watch } from 'vue'
 import type { LocalCoordinates } from '@/core/domain/Coordinates'
 import { resolvePlaceLabelForLocalCoordinates } from '@/core/infrastructure/placeIndex'
 
-export function usePlaceLabel(getCoordinates: () => LocalCoordinates | null) {
+export function usePlaceLabel(getCoordinates: () => LocalCoordinates | null | undefined) {
   const placeLabel = ref('Unknown area')
 
   watch(

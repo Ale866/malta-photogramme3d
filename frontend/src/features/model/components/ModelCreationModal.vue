@@ -14,11 +14,16 @@
         </header>
 
         <p v-if="errorMessage" class="text-error model-sheet-error">{{ errorMessage }}</p>
-        <model-job-status-panel v-if="jobStatus" :job="jobStatus" />
-        <p v-if="trackingError" class="text-error model-sheet-error">{{ trackingError }}</p>
 
-        <model-creation-form :coordinates="props.coordinates" :is-submitting="isSubmitting" submit-label="Upload model"
-          @submit="handleSubmit" />
+        <model-creation-form
+          :coordinates="props.coordinates"
+          :is-submitting="isSubmitting"
+          :is-locked="Boolean(submittedJobId)"
+          :submitted-job-id="submittedJobId"
+          :submit-label="submittedJobId ? 'Model submitted' : 'Upload model'"
+          @submit="handleSubmit"
+          @open-job-details="openJobDetails"
+        />
       </section>
     </div>
   </Teleport>
@@ -27,9 +32,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import ModelCreationForm from '@/features/model/components/ModelCreationForm.vue'
-import ModelJobStatusPanel from '@/features/model/components/ModelJobStatusPanel.vue'
 import { use3dModel } from '@/features/model/application/useModel'
-import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelCreationDraft } from '@/features/model/domain/ModelCreationDraft'
 
 const props = withDefaults(defineProps<{
@@ -41,28 +44,27 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   close: []
-  submitted: [jobId: string]
+  openJobDetails: [jobId: string]
 }>()
 
 const { uploadModel } = use3dModel()
-const {
-  job: jobStatus,
-  trackingError,
-  start: startTracking,
-  stop: stopTracking,
-} = useModelJobTracker()
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
+const submittedJobId = ref<string | null>(null)
 
 function resetModalState() {
-  stopTracking()
-  jobStatus.value = null
   errorMessage.value = null
+  submittedJobId.value = null
 }
 
 const close = () => {
   resetModalState()
   emit('close')
+}
+
+const openJobDetails = () => {
+  if (!submittedJobId.value) return
+  emit('openJobDetails', submittedJobId.value)
 }
 
 watch(() => props.open, (isOpen) => {
@@ -81,8 +83,7 @@ const handleSubmit = async (draft: ModelCreationDraft) => {
       ...draft,
       coordinates: props.coordinates ?? draft.coordinates,
     })
-    await startTracking(result.jobId)
-    emit('submitted', result.jobId)
+    submittedJobId.value = result.jobId
   } catch (err) {
     errorMessage.value = err instanceof Error ? err.message : 'Upload failed'
   } finally {

@@ -2,30 +2,47 @@
   <form class="model-form" @submit.prevent="submitForm">
     <div class="form-field">
       <label class="form-label" for="title">Title</label>
-      <input id="title" class="form-input" v-model="title" type="text" placeholder="Model title" required />
+      <input
+        id="title"
+        class="form-input"
+        v-model="title"
+        type="text"
+        placeholder="Model title"
+        :disabled="isDisabled"
+        required
+      />
     </div>
 
     <div v-if="coordinates" class="model-form-coordinates">
       Selected area: {{ placeLabel }}
     </div>
 
-    <div class="model-form-upload" @dragover.prevent @drop.prevent="handleDrop">
-      <div class="model-form-upload-copy">
-        <span class="model-form-upload-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M12 16V5" />
-            <path d="m7.5 9.5 4.5-4.5 4.5 4.5" />
-            <path d="M5 19h14" />
-          </svg>
-        </span>
-        <p class="model-form-upload-title">Add reconstruction images</p>
-        <p class="model-form-upload-hint">Drag and drop images here, or click to browse files.</p>
-        <p v-if="files.length > 0" class="model-form-upload-count">
-          {{ files.length }} {{ files.length === 1 ? 'image selected' : 'images selected' }}
-        </p>
-      </div>
-      <input class="model-form-upload-input" type="file" multiple accept="image/*" @change="handleFileSelect" />
+    <div v-if="submittedJobId" class="model-form-inline-success">
+      <p class="model-form-inline-success-title">Model job created</p>
+      <p class="model-form-inline-success-copy">You can keep inspecting the uploaded images here, or open the details page to follow the progress.</p>
+      <button class="btn btn-primary model-form-inline-success-button" type="button" @click="openJobDetails">
+        Open job details
+      </button>
+    </div>
+    <div v-else class="model-form-upload" :class="{ 'model-form-upload--disabled': isDisabled }" @dragover.prevent @drop.prevent="handleDrop">
+      <template>
+        <div class="model-form-upload-copy">
+          <span class="model-form-upload-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 16V5" />
+              <path d="m7.5 9.5 4.5-4.5 4.5 4.5" />
+              <path d="M5 19h14" />
+            </svg>
+          </span>
+          <p class="model-form-upload-title">Add reconstruction images</p>
+          <p class="model-form-upload-hint">Drag and drop images here, or click to browse files.</p>
+          <p v-if="files.length > 0" class="model-form-upload-count">
+            {{ files.length }} {{ files.length === 1 ? 'image selected' : 'images selected' }}
+          </p>
+        </div>
+        <input class="model-form-upload-input" type="file" multiple accept="image/*" :disabled="isDisabled" @change="handleFileSelect" />
+      </template>
     </div>
 
     <div v-if="files.length > 0" class="model-form-carousel">
@@ -48,6 +65,7 @@
                 </div>
               </div>
               <button type="button" class="model-form-delete" aria-label="Remove image"
+                :disabled="isDisabled"
                 @click="removeFile(entry.index)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round" aria-hidden="true">
@@ -76,7 +94,7 @@
       </div>
     </div>
 
-    <button class="btn btn-primary btn-block" type="submit" :disabled="isSubmitting">{{ submitLabel }}</button>
+    <button class="btn btn-primary btn-block" type="submit" :disabled="isDisabled">{{ submitLabel }}</button>
   </form>
 </template>
 
@@ -93,24 +111,30 @@ interface UploadedFile {
 const props = withDefaults(defineProps<{
   coordinates: { x: number, y: number, z: number }
   isSubmitting?: boolean
+  isLocked?: boolean
+  submittedJobId?: string | null
   submitLabel?: string
 }>(), {
   coordinates: () => ({ x: 0, y: 0, z: 0 }),
   isSubmitting: false,
+  isLocked: false,
+  submittedJobId: null,
   submitLabel: 'Submit',
 })
 
-const { coordinates, isSubmitting, submitLabel } = toRefs(props)
+const { coordinates, isSubmitting, isLocked, submittedJobId, submitLabel } = toRefs(props)
 const { placeLabel } = usePlaceLabel(() => coordinates.value)
 
 const emit = defineEmits<{
   submit: [payload: ModelCreationDraft]
+  openJobDetails: []
 }>()
 
 const title = ref('')
 const files = ref<UploadedFile[]>([])
 const currentPage = ref(0)
 const viewportWidth = ref(1024)
+const isDisabled = computed(() => isSubmitting.value || isLocked.value)
 
 const columnsPerSlide = computed(() => {
   if (viewportWidth.value <= 420) return 2
@@ -139,6 +163,10 @@ const updateViewportWidth = () => {
   viewportWidth.value = window.innerWidth
 }
 
+const openJobDetails = () => {
+  emit('openJobDetails')
+}
+
 onMounted(() => {
   updateViewportWidth()
   window.addEventListener('resize', updateViewportWidth)
@@ -156,6 +184,7 @@ watch(itemsPerSlide, () => {
 })
 
 const handleFileSelect = (event: Event) => {
+  if (isDisabled.value) return
   const input = event.target as HTMLInputElement
   if (!input.files) return
 
@@ -175,6 +204,7 @@ const handleFileSelect = (event: Event) => {
 }
 
 const handleDrop = (event: DragEvent) => {
+  if (isDisabled.value) return
   if (!event.dataTransfer?.files) return
   Array.from(event.dataTransfer.files).forEach(file => {
     if (!file.type.startsWith('image/')) return
@@ -190,6 +220,7 @@ const handleDrop = (event: DragEvent) => {
 }
 
 const removeFile = (index: number) => {
+  if (isDisabled.value) return
   files.value.splice(index, 1)
   if (files.value.length === 0) {
     currentPage.value = 0

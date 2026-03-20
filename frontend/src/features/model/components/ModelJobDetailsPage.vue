@@ -8,7 +8,6 @@ const props = defineProps<{
   trackingError: string | null
   canOpenGeneratedModel: boolean
 }>()
-
 const emit = defineEmits<{
   (event: 'open-generated-model'): void
 }>()

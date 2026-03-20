@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { MALTA_TERRAIN_UTM_BBOX } from '@/core/config/maltaTerrainBounds'
 import { useScene } from '@/features/island/composables/useScene'
 import { useIslandModelLayer } from '@/features/island/composables/useIslandModelLayer'
@@ -31,6 +31,7 @@ let islandOrchestrator: IslandOrchestrator | null = null
 let isViewActive = true
 const sceneRoot = inject('sceneRoot') as { value: HTMLElement | null } | null
 const route = useRoute()
+const router = useRouter()
 const { placements, ensureLoaded, findById } = islandModelCatalogStore
 const {
   terrainSelectionCoordinates,
@@ -63,6 +64,10 @@ function exitFocusedModel() {
   if (!islandOrchestrator) return
 
   exitFocusMode(islandOrchestrator)
+}
+
+function openCreatedJobDetails(jobId: string) {
+  void router.push({ name: 'ModelJobDetails', params: { jobId }, query: { from: 'list' } })
 }
 
 function handleWindowKeydown(event: KeyboardEvent) {
@@ -161,7 +166,12 @@ onUnmounted(() => {
     >
       Back to island
     </button>
-    <model-creation-modal :open="isCreateModelOpen" :coordinates="terrainSelectionCoordinates!" @close="closeCreateModel" />
+    <model-creation-modal
+      :open="isCreateModelOpen"
+      :coordinates="terrainSelectionCoordinates!"
+      @close="closeCreateModel"
+      @open-job-details="openCreatedJobDetails"
+    />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
     <profile-dock />
     <mobile-joystick class="island-mobile-joystick" @move="onMobileJoystickMove" />

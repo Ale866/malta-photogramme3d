@@ -32,7 +32,7 @@ function formatDate(value: string) {
 }
 
 const backLabel = computed(() => detailSource.value === 'catalog' ? 'Back to catalog' : 'Back to my models')
-const { placeLabel: modelLocationLabel } = usePlaceLabel(() => modelDetails.value!.coordinates)
+const { placeLabel: modelLocationLabel } = usePlaceLabel(() => modelDetails.value?.coordinates)
 
 const ownerName = computed(() => {
   const model = modelDetails.value
