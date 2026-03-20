@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuth } from '@/features/auth/application/useAuth'
+import ModelJobDetailsPage from '@/features/model/components/ModelJobDetailsPage.vue'
 import ModelPreviewViewport from '@/features/model/components/ModelPreviewViewport.vue'
 import { useModelDetails } from '@/features/model/application/useModelDetails'
 
@@ -14,7 +15,6 @@ const {
   isLoading,
   goBack,
   openGeneratedModel,
-  openGeneratedModelOnIsland,
   openCurrentModelOnIsland,
 } = useModelDetails()
 
@@ -37,14 +37,6 @@ function formatDate(value: string) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(parsed)
-}
-
-function formatStageLabel(stage: string | null | undefined) {
-  if (!stage) return 'Awaiting update'
-  return stage
-    .replace(/[_-]+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (segment) => segment.toUpperCase())
 }
 
 const backLabel = computed(() => detailSource.value === 'catalog' ? 'Back to catalog' : 'Back to my models')
@@ -112,8 +104,8 @@ const modelMeta = computed(() => {
               </button>
             </div>
 
-            <dl class="model-summary-facts">
-              <div v-for="item in modelMeta" :key="item.label" class="model-summary-fact">
+            <dl class="model-summary-details">
+              <div v-for="item in modelMeta" :key="item.label" class="model-summary-detail">
                 <dt>{{ item.label }}</dt>
                 <dd>{{ item.value }}</dd>
               </div>
@@ -123,28 +115,12 @@ const modelMeta = computed(() => {
       </template>
 
       <template v-else-if="liveJobDetails">
-        <section class="model-details-state-card">
-          <p class="model-details-state-eyebrow">Model Job</p>
-          <h1 class="model-job-fallback-title">{{ liveJobDetails.title }}</h1>
-          <p class="text-muted">Job details will be refined in the next pass.</p>
-          <p class="model-job-fallback-status">
-            Status: {{ formatStageLabel(liveJobDetails.status) }} - {{ liveJobDetails.progress }}%
-          </p>
-          <p class="text-muted">{{ formatStageLabel(liveJobDetails.stage) }}</p>
-
-          <div class="model-summary-actions" v-if="liveJobDetails.modelId">
-            <button class="btn btn-primary" type="button" @click="openGeneratedModel">
-              Open generated model
-            </button>
-            <button class="btn" type="button" @click="openGeneratedModelOnIsland">
-              View on island
-            </button>
-          </div>
-
-          <p v-if="trackingError" class="text-error model-details-inline-error">
-            {{ trackingError }}
-          </p>
-        </section>
+        <model-job-details-page
+          :job="liveJobDetails"
+          :tracking-error="trackingError"
+          :can-open-generated-model="Boolean(liveJobDetails.modelId)"
+          @open-generated-model="openGeneratedModel"
+        />
       </template>
     </div>
   </section>

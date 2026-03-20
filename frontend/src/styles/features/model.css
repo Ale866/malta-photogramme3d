@@ -640,7 +640,8 @@
 .model-preview-label,
 .model-preview-caption,
 .model-summary-title,
-.model-job-fallback-title {
+.model-job-title,
+.model-job-panel-header h2 {
   margin: 0;
 }
 
@@ -655,7 +656,8 @@
 
 .model-preview-caption,
 .model-summary-copy,
-.model-job-fallback-status,
+.model-job-summary,
+.model-job-error,
 .model-details-inline-error {
   margin: 0;
 }
@@ -695,13 +697,13 @@
   align-self: start;
 }
 
-.model-summary-facts {
+.model-summary-details {
   margin: 0;
   display: grid;
   gap: 0.75rem;
 }
 
-.model-summary-fact {
+.model-summary-detail {
   display: grid;
   gap: 0.3rem;
   padding: 0.9rem 0.95rem;
@@ -710,7 +712,7 @@
   background: rgb(255 255 255 / 0.03);
 }
 
-.model-summary-fact dt {
+.model-summary-detail dt {
   margin: 0;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -718,16 +720,141 @@
   color: #aabbd3;
 }
 
-.model-summary-fact dd {
+.model-summary-detail dd {
   margin: 0;
   font-size: 1rem;
   color: var(--text-primary);
   word-break: break-word;
 }
 
-.model-job-fallback-title {
-  margin-top: var(--space-2);
-  font-size: 1.6rem;
+.model-job-details-layout {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.model-job-progress-card {
+  padding: clamp(1.15rem, 2vw, 1.5rem);
+  border: 1px solid rgb(155 174 212 / 0.14);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgb(48 120 207 / 0.12), transparent 32%),
+    linear-gradient(180deg, rgb(12 18 28 / 0.96), rgb(8 12 20 / 0.96));
+  box-shadow: 0 26px 72px rgb(0 0 0 / 0.26);
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  min-height: 34rem;
+}
+
+.model-job-eyebrow,
+.model-job-stage-label,
+.model-job-detail-card dt {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9ec8ff;
+}
+
+.model-job-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  max-width: 18ch;
+}
+
+.model-job-summary {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.model-job-stage-value,
+.model-job-detail-card dd {
+  margin: 0;
+}
+
+.model-job-stage-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.model-job-progress-value {
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.model-job-stage-value {
+  margin-top: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.model-job-progress-bar {
+  height: 1rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+
+.model-job-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0d79ff, #4aa3ff);
+  transition: width 160ms ease;
+}
+
+.model-job-progress-note {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.model-job-error {
+  margin: 0;
+  max-width: 42rem;
+}
+
+.model-job-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.model-job-action-button {
+  padding: 0.7rem 1rem;
+  font-size: 0.92rem;
+}
+
+.model-job-details-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.model-job-detail-card {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  background: rgb(255 255 255 / 0.03);
+}
+
+.model-job-detail-card dt {
+  color: #aabbd3;
+  letter-spacing: 0.08em;
+}
+
+.model-job-detail-card dd {
+  word-break: break-word;
 }
 
 @media (max-width: 700px) {
@@ -755,6 +882,7 @@
   }
 
   .model-viewer-panel,
+  .model-job-progress-card,
   .model-summary-panel,
   .model-details-state-card {
     border-radius: 20px;
@@ -762,6 +890,18 @@
 
   .model-viewer-stage {
     min-height: 22rem;
+  }
+
+  .model-job-progress-card {
+    min-height: auto;
+  }
+
+  .model-job-stage-row {
+    display: grid;
+  }
+
+  .model-job-details-grid {
+    grid-template-columns: 1fr;
   }
 
   .model-form-coordinates {
@@ -772,6 +912,14 @@
 @media (min-width: 701px) and (max-width: 980px) {
   .model-details-layout {
     grid-template-columns: 1fr;
+  }
+
+  .model-job-progress-card {
+    min-height: 30rem;
+  }
+
+  .model-job-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .model-viewer-stage {
