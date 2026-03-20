@@ -51,12 +51,14 @@ async function loadModels() {
 }
 
 function openDetails(card: ModelCardViewModel) {
+  const from = modelSource.value === 'public' ? 'catalog' : 'list';
+
   if (card.type === 'job') {
-    void router.push({ name: 'ModelJobDetails', params: { jobId: card.id } });
+    void router.push({ name: 'ModelJobDetails', params: { jobId: card.id }, query: { from } });
     return;
   }
 
-  void router.push({ name: 'ModelDetails', params: { modelId: card.id } });
+  void router.push({ name: 'ModelDetails', params: { modelId: card.id }, query: { from } });
 }
 
 function onViewOnIsland(modelId: string) {

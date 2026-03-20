@@ -14,6 +14,7 @@ export type UploadResponse = {
 type ModelDto = {
   id: string;
   ownerId: string;
+  ownerNickname: string;
   title: string;
   sourceJobId: string | null;
   outputFolder: string;
@@ -59,6 +60,7 @@ function toModelSummary(dto: ModelDto): ModelSummary {
   return {
     id: dto.id,
     ownerId: dto.ownerId,
+    ownerNickname: dto.ownerNickname,
     title: dto.title,
     sourceJobId: dto.sourceJobId ?? null,
     outputFolder: dto.outputFolder,

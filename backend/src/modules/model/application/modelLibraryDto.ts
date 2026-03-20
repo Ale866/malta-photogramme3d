@@ -4,6 +4,7 @@ import type { Model } from '../domain/modelRepository';
 export type ModelListItemDto = {
   id: string;
   ownerId: string;
+  ownerNickname: string;
   title: string;
   sourceJobId: string | null;
   outputFolder: string;
@@ -30,11 +31,13 @@ export type UserModelLibraryDto = {
 export function toUserModelLibraryDto(input: {
   models: Model[];
   modelJobs: ModelJob[];
+  ownerNicknames: ReadonlyMap<string, string>;
 }): UserModelLibraryDto {
   return {
     models: input.models.map((model) => ({
       id: model.id,
       ownerId: model.ownerId,
+      ownerNickname: input.ownerNicknames.get(model.ownerId) ?? 'Unknown user',
       title: model.title,
       sourceJobId: model.sourceJobId,
       outputFolder: model.outputFolder,
@@ -52,4 +55,17 @@ export function toUserModelLibraryDto(input: {
       updatedAt: job.updatedAt,
     })),
   };
+}
+
+export function toModelCatalogDto(input: { models: Model[]; ownerNicknames: ReadonlyMap<string, string>; }): ModelListItemDto[] {
+  return input.models.map((model) => ({
+    id: model.id,
+    ownerId: model.ownerId,
+    ownerNickname: input.ownerNicknames.get(model.ownerId) ?? 'Unknown user',
+    title: model.title,
+    sourceJobId: model.sourceJobId,
+    outputFolder: model.outputFolder,
+    createdAt: model.createdAt,
+    coordinates: model.coordinates,
+  }));
 }

@@ -8,14 +8,17 @@ import {
 } from "../../../shared/errors/applicationError";
 import { modelRepo } from "../infrastructure/modelRepo";
 import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
+import { authServices } from "../../auth/infrastructure/authServices";
 
 const modelLibraryDependencies = {
   models: modelRepo,
   modelJobs: modelJobRepo,
+  users: authServices.users,
 };
 
 const modelDependencies = {
   models: modelRepo,
+  users: authServices.users,
 };
 
 export async function getUserModelsController(req: AuthedRequest, res: Response) {

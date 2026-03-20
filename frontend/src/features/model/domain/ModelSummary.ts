@@ -3,6 +3,7 @@ import type { ModelJobSnapshot } from './ModelJob';
 export type ModelSummary = {
   id: string;
   ownerId: string;
+  ownerNickname: string;
   title: string;
   sourceJobId: string | null;
   outputFolder: string;

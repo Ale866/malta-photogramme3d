@@ -1,6 +1,7 @@
 import type { ModelLibraryServices } from './ports';
 import { toUserModelLibraryDto, type UserModelLibraryDto } from './modelLibraryDto';
 import { badRequest } from '../../../shared/errors/applicationError';
+import { resolveOwnerNicknames } from './resolveOwnerNicknames';
 
 export async function getUserModelLibrary(services: ModelLibraryServices, input: { ownerId: string }): Promise<UserModelLibraryDto> {
   const ownerId = typeof input.ownerId === "string" ? input.ownerId.trim() : "";
@@ -11,5 +12,7 @@ export async function getUserModelLibrary(services: ModelLibraryServices, input:
     services.modelJobs.listNonCompletedByOwner(ownerId),
   ]);
 
-  return toUserModelLibraryDto({ models, modelJobs });
+  const ownerNicknames = await resolveOwnerNicknames(services.users, models.map((model) => model.ownerId));
+
+  return toUserModelLibraryDto({ models, modelJobs, ownerNicknames });
 }

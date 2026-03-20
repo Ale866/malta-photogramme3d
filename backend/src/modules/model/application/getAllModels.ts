@@ -1,7 +1,11 @@
 import { ModelsServices } from "./ports";
+import { toModelCatalogDto } from './modelLibraryDto';
+import { resolveOwnerNicknames } from './resolveOwnerNicknames';
 
 
-export function getAllModels(services: ModelsServices){
+export async function getAllModels(services: ModelsServices){
+  const models = await services.models.listAllPublic();
+  const ownerNicknames = await resolveOwnerNicknames(services.users, models.map((model) => model.ownerId));
 
-  return services.models.listAllPublic()
+  return toModelCatalogDto({ models, ownerNicknames });
 }
