@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuth } from '@/features/auth/application/useAuth'
+import ModelPreviewViewport from '@/features/model/components/ModelPreviewViewport.vue'
 import { useModelDetails } from '@/features/model/application/useModelDetails'
 
 const {
@@ -94,7 +95,7 @@ const modelMeta = computed(() => {
         <div class="model-details-layout">
           <section class="model-viewer-panel">
             <div class="model-viewer-stage">
-              
+              <model-preview-viewport />
             </div>
           </section>
 
@@ -106,7 +107,7 @@ const modelMeta = computed(() => {
             </p>
 
             <div class="model-summary-actions">
-              <button class="btn btn-primary" type="button" @click="openCurrentModelOnIsland">
+              <button class="btn btn-primary model-summary-island-button" type="button" @click="openCurrentModelOnIsland">
                 View on island
               </button>
             </div>
