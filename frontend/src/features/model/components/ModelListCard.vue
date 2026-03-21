@@ -2,11 +2,19 @@
 import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import type { ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter';
 
-const props = defineProps<{ card: ModelCardViewModel }>();
+const props = withDefaults(defineProps<{
+  card: ModelCardViewModel;
+  showVoting?: boolean;
+  voteDisabled?: boolean;
+}>(), {
+  showVoting: false,
+  voteDisabled: false,
+});
 
 const emit = defineEmits<{
   (event: 'open-details', card: ModelCardViewModel): void;
   (event: 'view-on-island', modelId: string): void;
+  (event: 'toggle-vote', card: ModelCardViewModel): void;
 }>();
 
 const openDetails = () => {
@@ -25,6 +33,12 @@ const statusLabelByStatus = {
 } as const;
 
 const { placeLabel } = usePlaceLabel(() => props.card.locationCoordinates)
+
+function toggleVote() {
+  if (props.card.type !== 'model') return
+  emit('toggle-vote', props.card)
+}
+
 </script>
 
 <template>
@@ -35,6 +49,15 @@ const { placeLabel } = usePlaceLabel(() => props.card.locationCoordinates)
     </header>
 
     <div class="model-list-card-preview">{{ card.modelPlaceholderLabel }}</div>
+
+    <div v-if="showVoting && card.type === 'model'" class="model-list-card-votes">
+      <div class="model-list-card-vote-count">
+        {{ card.voteCount }} {{ card.voteCount === 1 ? 'vote' : 'votes' }}
+      </div>
+      <button class="btn" type="button" :disabled="voteDisabled" @click.stop="toggleVote">
+        {{ card.hasVoted ? 'Remove vote' : 'Vote' }}
+      </button>
+    </div>
 
     <div class="model-list-card-meta">
       <div>

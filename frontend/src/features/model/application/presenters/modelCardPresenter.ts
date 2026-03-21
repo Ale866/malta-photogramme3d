@@ -4,13 +4,15 @@ import type { ModelSummary } from '@/features/model/domain/ModelSummary';
 
 export type ModelCardViewModel = {
   id: string;
+  ownerId: string | null;
   type: 'model' | 'job';
   createdAt: string;
   title: string;
   modelPlaceholderLabel: string;
   locationCoordinates: { x: number; y: number; z: number } | null;
-  locationLabel: string;
   date: string;
+  voteCount: number,
+  hasVoted: boolean,
   status: 'ready' | 'pending' | 'failed';
 };
 
@@ -19,14 +21,16 @@ export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
 
   return {
     id: model.id,
+    ownerId: model.ownerId,
     type: 'model',
     createdAt: model.createdAt,
     title: model.title,
     modelPlaceholderLabel: '3D preview placeholder',
     locationCoordinates: model.coordinates,
-    locationLabel: 'Resolving location...',
     date: model.createdAt,
     status,
+    voteCount: model.voteCount,
+    hasVoted: model.hasVoted,
   };
 }
 
@@ -39,14 +43,16 @@ function toModelJobCardViewModel(job: NonCompletedModelJobSummary): ModelCardVie
 
   return {
     id: job.id,
+    ownerId: null,
     type: 'job',
     createdAt: job.createdAt,
     title: job.title,
     modelPlaceholderLabel: 'Pipeline job',
     locationCoordinates: job.coordinates,
-    locationLabel: 'Resolving location...',
     date: job.createdAt,
     status,
+    voteCount: 0,
+    hasVoted: false,
   };
 }
 

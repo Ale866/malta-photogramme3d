@@ -1,9 +1,10 @@
 import { ModelApi } from "../infrastructure/api";
-import { requireAccessToken } from "@/features/auth/application/useAuth";
+import { authStore, requireAccessToken } from "@/features/auth/application/useAuth";
 import type { ModelCreationDraft } from "../domain/ModelCreationDraft";
 import type { ModelJobDetails } from "../domain/ModelJobDetails";
 import type { ModelLibrary } from "../domain/ModelLibrary";
 import type { ModelJobSnapshot } from "../domain/ModelJob";
+import type { ModelVoteState } from "../domain/ModelSummary";
 
 export function use3dModel() {
   async function uploadModel(input: ModelCreationDraft) {
@@ -23,8 +24,20 @@ export function use3dModel() {
   }
 
   async function getPublicModelCatalog(): Promise<ModelLibrary> {
-    const result = await ModelApi.getPublicModelCatalog();
+    await authStore.hydrateSession();
+    const accessToken = authStore.getAccessToken();
+    const result = await ModelApi.getPublicModelCatalog(accessToken);
     return result;
+  }
+
+  async function voteForModel(modelId: string): Promise<ModelVoteState> {
+    const accessToken = await requireAccessToken();
+    return ModelApi.voteForModel(modelId, accessToken);
+  }
+
+  async function unvoteForModel(modelId: string): Promise<ModelVoteState> {
+    const accessToken = await requireAccessToken();
+    return ModelApi.unvoteForModel(modelId, accessToken);
   }
 
   async function getModelJobStatus(jobId: string): Promise<ModelJobSnapshot> {
@@ -43,6 +56,8 @@ export function use3dModel() {
     uploadModel,
     getModelLibrary,
     getPublicModelCatalog,
+    voteForModel,
+    unvoteForModel,
     getModelJobStatus,
     getModelJobDetails,
   }

@@ -532,6 +532,18 @@
   gap: var(--space-2);
 }
 
+.model-list-card-votes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.model-list-card-vote-count {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
 .model-list-card-meta div {
   display: grid;
   gap: 0.2rem;

@@ -2,7 +2,7 @@ import { getErrorMessage, http } from '@/core/api/httpClient';
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 import type { ModelLibrary, NonCompletedModelJobSummary } from '@/features/model/domain/ModelLibrary';
-import type { ModelSummary } from '@/features/model/domain/ModelSummary';
+import type { ModelSummary, ModelVoteState } from '@/features/model/domain/ModelSummary';
 import type { ModelCreationDraft } from '../domain/ModelCreationDraft';
 
 export type UploadResponse = {
@@ -20,6 +20,8 @@ type ModelDto = {
   outputFolder: string;
   createdAt: string;
   coordinates: { x: number, y: number, z: number };
+  voteCount: number;
+  hasVoted: boolean;
 };
 
 type ModelJobDto = {
@@ -56,6 +58,12 @@ type ModelLibraryDto = {
 };
 
 type PublicModelCatalogDto = ModelDto[];
+type ModelVoteStateDto = {
+  message: string;
+  modelId: string;
+  voteCount: number;
+  hasVoted: boolean;
+};
 
 function toModelSummary(dto: ModelDto): ModelSummary {
   return {
@@ -67,6 +75,8 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     outputFolder: dto.outputFolder,
     createdAt: dto.createdAt,
     coordinates: dto.coordinates,
+    voteCount: dto.voteCount,
+    hasVoted: dto.hasVoted,
     modelJob: null,
   };
 }
@@ -82,6 +92,14 @@ function toNonCompletedModelJobSummary(dto: ModelJobDto): NonCompletedModelJobSu
     coordinates: dto.coordinates,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
+  };
+}
+
+function toModelVoteState(dto: ModelVoteStateDto): ModelVoteState {
+  return {
+    modelId: dto.modelId,
+    voteCount: dto.voteCount,
+    hasVoted: dto.hasVoted,
   };
 }
 
@@ -142,9 +160,13 @@ export const ModelApi = {
     }
   },
 
-  async getPublicModelCatalog(): Promise<ModelLibrary> {
+  async getPublicModelCatalog(accessToken?: string | null): Promise<ModelLibrary> {
     try {
-      const res = await http.get<PublicModelCatalogDto>('/model/catalog');
+      const res = await http.get<PublicModelCatalogDto>('/model/catalog', {
+        headers: accessToken ? {
+          Authorization: `Bearer ${accessToken}`,
+        } : undefined,
+      });
 
       return {
         models: res.data.map(toModelSummary),
@@ -188,4 +210,32 @@ export const ModelApi = {
       throw new Error(getErrorMessage(err));
     }
   },
+
+  async voteForModel(modelId: string, accessToken: string): Promise<ModelVoteState> {
+    try {
+      const res = await http.post<ModelVoteStateDto>(`/model/${modelId}/vote`, undefined, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        }
+      })
+
+      return toModelVoteState(res.data);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async unvoteForModel(modelId: string, accessToken: string): Promise<ModelVoteState> {
+    try {
+      const res = await http.delete<ModelVoteStateDto>(`/model/${modelId}/vote`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        }
+      })
+
+      return toModelVoteState(res.data);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  }
 };

@@ -1,5 +1,11 @@
 import type { ModelJobSnapshot } from './ModelJob';
 
+export type ModelVoteState = {
+  modelId: string;
+  voteCount: number;
+  hasVoted: boolean;
+};
+
 export type ModelSummary = {
   id: string;
   ownerId: string;
@@ -9,6 +15,8 @@ export type ModelSummary = {
   outputFolder: string;
   createdAt: string;
   coordinates: { x: number, y: number, z: number };
+  voteCount: number;
+  hasVoted: boolean;
   modelJob?: ModelJobSnapshot | null;
 };
 
