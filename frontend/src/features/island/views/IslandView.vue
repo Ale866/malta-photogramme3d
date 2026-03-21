@@ -32,7 +32,7 @@ let isViewActive = true
 const sceneRoot = inject('sceneRoot') as { value: HTMLElement | null } | null
 const route = useRoute()
 const router = useRouter()
-const { placements, ensureLoaded, findById } = islandModelCatalogStore
+const { placements, ensureLoaded, refresh, findById } = islandModelCatalogStore
 const {
   terrainSelectionCoordinates,
   isCreateModelOpen,
@@ -76,6 +76,22 @@ function handleWindowKeydown(event: KeyboardEvent) {
   exitFocusMode(islandOrchestrator)
 }
 
+async function focusRequestedModel(modelId: string) {
+  if (!islandOrchestrator) return
+
+  let focusedModel = findById(modelId)
+  if (!focusedModel) {
+    await refresh()
+    renderModels(islandOrchestrator, placements.value)
+    focusedModel = findById(modelId)
+  }
+
+  if (!focusedModel) return
+
+  clearTerrainSelection()
+  focusModel(islandOrchestrator, focusedModel)
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', handleWindowKeydown)
   const container = sceneRoot?.value
@@ -114,11 +130,7 @@ onMounted(async () => {
 
     const focusedModelId = typeof route.query.modelId === 'string' ? route.query.modelId : null
     if (focusedModelId) {
-      const focusedModel = findById(focusedModelId)
-      if (focusedModel) {
-        clearTerrainSelection()
-        focusModel(islandOrchestrator, focusedModel)
-      }
+      await focusRequestedModel(focusedModelId)
     }
 
     stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
