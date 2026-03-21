@@ -33,6 +33,10 @@ const modelSchema = new Schema(
       type: Date,
       default: null,
     },
+    userVotesIds: {
+      type: [String],
+      default: [],
+    }
   },
   { timestamps: true }
 );

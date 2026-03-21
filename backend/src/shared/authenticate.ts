@@ -22,3 +22,21 @@ export function authenticate(req: AuthedRequest, res: Response, next: NextFuncti
     return sendErrorResponse(res, unauthorized('Invalid or expired token', 'invalid_access_token'))
   }
 }
+
+export function optionalAuthenticate(req: AuthedRequest, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization
+  if (!header?.startsWith('Bearer ')) {
+    return next()
+  }
+
+  const token = header.slice('Bearer '.length).trim()
+
+  try {
+    const payload = authServices.verifyAccessToken(token)
+    req.user = payload
+  } catch {
+    req.user = undefined
+  }
+
+  return next()
+}

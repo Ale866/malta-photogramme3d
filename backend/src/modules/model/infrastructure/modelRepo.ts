@@ -10,6 +10,7 @@ function toDomain(doc: any): Model {
     outputFolder: doc.outputFolder,
     createdAt: doc.createdAt,
     coordinates: doc.coordinates,
+    userVotesIds: doc.userVotesIds || []
   };
 }
 
@@ -21,6 +22,7 @@ export const modelRepo: ModelRepository = {
       sourceJobId: input.sourceJobId ?? undefined,
       outputFolder: input.outputFolder,
       coordinates: input.coordinates,
+      userVotesIds: [],
     });
 
     return toDomain(created);
@@ -37,8 +39,18 @@ export const modelRepo: ModelRepository = {
     return docs.map(toDomain);
   },
 
-  async listAllPublic(): Promise<Model[]> {
+  async listCatalog(): Promise<Model[]> {
     const docs = await ModelSchema.find().sort({ createdAt: -1 }).lean();
     return docs.map(toDomain);
+  },
+
+  async vote(modelId: string, userId: string) {
+    const result = await ModelSchema.updateOne({ _id: modelId }, { $addToSet: { userVotesIds: userId } });
+    return { changed: result.modifiedCount > 0 };
+  },
+
+  async unvote(modelId: string, userId: string) {
+    const result = await ModelSchema.updateOne({ _id: modelId }, { $pull: { userVotesIds: userId } });
+    return { changed: result.modifiedCount > 0 };
   }
 };

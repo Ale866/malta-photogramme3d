@@ -10,6 +10,8 @@ export type ModelListItemDto = {
   outputFolder: string;
   createdAt: Date;
   coordinates: { x: number; y: number; z: number };
+  voteCount: number;
+  hasVoted: boolean;
 };
 
 export type ModelJobListItemDto = {
@@ -43,6 +45,8 @@ export function toUserModelLibraryDto(input: {
       outputFolder: model.outputFolder,
       createdAt: model.createdAt,
       coordinates: model.coordinates,
+      voteCount: model.userVotesIds.length,
+      hasVoted: false,
     })),
     modelJobs: input.modelJobs.map((job) => ({
       id: job.id,
@@ -57,7 +61,11 @@ export function toUserModelLibraryDto(input: {
   };
 }
 
-export function toModelCatalogDto(input: { models: Model[]; ownerNicknames: ReadonlyMap<string, string>; }): ModelListItemDto[] {
+export function toModelCatalogDto(input: {
+  models: Model[];
+  ownerNicknames: ReadonlyMap<string, string>;
+  currentUserId?: string;
+}): ModelListItemDto[] {
   return input.models.map((model) => ({
     id: model.id,
     ownerId: model.ownerId,
@@ -67,5 +75,9 @@ export function toModelCatalogDto(input: { models: Model[]; ownerNicknames: Read
     outputFolder: model.outputFolder,
     createdAt: model.createdAt,
     coordinates: model.coordinates,
+    voteCount: model.userVotesIds.length,
+    hasVoted: typeof input.currentUserId === 'string' && input.currentUserId.length > 0
+      ? model.userVotesIds.includes(input.currentUserId)
+      : false,
   }));
 }

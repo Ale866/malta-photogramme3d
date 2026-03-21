@@ -6,6 +6,7 @@ export type Model = {
   outputFolder: string;
   createdAt: Date;
   coordinates: { x: number, y: number, z: number };
+  userVotesIds: string[];
 };
 
 export type CreateModelInput = {
@@ -16,9 +17,15 @@ export type CreateModelInput = {
   coordinates: { x: number, y: number, z: number };
 };
 
+export type VoteChangeResult = {
+  changed: boolean;
+};
+
 export interface ModelRepository {
   create(input: CreateModelInput): Promise<Model>;
   findById(id: string): Promise<Model | null>;
-  listAllPublic(): Promise<Model[]>;
+  listCatalog(): Promise<Model[]>;
   listByOwner(ownerId: string): Promise<Model[]>;
+  vote(modelId: string, userId: string): Promise<VoteChangeResult>;
+  unvote(modelId: string, userId: string): Promise<VoteChangeResult>;
 }

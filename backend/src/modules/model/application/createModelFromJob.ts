@@ -2,7 +2,7 @@ import type { ModelsServices } from './ports';
 import type { CreateModelInput, Model } from '../domain/modelRepository';
 import { badRequest } from '../../../shared/errors/applicationError';
 
-export async function createModelFromJob(services: ModelsServices, input: CreateModelInput): Promise<Model> {
+export async function createModelFromJob(services: Pick<ModelsServices, 'models'>, input: CreateModelInput): Promise<Model> {
   const ownerId = typeof input.ownerId === 'string' ? input.ownerId.trim() : '';
   if (!ownerId) throw badRequest('Missing ownerId', 'owner_id_required');
 
