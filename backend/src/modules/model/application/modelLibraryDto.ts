@@ -21,6 +21,7 @@ export type ModelJobListItemDto = {
   stage: string;
   progress: number;
   error: string | null;
+  coordinates: { x: number; y: number; z: number } | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -55,6 +56,7 @@ export function toUserModelLibraryDto(input: {
       stage: job.stage,
       progress: job.progress,
       error: job.error,
+      coordinates: job.coordinates,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
     })),

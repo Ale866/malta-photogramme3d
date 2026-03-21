@@ -2,15 +2,8 @@
   <form class="model-form" @submit.prevent="submitForm">
     <div class="form-field">
       <label class="form-label" for="title">Title</label>
-      <input
-        id="title"
-        class="form-input"
-        v-model="title"
-        type="text"
-        placeholder="Model title"
-        :disabled="isDisabled"
-        required
-      />
+      <input id="title" class="form-input" v-model="title" type="text" placeholder="Model title" :disabled="isDisabled"
+        required />
     </div>
 
     <div v-if="coordinates" class="model-form-coordinates">
@@ -19,30 +12,32 @@
 
     <div v-if="submittedJobId" class="model-form-inline-success">
       <p class="model-form-inline-success-title">Model job created</p>
-      <p class="model-form-inline-success-copy">You can keep inspecting the uploaded images here, or open the details page to follow the progress.</p>
+      <p class="model-form-inline-success-copy">You can keep inspecting the uploaded images here, or open the details
+        page to follow the progress.</p>
       <button class="btn btn-primary model-form-inline-success-button" type="button" @click="openJobDetails">
         Open job details
       </button>
     </div>
-    <div v-else class="model-form-upload" :class="{ 'model-form-upload--disabled': isDisabled }" @dragover.prevent @drop.prevent="handleDrop">
-      <template>
-        <div class="model-form-upload-copy">
-          <span class="model-form-upload-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M12 16V5" />
-              <path d="m7.5 9.5 4.5-4.5 4.5 4.5" />
-              <path d="M5 19h14" />
-            </svg>
-          </span>
-          <p class="model-form-upload-title">Add reconstruction images</p>
-          <p class="model-form-upload-hint">Drag and drop images here, or click to browse files.</p>
-          <p v-if="files.length > 0" class="model-form-upload-count">
-            {{ files.length }} {{ files.length === 1 ? 'image selected' : 'images selected' }}
-          </p>
-        </div>
-        <input class="model-form-upload-input" type="file" multiple accept="image/*" :disabled="isDisabled" @change="handleFileSelect" />
-      </template>
+    <div v-else class="model-form-upload" :class="{ 'model-form-upload--disabled': isDisabled }" role="button"
+      tabindex="0" @click="openFilePicker" @keydown.enter.prevent="openFilePicker"
+      @keydown.space.prevent="openFilePicker" @dragover.prevent @drop.prevent="handleDrop">
+      <div class="model-form-upload-copy">
+        <span class="model-form-upload-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 16V5" />
+            <path d="m7.5 9.5 4.5-4.5 4.5 4.5" />
+            <path d="M5 19h14" />
+          </svg>
+        </span>
+        <p class="model-form-upload-title">Add reconstruction images</p>
+        <p class="model-form-upload-hint">Drag and drop images here, or click to browse files.</p>
+        <p v-if="files.length > 0" class="model-form-upload-count">
+          {{ files.length }} {{ files.length === 1 ? 'image selected' : 'images selected' }}
+        </p>
+      </div>
+      <input ref="fileInputRef" class="model-form-upload-input" type="file" multiple accept="image/*"
+        :disabled="isDisabled" @change="handleFileSelect" />
     </div>
 
     <div v-if="files.length > 0" class="model-form-carousel">
@@ -64,8 +59,7 @@
                   <span class="model-form-image-name">{{ entry.file.file.name }}</span>
                 </div>
               </div>
-              <button type="button" class="model-form-delete" aria-label="Remove image"
-                :disabled="isDisabled"
+              <button type="button" class="model-form-delete" aria-label="Remove image" :disabled="isDisabled"
                 @click="removeFile(entry.index)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                   stroke-linejoin="round" aria-hidden="true">
@@ -134,6 +128,7 @@ const title = ref('')
 const files = ref<UploadedFile[]>([])
 const currentPage = ref(0)
 const viewportWidth = ref(1024)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const isDisabled = computed(() => isSubmitting.value || isLocked.value)
 
 const columnsPerSlide = computed(() => {
@@ -183,12 +178,8 @@ watch(itemsPerSlide, () => {
   }
 })
 
-const handleFileSelect = (event: Event) => {
-  if (isDisabled.value) return
-  const input = event.target as HTMLInputElement
-  if (!input.files) return
-
-  Array.from(input.files).forEach(file => {
+const addFiles = (selectedFiles: File[]) => {
+  selectedFiles.forEach(file => {
     if (!file.type.startsWith('image/')) return
     const reader = new FileReader()
     reader.onload = e => {
@@ -199,6 +190,19 @@ const handleFileSelect = (event: Event) => {
     }
     reader.readAsDataURL(file)
   })
+}
+
+const openFilePicker = () => {
+  if (isDisabled.value) return
+  fileInputRef.value?.click()
+}
+
+const handleFileSelect = (event: Event) => {
+  if (isDisabled.value) return
+  const input = event.target as HTMLInputElement
+  if (!input.files) return
+
+  addFiles(Array.from(input.files))
 
   input.value = ''
 }
@@ -206,17 +210,7 @@ const handleFileSelect = (event: Event) => {
 const handleDrop = (event: DragEvent) => {
   if (isDisabled.value) return
   if (!event.dataTransfer?.files) return
-  Array.from(event.dataTransfer.files).forEach(file => {
-    if (!file.type.startsWith('image/')) return
-    const reader = new FileReader()
-    reader.onload = e => {
-      files.value.push({
-        file,
-        preview: e.target?.result as string,
-      })
-    }
-    reader.readAsDataURL(file)
-  })
+  addFiles(Array.from(event.dataTransfer.files))
 }
 
 const removeFile = (index: number) => {

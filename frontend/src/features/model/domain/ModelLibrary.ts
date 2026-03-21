@@ -8,6 +8,7 @@ export type NonCompletedModelJobSummary = {
   stage: string;
   progress: number;
   error: string | null;
+  coordinates: { x: number; y: number; z: number } | null;
   createdAt: string;
   updatedAt: string;
 };

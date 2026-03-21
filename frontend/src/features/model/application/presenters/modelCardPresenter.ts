@@ -43,8 +43,8 @@ function toModelJobCardViewModel(job: NonCompletedModelJobSummary): ModelCardVie
     createdAt: job.createdAt,
     title: job.title,
     modelPlaceholderLabel: 'Pipeline job',
-    locationCoordinates: null,
-    locationLabel: 'Not available until processing finishes',
+    locationCoordinates: job.coordinates,
+    locationLabel: 'Resolving location...',
     date: job.createdAt,
     status,
   };

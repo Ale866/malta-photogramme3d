@@ -92,7 +92,8 @@ const modelMeta = computed(() => {
             </p>
 
             <div class="model-summary-actions">
-              <button class="btn btn-primary model-summary-island-button" type="button" @click="openCurrentModelOnIsland">
+              <button class="btn btn-primary model-summary-island-button" type="button"
+                @click="openCurrentModelOnIsland">
                 View on island
               </button>
             </div>
@@ -108,12 +109,8 @@ const modelMeta = computed(() => {
       </template>
 
       <template v-else-if="liveJobDetails">
-        <model-job-details-page
-          :job="liveJobDetails"
-          :tracking-error="trackingError"
-          :can-open-generated-model="Boolean(liveJobDetails.modelId)"
-          @open-generated-model="openGeneratedModel"
-        />
+        <model-job-details-page :job="liveJobDetails" :tracking-error="trackingError"
+          :can-open-generated-model="Boolean(liveJobDetails.modelId)" @open-generated-model="openGeneratedModel" />
       </template>
     </div>
   </section>

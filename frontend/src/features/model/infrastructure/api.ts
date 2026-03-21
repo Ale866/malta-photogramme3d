@@ -29,6 +29,7 @@ type ModelJobDto = {
   stage: string;
   progress: number;
   error: string | null;
+  coordinates: { x: number, y: number, z: number } | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -78,6 +79,7 @@ function toNonCompletedModelJobSummary(dto: ModelJobDto): NonCompletedModelJobSu
     stage: dto.stage,
     progress: dto.progress,
     error: dto.error,
+    coordinates: dto.coordinates,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
