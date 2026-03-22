@@ -3,7 +3,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { use3dModel } from '@/features/model/application/useModel'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
-import { canRenderModelOnIsland, type ModelSummary, type ModelVoteState } from '@/features/model/domain/ModelSummary'
+import { applyVoteStateToModel, canRenderModelOnIsland, type ModelSummary, type ModelVoteState } from '@/features/model/domain/ModelSummary'
 
 type DetailMode = 'job' | 'model'
 
@@ -88,13 +88,9 @@ export function useModelDetails() {
   }
 
   function applyVoteState(voteState: ModelVoteState) {
-    if (!modelDetails.value || modelDetails.value.id !== voteState.modelId) return
+    if (!modelDetails.value) return
 
-    modelDetails.value = {
-      ...modelDetails.value,
-      voteCount: voteState.voteCount,
-      hasVoted: voteState.hasVoted,
-    }
+    modelDetails.value = applyVoteStateToModel(modelDetails.value, voteState)
   }
 
   function setError(message: string | null) {

@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth/application/useAuth'
 import { use3dModel } from '@/features/model/application/useModel'
 import type { ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter'
 import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
-import type { ModelVoteState } from '@/features/model/domain/ModelSummary'
+import { applyVoteStateToModel, type ModelVoteState } from '@/features/model/domain/ModelSummary'
 
 type UseModelVotingOptions = {
   library: Ref<ModelLibrary | null>
@@ -22,15 +22,7 @@ export function useModelVoting(options: UseModelVotingOptions) {
 
     options.library.value = {
       ...options.library.value,
-      models: options.library.value.models.map((model) =>
-        model.id === voteState.modelId
-          ? {
-              ...model,
-              voteCount: voteState.voteCount,
-              hasVoted: voteState.hasVoted,
-            }
-          : model
-      ),
+      models: options.library.value.models.map((model) => applyVoteStateToModel(model, voteState)),
     }
   }
 

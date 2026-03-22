@@ -28,6 +28,16 @@ export function canRenderModelOnIsland(voteCount: number): boolean {
   return voteCount >= MIN_ISLAND_MODEL_VOTES;
 }
 
+export function applyVoteStateToModel(model: ModelSummary, voteState: ModelVoteState): ModelSummary {
+  if (model.id !== voteState.modelId) return model;
+
+  return {
+    ...model,
+    voteCount: voteState.voteCount,
+    hasVoted: voteState.hasVoted,
+  };
+}
+
 export function getModelLifecycleStatus(model: ModelSummary): ModelLifecycleStatus {
   const status = model.modelJob?.status;
 
