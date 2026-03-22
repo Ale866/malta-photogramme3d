@@ -8,7 +8,6 @@ export type ModelCardViewModel = {
   type: 'model' | 'job';
   createdAt: string;
   title: string;
-  modelPlaceholderLabel: string;
   locationCoordinates: { x: number; y: number; z: number } | null;
   date: string;
   voteCount: number,
@@ -25,7 +24,6 @@ export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
     type: 'model',
     createdAt: model.createdAt,
     title: model.title,
-    modelPlaceholderLabel: '3D preview placeholder',
     locationCoordinates: model.coordinates,
     date: model.createdAt,
     status,
@@ -47,7 +45,6 @@ function toModelJobCardViewModel(job: NonCompletedModelJobSummary): ModelCardVie
     type: 'job',
     createdAt: job.createdAt,
     title: job.title,
-    modelPlaceholderLabel: 'Pipeline job',
     locationCoordinates: job.coordinates,
     date: job.createdAt,
     status,

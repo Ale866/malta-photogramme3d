@@ -565,6 +565,51 @@
   pointer-events: none;
 }
 
+.model-list-card-job-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.model-list-card-job-stage-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.04);
+  color: #9dc9ff;
+}
+
+.model-list-card-job-stage-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.model-list-card-job-stage-title,
+.model-list-card-job-stage-copy {
+  margin: 0;
+}
+
+.model-list-card-job-stage-title {
+  font-size: 1rem;
+  font-weight: var(--font-weight-semibold);
+  color: #f3f8ff;
+}
+
+.model-list-card-job-stage-copy {
+  max-width: 18rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
 .model-list-card-preview::after {
   content: "";
   position: absolute;
@@ -1157,6 +1202,12 @@
   background: rgb(255 255 255 / 0.03);
 }
 
+.model-job-detail-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .model-job-detail-card dt {
   color: #aabbd3;
   letter-spacing: 0.08em;
@@ -1164,6 +1215,24 @@
 
 .model-job-detail-card dd {
   word-break: break-word;
+}
+
+.model-job-detail-icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.04);
+  color: #97c6ff;
+  flex: 0 0 auto;
+}
+
+.model-job-detail-icon svg {
+  width: 0.92rem;
+  height: 0.92rem;
 }
 
 @media (max-width: 700px) {

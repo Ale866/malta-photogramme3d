@@ -59,7 +59,25 @@ function toggleVote() {
     </header>
 
     <div class="model-list-card-preview">
-      <model-preview-viewport :interactive="false" :show-overlay="false" />
+      <model-preview-viewport v-if="card.type === 'model'" :interactive="false" :show-overlay="false" />
+      <div v-else class="model-list-card-job-stage">
+        <div class="model-list-card-job-stage-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4" />
+            <path d="m16.24 7.76 2.83-2.83" />
+            <path d="M18 12h4" />
+            <path d="m16.24 16.24 2.83 2.83" />
+            <path d="M12 18v4" />
+            <path d="m4.93 19.07 2.83-2.83" />
+            <path d="M2 12h4" />
+            <path d="m4.93 4.93 2.83 2.83" />
+          </svg>
+        </div>
+        <p class="model-list-card-job-stage-title">{{ card.status === 'failed' ? 'Job failed' : 'Processing job' }}</p>
+        <p class="model-list-card-job-stage-copy">
+          {{ card.status === 'failed' ? 'Open details to inspect the latest pipeline error.' : 'Open details to follow progress and live job updates.' }}
+        </p>
+      </div>
     </div>
 
     <div class="model-list-card-meta">
