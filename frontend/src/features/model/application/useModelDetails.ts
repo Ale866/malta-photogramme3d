@@ -1,7 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { use3dModel } from '@/features/model/application/useModel'
-import { islandModelCatalogStore } from '@/features/model/application/composables/useIslandModelCatalog'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
 import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
@@ -113,11 +112,6 @@ export function useModelDetails() {
           : model
       ),
     }
-
-    const updatedModel = library.value.models.find((model) => model.id === voteState.modelId)
-    if (!updatedModel) return
-
-    islandModelCatalogStore.syncModel(updatedModel)
   }
 
   function setError(message: string | null) {

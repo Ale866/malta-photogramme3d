@@ -32,7 +32,7 @@ let isViewActive = true
 const sceneRoot = inject('sceneRoot') as { value: HTMLElement | null } | null
 const route = useRoute()
 const router = useRouter()
-const { placements, ensureLoaded, refresh, findById } = islandModelCatalogStore
+const { placements, refresh, findById } = islandModelCatalogStore
 const {
   terrainSelectionCoordinates,
   isCreateModelOpen,
@@ -79,13 +79,7 @@ function handleWindowKeydown(event: KeyboardEvent) {
 async function focusRequestedModel(modelId: string) {
   if (!islandOrchestrator) return
 
-  let focusedModel = findById(modelId)
-  if (!focusedModel) {
-    await refresh()
-    renderModels(islandOrchestrator, placements.value)
-    focusedModel = findById(modelId)
-  }
-
+  const focusedModel = findById(modelId)
   if (!focusedModel) return
 
   clearTerrainSelection()
@@ -120,7 +114,7 @@ onMounted(async () => {
       setTerrainSelection(coordinates.local)
     })
 
-    await ensureLoaded()
+    await refresh()
     renderModels(islandOrchestrator, placements.value)
     attachInteractions(islandOrchestrator, {
       onModelFocus: () => {
