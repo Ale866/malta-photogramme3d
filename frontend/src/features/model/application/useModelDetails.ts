@@ -4,7 +4,7 @@ import { use3dModel } from '@/features/model/application/useModel'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
 import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
-import type { ModelSummary } from '@/features/model/domain/ModelSummary'
+import type { ModelSummary, ModelVoteState } from '@/features/model/domain/ModelSummary'
 
 type DetailMode = 'job' | 'model'
 
@@ -97,6 +97,27 @@ export function useModelDetails() {
     }
   }
 
+  function applyVoteState(voteState: ModelVoteState) {
+    if (!library.value) return
+
+    library.value = {
+      ...library.value,
+      models: library.value.models.map((model) =>
+        model.id === voteState.modelId
+          ? {
+              ...model,
+              voteCount: voteState.voteCount,
+              hasVoted: voteState.hasVoted,
+            }
+          : model
+      ),
+    }
+  }
+
+  function setError(message: string | null) {
+    errorMessage.value = message
+  }
+
   function goBack() {
     void router.push({ name: detailSource.value === 'catalog' ? 'ModelCatalog' : 'ListModel' })
   }
@@ -146,6 +167,8 @@ export function useModelDetails() {
     trackingError,
     errorMessage,
     isLoading,
+    applyVoteState,
+    setError,
     goBack,
     openGeneratedModel,
     openGeneratedModelOnIsland,

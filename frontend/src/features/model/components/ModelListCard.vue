@@ -87,7 +87,7 @@ function toggleVote() {
           </svg>
         </div>
         <div>
-          <div class="model-list-card-meta-label">Published</div>
+          <div class="model-list-card-meta-label">Created</div>
           <div class="model-list-card-meta-value">{{ formattedDate }}</div>
         </div>
       </div>

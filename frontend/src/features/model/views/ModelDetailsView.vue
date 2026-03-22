@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import { useAuth } from '@/features/auth/application/useAuth'
+import { useModelDetailVoting } from '@/features/model/application/useModelDetailVoting'
 import ModelJobDetailsPage from '@/features/model/components/ModelJobDetailsPage.vue'
 import ModelPreviewViewport from '@/features/model/components/ModelPreviewViewport.vue'
 import { useModelDetails } from '@/features/model/application/useModelDetails'
@@ -14,6 +15,8 @@ const {
   trackingError,
   errorMessage,
   isLoading,
+  applyVoteState,
+  setError,
   goBack,
   openGeneratedModel,
   openCurrentModelOnIsland,
@@ -33,6 +36,16 @@ function formatDate(value: string) {
 
 const backLabel = computed(() => detailSource.value === 'catalog' ? 'Back to catalog' : 'Back to my models')
 const { placeLabel: modelLocationLabel } = usePlaceLabel(() => modelDetails.value?.coordinates)
+const {
+  showVoting,
+  isVoteDisabled,
+  toggleVote,
+} = useModelDetailVoting({
+  detailSource,
+  modelDetails,
+  applyVoteState,
+  setErrorMessage: setError,
+})
 
 const ownerName = computed(() => {
   const model = modelDetails.value
@@ -48,9 +61,9 @@ const modelMeta = computed(() => {
   if (!model) return []
 
   return [
-    { label: 'Creator', value: ownerName.value },
-    { label: 'Published', value: formatDate(model.createdAt) },
-    { label: 'Location', value: modelLocationLabel.value },
+    { key: 'creator', label: 'Creator', value: ownerName.value },
+    { key: 'created', label: 'Created', value: formatDate(model.createdAt) },
+    { key: 'location', label: 'Location', value: modelLocationLabel.value },
   ]
 })
 </script>
@@ -85,25 +98,64 @@ const modelMeta = computed(() => {
           </section>
 
           <aside class="model-summary-panel">
-            <p class="model-summary-eyebrow">Published Model</p>
+            <p class="model-summary-eyebrow">Created Model</p>
             <h1 class="model-summary-title">{{ modelDetails.title }}</h1>
             <p class="model-summary-copy">
               A finished model ready to inspect here and place on the island.
             </p>
 
-            <div class="model-summary-actions">
-              <button class="btn btn-primary model-summary-island-button" type="button"
-                @click="openCurrentModelOnIsland">
-                View on island
-              </button>
-            </div>
-
             <dl class="model-summary-details">
-              <div v-for="item in modelMeta" :key="item.label" class="model-summary-detail">
-                <dt>{{ item.label }}</dt>
+              <div v-for="item in modelMeta" :key="item.key" class="model-summary-detail">
+                <dt class="model-summary-detail-label">
+                  <span class="model-summary-detail-icon" aria-hidden="true">
+                    <svg v-if="item.key === 'location'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 21s-6-4.35-6-10a6 6 0 1 1 12 0c0 5.65-6 10-6 10Z" />
+                      <circle cx="12" cy="11" r="2.2" />
+                    </svg>
+                    <svg v-else-if="item.key === 'created'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M8 3v3" />
+                      <path d="M16 3v3" />
+                      <path d="M4 9h16" />
+                      <rect x="4" y="5" width="16" height="16" rx="2" />
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+                      <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+                    </svg>
+                  </span>
+                  <span>{{ item.label }}</span>
+                </dt>
                 <dd>{{ item.value }}</dd>
               </div>
             </dl>
+
+            <div class="model-summary-actions">
+              <button class="btn btn-primary model-summary-island-button" type="button" @click="openCurrentModelOnIsland">
+                View on island
+              </button>
+
+              <button
+                v-if="showVoting"
+                class="btn model-summary-vote-button"
+                :class="{ 'model-summary-vote-button--active': modelDetails.hasVoted }"
+                type="button"
+                :disabled="isVoteDisabled"
+                @click="toggleVote"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  :fill="modelDetails.hasVoted ? 'currentColor' : 'none'"
+                  stroke="currentColor"
+                  :stroke-width="modelDetails.hasVoted ? 0 : 1.9"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4.5 20 14h-5v6H9v-6H4z" />
+                </svg>
+                <span class="model-summary-vote-count">{{ modelDetails.voteCount }}</span>
+              </button>
+            </div>
           </aside>
         </div>
       </template>
