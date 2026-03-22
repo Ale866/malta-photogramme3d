@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import { useAuth } from '@/features/auth/application/useAuth'
 import { useModelDetailVoting } from '@/features/model/application/useModelDetailVoting'
 import ModelJobDetailsPage from '@/features/model/components/ModelJobDetailsPage.vue'
-import ModelPreviewViewport from '@/features/model/components/ModelPreviewViewport.vue'
 import { useModelDetails } from '@/features/model/application/useModelDetails'
 import { MIN_ISLAND_MODEL_VOTES, canRenderModelOnIsland } from '@/features/model/domain/ModelSummary'
+
+const ModelPreviewViewport = defineAsyncComponent(() => import('@/features/model/components/ModelPreviewViewport.vue'))
 
 const {
   detailMode,
