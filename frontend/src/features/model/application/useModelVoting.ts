@@ -1,6 +1,7 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { useAuth } from '@/features/auth/application/useAuth'
 import { use3dModel } from '@/features/model/application/useModel'
+import { islandModelCatalogStore } from '@/features/model/application/composables/useIslandModelCatalog'
 import type { ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter'
 import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
 import type { ModelVoteState } from '@/features/model/domain/ModelSummary'
@@ -32,6 +33,11 @@ export function useModelVoting(options: UseModelVotingOptions) {
           : model
       ),
     }
+
+    const updatedModel = options.library.value.models.find((model) => model.id === voteState.modelId)
+    if (!updatedModel) return
+
+    islandModelCatalogStore.syncModel(updatedModel)
   }
 
   function isVoteDisabled(card: ModelCardViewModel) {

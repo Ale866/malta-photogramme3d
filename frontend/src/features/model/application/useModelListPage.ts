@@ -5,6 +5,7 @@ import { useModelLibraryAutoRefresh } from '@/features/model/application/useMode
 import { useModelVoting } from '@/features/model/application/useModelVoting'
 import { toModelLibraryCardViewModels, type ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter'
 import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
+import { canRenderModelOnIsland } from '@/features/model/domain/ModelSummary'
 
 export function useModelListPage() {
   const route = useRoute()
@@ -84,6 +85,9 @@ export function useModelListPage() {
   }
 
   function viewOnIsland(modelId: string) {
+    const model = library.value?.models.find((entry) => entry.id === modelId)
+    if (!model || !canRenderModelOnIsland(model.voteCount)) return
+
     void router.push({ name: 'Island', query: { modelId } })
   }
 

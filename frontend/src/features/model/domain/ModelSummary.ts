@@ -6,6 +6,8 @@ export type ModelVoteState = {
   hasVoted: boolean;
 };
 
+export const MIN_ISLAND_MODEL_VOTES = 3;
+
 export type ModelSummary = {
   id: string;
   ownerId: string;
@@ -21,6 +23,10 @@ export type ModelSummary = {
 };
 
 export type ModelLifecycleStatus = 'ready' | 'pending' | 'failed';
+
+export function canRenderModelOnIsland(voteCount: number): boolean {
+  return voteCount >= MIN_ISLAND_MODEL_VOTES;
+}
 
 export function getModelLifecycleStatus(model: ModelSummary): ModelLifecycleStatus {
   const status = model.modelJob?.status;

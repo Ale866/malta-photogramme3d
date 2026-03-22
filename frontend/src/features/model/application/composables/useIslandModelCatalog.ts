@@ -1,6 +1,6 @@
 import { computed, shallowRef } from 'vue';
 import { use3dModel } from '../useModel';
-import type { ModelSummary } from '../../domain/ModelSummary';
+import { canRenderModelOnIsland, type ModelSummary } from '../../domain/ModelSummary';
 
 export type IslandModelPlacement = {
   id: string;
@@ -28,7 +28,9 @@ function createIslandModelCatalogStore() {
 
   async function load() {
     const library = await getPublicModelCatalog();
-    placements.value = library.models.map(toIslandModelPlacement);
+    placements.value = library.models
+      .filter((model) => canRenderModelOnIsland(model.voteCount))
+      .map(toIslandModelPlacement);
     hasLoadedOnce.value = true;
   }
 
@@ -56,6 +58,29 @@ function createIslandModelCatalogStore() {
     return placements.value.find((placement) => placement.id === modelId) ?? null;
   }
 
+  function syncModel(model: ModelSummary): void {
+    const nextPlacement = canRenderModelOnIsland(model.voteCount)
+      ? toIslandModelPlacement(model)
+      : null;
+    const existingIndex = placements.value.findIndex((placement) => placement.id === model.id);
+
+    if (!nextPlacement) {
+      if (existingIndex === -1) return;
+
+      placements.value = placements.value.filter((placement) => placement.id !== model.id);
+      return;
+    }
+
+    if (existingIndex === -1) {
+      placements.value = [...placements.value, nextPlacement];
+      return;
+    }
+
+    placements.value = placements.value.map((placement, index) =>
+      index === existingIndex ? nextPlacement : placement
+    );
+  }
+
   async function refresh(): Promise<void> {
     placements.value = [];
     hasLoadedOnce.value = false;
@@ -70,6 +95,7 @@ function createIslandModelCatalogStore() {
     ensureLoaded,
     refresh,
     findById,
+    syncModel,
   };
 }
 

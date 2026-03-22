@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { usePlaceLabel } from '@/core/application/usePlaceLabel'
+import { MIN_ISLAND_MODEL_VOTES, canRenderModelOnIsland } from '@/features/model/domain/ModelSummary'
 import type { ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter';
 import ModelPreviewViewport from '@/features/model/components/ModelPreviewViewport.vue'
 
@@ -47,6 +48,17 @@ const formattedDate = computed(() => {
 function toggleVote() {
   if (props.card.type !== 'model') return
   emit('toggle-vote', props.card)
+}
+
+function isIslandButtonDisabled(card: ModelCardViewModel): boolean {
+  return card.type !== 'model' || !canRenderModelOnIsland(card.voteCount)
+}
+
+function islandButtonTitle(card: ModelCardViewModel): string | undefined {
+  if (card.type !== 'model') return undefined
+  if (canRenderModelOnIsland(card.voteCount)) return undefined
+
+  return `Needs at least ${MIN_ISLAND_MODEL_VOTES} votes to appear on the island`
 }
 
 </script>
@@ -128,7 +140,8 @@ function toggleVote() {
 
     <div v-if="card.type === 'model'" class="model-list-card-actions">
       <button class="btn btn-primary model-list-card-island-button"
-        :class="{ 'model-list-card-island-button--solo': !showVoting }" type="button" :disabled="card.type !== 'model'"
+        :class="{ 'model-list-card-island-button--solo': !showVoting }" type="button"
+        :disabled="isIslandButtonDisabled(card)" :title="islandButtonTitle(card)"
         @click.stop="viewOnIsland">
         View on island
       </button>

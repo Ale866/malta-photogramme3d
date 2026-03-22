@@ -1,10 +1,11 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { use3dModel } from '@/features/model/application/useModel'
+import { islandModelCatalogStore } from '@/features/model/application/composables/useIslandModelCatalog'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
 import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
-import type { ModelSummary, ModelVoteState } from '@/features/model/domain/ModelSummary'
+import { canRenderModelOnIsland, type ModelSummary, type ModelVoteState } from '@/features/model/domain/ModelSummary'
 
 type DetailMode = 'job' | 'model'
 
@@ -112,6 +113,11 @@ export function useModelDetails() {
           : model
       ),
     }
+
+    const updatedModel = library.value.models.find((model) => model.id === voteState.modelId)
+    if (!updatedModel) return
+
+    islandModelCatalogStore.syncModel(updatedModel)
   }
 
   function setError(message: string | null) {
@@ -141,10 +147,10 @@ export function useModelDetails() {
   }
 
   function openCurrentModelOnIsland() {
-    const currentModelId = modelDetails.value?.id
-    if (!currentModelId) return
+    const currentModel = modelDetails.value
+    if (!currentModel || !canRenderModelOnIsland(currentModel.voteCount)) return
 
-    void router.push({ name: 'Island', query: { modelId: currentModelId } })
+    void router.push({ name: 'Island', query: { modelId: currentModel.id } })
   }
 
   watch(

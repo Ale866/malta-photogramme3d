@@ -6,6 +6,7 @@ import { useModelDetailVoting } from '@/features/model/application/useModelDetai
 import ModelJobDetailsPage from '@/features/model/components/ModelJobDetailsPage.vue'
 import ModelPreviewViewport from '@/features/model/components/ModelPreviewViewport.vue'
 import { useModelDetails } from '@/features/model/application/useModelDetails'
+import { MIN_ISLAND_MODEL_VOTES, canRenderModelOnIsland } from '@/features/model/domain/ModelSummary'
 
 const {
   detailMode,
@@ -65,6 +66,18 @@ const modelMeta = computed(() => {
     { key: 'created', label: 'Created', value: formatDate(model.createdAt) },
     { key: 'location', label: 'Location', value: modelLocationLabel.value },
   ]
+})
+
+const isIslandButtonDisabled = computed(() => {
+  const model = modelDetails.value
+  return !model || !canRenderModelOnIsland(model.voteCount)
+})
+
+const islandButtonTitle = computed(() => {
+  const model = modelDetails.value
+  if (!model || canRenderModelOnIsland(model.voteCount)) return undefined
+
+  return `Needs at least ${MIN_ISLAND_MODEL_VOTES} votes to appear on the island`
 })
 </script>
 
@@ -131,7 +144,8 @@ const modelMeta = computed(() => {
 
             <div class="model-summary-actions">
               <button class="btn btn-primary model-summary-island-button"
-                :class="{ 'model-summary-island-button--solo': !showVoting }" type="button" @click="openCurrentModelOnIsland">
+                :class="{ 'model-summary-island-button--solo': !showVoting }" type="button"
+                :disabled="isIslandButtonDisabled" :title="islandButtonTitle" @click="openCurrentModelOnIsland">
                 View on island
               </button>
 
