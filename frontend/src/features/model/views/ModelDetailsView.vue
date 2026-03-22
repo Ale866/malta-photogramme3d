@@ -130,7 +130,8 @@ const modelMeta = computed(() => {
             </dl>
 
             <div class="model-summary-actions">
-              <button class="btn btn-primary model-summary-island-button" type="button" @click="openCurrentModelOnIsland">
+              <button class="btn btn-primary model-summary-island-button"
+                :class="{ 'model-summary-island-button--solo': !showVoting }" type="button" @click="openCurrentModelOnIsland">
                 View on island
               </button>
 

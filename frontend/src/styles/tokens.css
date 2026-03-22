@@ -18,8 +18,9 @@
   --text-secondary: #d8dce3;
   --text-muted: #b0b6c1;
 
-  --accent-primary: #0d79ff;
-  --accent-primary-strong: #3f84ff;
+  --accent-primary: #0a5ec2;
+  --accent-primary-strong: #2f74cf;
+  --accent-primary-hover: #094fa3;
   --accent-info: #6fbbe9;
   --feedback-error: #ff8080;
   --feedback-success: #86db95;

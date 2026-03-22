@@ -16,9 +16,21 @@ export function useModelListPage() {
   const errorMessage = ref<string | null>(null)
 
   const modelSource = computed(() => route.meta.modelSource as 'private' | 'public' | undefined)
-  const pageTitle = computed(() => typeof route.meta.title === 'string' ? route.meta.title : 'Models')
   const cards = computed(() => toModelLibraryCardViewModels(library.value))
   const showVoting = computed(() => modelSource.value === 'public')
+  const pageHeading = computed(() => showVoting.value ? 'Community catalog' : 'Your workspace')
+  const pageDescription = computed(() =>
+    showVoting.value
+      ? 'Browse published reconstructions'
+      : 'Track your pipeline jobs, revisit finished reconstructions, and jump back into the island when a model is ready'
+  )
+  const pageSecondaryDescription = computed(() =>
+    showVoting.value
+      ? 'A model needs at least 3 votes before it is placed on the island'
+      : 'Open any card to inspect details, follow progress, or jump to the island when a model is ready'
+  )
+  const totalModelCount = computed(() => library.value?.models.length ?? 0)
+  const totalJobCount = computed(() => library.value?.modelJobs.length ?? 0)
   const pendingJobIds = computed(() => {
     if (modelSource.value !== 'private' || !library.value) return []
 
@@ -97,8 +109,12 @@ export function useModelListPage() {
     errorMessage,
     isLoading,
     openDetails,
-    pageTitle,
+    pageDescription,
+    pageHeading,
+    pageSecondaryDescription,
     showVoting,
+    totalJobCount,
+    totalModelCount,
     toggleVote: voting.toggleVote,
     isVoteDisabled: voting.isVoteDisabled,
     viewOnIsland,

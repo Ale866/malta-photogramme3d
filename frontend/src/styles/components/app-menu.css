@@ -44,7 +44,7 @@
 }
 
 .app-menu-link--active {
-  background: linear-gradient(135deg, rgb(13 121 255 / 0.95), rgb(84 171 255 / 0.9));
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-strong));
   color: #fff;
 }
 

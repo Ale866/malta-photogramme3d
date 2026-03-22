@@ -62,7 +62,8 @@ function toggleVote() {
       <model-preview-viewport v-if="card.type === 'model'" :interactive="false" :show-overlay="false" />
       <div v-else class="model-list-card-job-stage">
         <div class="model-list-card-job-stage-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
             <path d="M12 2v4" />
             <path d="m16.24 7.76 2.83-2.83" />
             <path d="M18 12h4" />
@@ -75,12 +76,26 @@ function toggleVote() {
         </div>
         <p class="model-list-card-job-stage-title">{{ card.status === 'failed' ? 'Job failed' : 'Processing job' }}</p>
         <p class="model-list-card-job-stage-copy">
-          {{ card.status === 'failed' ? 'Open details to inspect the latest pipeline error.' : 'Open details to follow progress and live job updates.' }}
+          {{ card.status === 'failed' ? 'Open details to inspect the latest pipeline error.' :
+            'Open details to follow progress and live job updates.' }}
         </p>
       </div>
     </div>
 
     <div class="model-list-card-meta">
+      <div v-if="card.type === 'model' && card.ownerName" class="model-list-card-meta-item">
+        <div class="model-list-card-meta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+            <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+          </svg>
+        </div>
+        <div>
+          <div class="model-list-card-meta-label">Creator</div>
+          <div class="model-list-card-meta-value">{{ card.ownerName }}</div>
+        </div>
+      </div>
       <div class="model-list-card-meta-item">
         <div class="model-list-card-meta-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
@@ -112,7 +127,8 @@ function toggleVote() {
     </div>
 
     <div v-if="card.type === 'model'" class="model-list-card-actions">
-      <button class="btn btn-primary model-list-card-island-button" type="button" :disabled="card.type !== 'model'"
+      <button class="btn btn-primary model-list-card-island-button"
+        :class="{ 'model-list-card-island-button--solo': !showVoting }" type="button" :disabled="card.type !== 'model'"
         @click.stop="viewOnIsland">
         View on island
       </button>

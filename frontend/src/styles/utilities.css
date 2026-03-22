@@ -52,7 +52,7 @@
 }
 
 .btn-primary:hover {
-  background: #096ae0;
+  background: var(--accent-primary-hover);
 }
 
 .btn-pill {

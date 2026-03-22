@@ -20,7 +20,6 @@ const routes = [
         meta: {
           requiresAuth: true,
           modelSource: 'private',
-          title: 'My models',
         },
         component: ListModelView,
       },
@@ -29,7 +28,6 @@ const routes = [
         name: "ModelCatalog",
         meta: {
           modelSource: 'public',
-          title: 'All models',
         },
         component: ListModelView,
       },

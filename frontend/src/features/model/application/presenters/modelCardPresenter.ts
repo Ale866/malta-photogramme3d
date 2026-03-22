@@ -5,6 +5,7 @@ import type { ModelSummary } from '@/features/model/domain/ModelSummary';
 export type ModelCardViewModel = {
   id: string;
   ownerId: string | null;
+  ownerName: string | null;
   type: 'model' | 'job';
   createdAt: string;
   title: string;
@@ -21,6 +22,7 @@ export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
   return {
     id: model.id,
     ownerId: model.ownerId,
+    ownerName: model.ownerNickname?.trim() || null,
     type: 'model',
     createdAt: model.createdAt,
     title: model.title,
@@ -42,6 +44,7 @@ function toModelJobCardViewModel(job: NonCompletedModelJobSummary): ModelCardVie
   return {
     id: job.id,
     ownerId: null,
+    ownerName: null,
     type: 'job',
     createdAt: job.createdAt,
     title: job.title,
