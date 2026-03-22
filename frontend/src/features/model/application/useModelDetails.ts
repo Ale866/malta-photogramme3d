@@ -3,7 +3,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { use3dModel } from '@/features/model/application/useModel'
 import { useModelJobTracker } from '@/features/model/application/useModelJobTracker'
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
-import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
 import { canRenderModelOnIsland, type ModelSummary, type ModelVoteState } from '@/features/model/domain/ModelSummary'
 
 type DetailMode = 'job' | 'model'
@@ -11,7 +10,7 @@ type DetailMode = 'job' | 'model'
 export function useModelDetails() {
   const route = useRoute()
   const router = useRouter()
-  const { getModelLibrary, getPublicModelCatalog, getModelJobDetails } = use3dModel()
+  const { getPublicModelById, getUserModelById, getModelJobDetails } = use3dModel()
   const {
     job: liveJobSnapshot,
     trackingError,
@@ -19,7 +18,7 @@ export function useModelDetails() {
     stop: stopTracking,
   } = useModelJobTracker()
 
-  const library = ref<ModelLibrary | null>(null)
+  const modelDetails = ref<ModelSummary | null>(null)
   const jobDetails = ref<ModelJobDetails | null>(null)
   const isLoading = ref(false)
   const errorMessage = ref<string | null>(null)
@@ -28,11 +27,6 @@ export function useModelDetails() {
   const detailSource = computed<'catalog' | 'list'>(() => route.query.from === 'catalog' ? 'catalog' : 'list')
   const modelId = computed(() => String(route.params.modelId ?? ''))
   const jobId = computed(() => String(route.params.jobId ?? ''))
-
-  const modelDetails = computed<ModelSummary | null>(() => {
-    if (detailMode.value !== 'model' || !library.value) return null
-    return library.value.models.find((model) => model.id === modelId.value) ?? null
-  })
 
   const liveJobDetails = computed<ModelJobDetails | null>(() => {
     const details = jobDetails.value
@@ -50,18 +44,14 @@ export function useModelDetails() {
   async function loadModelDetails() {
     const currentModelId = modelId.value.trim()
     if (!currentModelId) {
-      library.value = null
+      modelDetails.value = null
       errorMessage.value = 'Missing model ID'
       return
     }
 
-    library.value = detailSource.value === 'catalog'
-      ? await getPublicModelCatalog()
-      : await getModelLibrary()
-
-    if (!library.value.models.some((model) => model.id === currentModelId)) {
-      throw new Error('Model not found')
-    }
+    modelDetails.value = detailSource.value === 'catalog'
+      ? await getPublicModelById(currentModelId)
+      : await getUserModelById(currentModelId)
   }
 
   async function loadJobDetails() {
@@ -84,7 +74,7 @@ export function useModelDetails() {
 
     try {
       if (detailMode.value === 'job') {
-        library.value = null
+        modelDetails.value = null
         await loadJobDetails()
       } else {
         jobDetails.value = null
@@ -98,19 +88,12 @@ export function useModelDetails() {
   }
 
   function applyVoteState(voteState: ModelVoteState) {
-    if (!library.value) return
+    if (!modelDetails.value || modelDetails.value.id !== voteState.modelId) return
 
-    library.value = {
-      ...library.value,
-      models: library.value.models.map((model) =>
-        model.id === voteState.modelId
-          ? {
-              ...model,
-              voteCount: voteState.voteCount,
-              hasVoted: voteState.hasVoted,
-            }
-          : model
-      ),
+    modelDetails.value = {
+      ...modelDetails.value,
+      voteCount: voteState.voteCount,
+      hasVoted: voteState.hasVoted,
     }
   }
 
@@ -162,7 +145,7 @@ export function useModelDetails() {
   return {
     detailMode,
     detailSource,
-    modelDetails,
+    modelDetails: computed(() => modelDetails.value),
     liveJobDetails,
     trackingError,
     errorMessage,

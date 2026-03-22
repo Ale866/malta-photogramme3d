@@ -4,7 +4,7 @@ import type { ModelCreationDraft } from "../domain/ModelCreationDraft";
 import type { ModelJobDetails } from "../domain/ModelJobDetails";
 import type { ModelLibrary } from "../domain/ModelLibrary";
 import type { ModelJobSnapshot } from "../domain/ModelJob";
-import type { ModelVoteState } from "../domain/ModelSummary";
+import type { ModelSummary, ModelVoteState } from "../domain/ModelSummary";
 
 export function use3dModel() {
   async function uploadModel(input: ModelCreationDraft) {
@@ -28,6 +28,17 @@ export function use3dModel() {
     const accessToken = authStore.getAccessToken();
     const result = await ModelApi.getPublicModelCatalog(accessToken);
     return result;
+  }
+
+  async function getPublicModelById(modelId: string): Promise<ModelSummary> {
+    await authStore.hydrateSession();
+    const accessToken = authStore.getAccessToken();
+    return ModelApi.getPublicModelById(modelId, accessToken);
+  }
+
+  async function getUserModelById(modelId: string): Promise<ModelSummary> {
+    const accessToken = await requireAccessToken();
+    return ModelApi.getUserModelById(modelId, accessToken);
   }
 
   async function getIslandModelCatalog(): Promise<ModelLibrary> {
@@ -62,6 +73,8 @@ export function use3dModel() {
     uploadModel,
     getModelLibrary,
     getPublicModelCatalog,
+    getPublicModelById,
+    getUserModelById,
     getIslandModelCatalog,
     voteForModel,
     unvoteForModel,

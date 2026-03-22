@@ -177,6 +177,34 @@ export const ModelApi = {
     }
   },
 
+  async getPublicModelById(modelId: string, accessToken?: string | null): Promise<ModelSummary> {
+    try {
+      const res = await http.get<ModelDto>(`/model/catalog/${modelId}`, {
+        headers: accessToken ? {
+          Authorization: `Bearer ${accessToken}`,
+        } : undefined,
+      });
+
+      return toModelSummary(res.data);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async getUserModelById(modelId: string, accessToken: string): Promise<ModelSummary> {
+    try {
+      const res = await http.get<ModelDto>(`/model/list/${modelId}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return toModelSummary(res.data);
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
   async getIslandModelCatalog(accessToken?: string | null): Promise<ModelLibrary> {
     try {
       const res = await http.get<PublicModelCatalogDto>('/model/island', {

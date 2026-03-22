@@ -2,6 +2,7 @@ import { AuthedRequest } from "../../../shared/authenticate";
 import { Response } from "express";
 import { getUserModelLibrary } from "../application/getModelLibrary";
 import { getAllModels } from "../application/getAllModels";
+import { getCatalogModelById, getUserModelById } from "../application/getModelById";
 import { getIslandModels } from "../application/getIslandModels";
 import { notFound, sendErrorResponse, unauthorized, } from "../../../shared/errors/applicationError";
 import { modelRepo } from "../infrastructure/modelRepo";
@@ -35,6 +36,28 @@ export async function getAllModelsController(req: AuthedRequest, res: Response) 
   try {
     const catalog = await getAllModels(modelDependencies, req.user?.sub);
     return res.status(200).json(catalog);
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function getCatalogModelByIdController(req: AuthedRequest, res: Response) {
+  try {
+    const { modelId } = req.params;
+    const model = await getCatalogModelById(modelDependencies, modelId, req.user?.sub);
+    return res.status(200).json(model);
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function getUserModelByIdController(req: AuthedRequest, res: Response) {
+  try {
+    if (!req.user) throw unauthorized("Not authenticated");
+
+    const { modelId } = req.params;
+    const model = await getUserModelById(modelDependencies, modelId, req.user.sub);
+    return res.status(200).json(model);
   } catch (error) {
     return sendErrorResponse(res, error);
   }
