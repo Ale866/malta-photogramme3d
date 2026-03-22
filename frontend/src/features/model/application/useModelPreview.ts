@@ -1,8 +1,12 @@
 import { onBeforeUnmount } from 'vue'
 import { ModelPreviewScene } from '@/features/model/infrastructure/ModelPreviewScene'
 
-export function useModelPreview() {
-  const scene = new ModelPreviewScene()
+type UseModelPreviewOptions = {
+  interactive?: boolean
+}
+
+export function useModelPreview(options: UseModelPreviewOptions = {}) {
+  const scene = new ModelPreviewScene(options)
 
   function mount(element: HTMLElement | null) {
     if (!element) return

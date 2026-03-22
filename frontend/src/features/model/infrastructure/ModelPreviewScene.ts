@@ -1,5 +1,9 @@
 import * as T from 'three'
 
+type ModelPreviewSceneOptions = {
+  interactive?: boolean
+}
+
 type DragState = {
   pointerId: number | null
   lastX: number
@@ -16,12 +20,17 @@ export class ModelPreviewScene {
   private previewMesh: T.Mesh<T.BoxGeometry, T.MeshStandardMaterial> | null = null
   private resizeObserver: ResizeObserver | null = null
   private frameId: number | null = null
+  private readonly interactive: boolean
   private dragState: DragState = {
     pointerId: null,
     lastX: 0,
     lastY: 0,
     rotationX: 0.3,
     rotationY: 0.45,
+  }
+
+  constructor(options: ModelPreviewSceneOptions = {}) {
+    this.interactive = options.interactive ?? true
   }
 
   mount(sceneElement: HTMLElement) {
@@ -81,11 +90,13 @@ export class ModelPreviewScene {
     })
     this.resizeObserver.observe(sceneElement)
 
-    sceneElement.addEventListener('pointerdown', this.handlePointerDown)
-    sceneElement.addEventListener('pointermove', this.handlePointerMove)
-    sceneElement.addEventListener('pointerup', this.handlePointerUp)
-    sceneElement.addEventListener('pointerleave', this.handlePointerUp)
-    sceneElement.addEventListener('pointercancel', this.handlePointerUp)
+    if (this.interactive) {
+      sceneElement.addEventListener('pointerdown', this.handlePointerDown)
+      sceneElement.addEventListener('pointermove', this.handlePointerMove)
+      sceneElement.addEventListener('pointerup', this.handlePointerUp)
+      sceneElement.addEventListener('pointerleave', this.handlePointerUp)
+      sceneElement.addEventListener('pointercancel', this.handlePointerUp)
+    }
 
     this.animate()
   }
@@ -129,8 +140,13 @@ export class ModelPreviewScene {
   private animate = () => {
     if (!this.renderer || !this.scene || !this.camera || !this.previewMesh) return
 
-    this.previewMesh.rotation.x = this.dragState.rotationX
-    this.previewMesh.rotation.y = this.dragState.rotationY
+    if (this.interactive) {
+      this.previewMesh.rotation.x = this.dragState.rotationX
+      this.previewMesh.rotation.y = this.dragState.rotationY
+    } else {
+      this.previewMesh.rotation.x = 0.42
+      this.previewMesh.rotation.y += 0.01
+    }
 
     this.renderer.render(this.scene, this.camera)
     this.frameId = requestAnimationFrame(this.animate)

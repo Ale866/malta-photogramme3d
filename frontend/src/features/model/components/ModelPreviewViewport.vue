@@ -2,8 +2,16 @@
 import { nextTick, onMounted, useTemplateRef } from 'vue'
 import { useModelPreview } from '@/features/model/application/useModelPreview'
 
+const props = withDefaults(defineProps<{
+  interactive?: boolean
+  showOverlay?: boolean
+}>(), {
+  interactive: true,
+  showOverlay: true,
+})
+
 const element = useTemplateRef<HTMLElement>('scene-element-container')
-const { mount } = useModelPreview()
+const { mount } = useModelPreview({ interactive: props.interactive })
 
 onMounted(async () => {
   await nextTick()
@@ -14,7 +22,7 @@ onMounted(async () => {
 <template>
   <div class="model-preview">
     <div ref="scene-element-container" class="model-preview-canvas" aria-label="Interactive model preview"></div>
-    <div class="model-preview-overlay">
+    <div v-if="showOverlay" class="model-preview-overlay">
       <p class="model-preview-label">Preview</p>
       <p class="model-preview-caption">Drag inside the viewer to inspect the temporary model placeholder.</p>
     </div>
