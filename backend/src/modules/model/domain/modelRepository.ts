@@ -25,6 +25,7 @@ export interface ModelRepository {
   create(input: CreateModelInput): Promise<Model>;
   findById(id: string): Promise<Model | null>;
   listCatalog(): Promise<Model[]>;
+  listIslandCatalog(): Promise<Model[]>;
   listByOwner(ownerId: string): Promise<Model[]>;
   vote(modelId: string, userId: string): Promise<VoteChangeResult>;
   unvote(modelId: string, userId: string): Promise<VoteChangeResult>;

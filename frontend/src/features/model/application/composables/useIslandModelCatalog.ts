@@ -24,13 +24,11 @@ function createIslandModelCatalogStore() {
   const error = shallowRef<string | null>(null);
   const hasLoadedOnce = shallowRef(false);
   let loadPromise: Promise<void> | null = null;
-  const { getPublicModelCatalog } = use3dModel();
+  const { getIslandModelCatalog } = use3dModel();
 
   async function load() {
-    const library = await getPublicModelCatalog();
-    placements.value = library.models
-      .filter((model) => canRenderModelOnIsland(model.voteCount))
-      .map(toIslandModelPlacement);
+    const library = await getIslandModelCatalog();
+    placements.value = library.models.map(toIslandModelPlacement);
     hasLoadedOnce.value = true;
   }
 

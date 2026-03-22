@@ -177,6 +177,23 @@ export const ModelApi = {
     }
   },
 
+  async getIslandModelCatalog(accessToken?: string | null): Promise<ModelLibrary> {
+    try {
+      const res = await http.get<PublicModelCatalogDto>('/model/island', {
+        headers: accessToken ? {
+          Authorization: `Bearer ${accessToken}`,
+        } : undefined,
+      });
+
+      return {
+        models: res.data.map(toModelSummary),
+        modelJobs: [],
+      };
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
   async getModelJobStatus(jobId: string, accessToken: string): Promise<ModelJobSnapshot> {
     try {
       const normalizedJobId = jobId.trim();

@@ -30,6 +30,12 @@ export function use3dModel() {
     return result;
   }
 
+  async function getIslandModelCatalog(): Promise<ModelLibrary> {
+    await authStore.hydrateSession();
+    const accessToken = authStore.getAccessToken();
+    return ModelApi.getIslandModelCatalog(accessToken);
+  }
+
   async function voteForModel(modelId: string): Promise<ModelVoteState> {
     const accessToken = await requireAccessToken();
     return ModelApi.voteForModel(modelId, accessToken);
@@ -56,6 +62,7 @@ export function use3dModel() {
     uploadModel,
     getModelLibrary,
     getPublicModelCatalog,
+    getIslandModelCatalog,
     voteForModel,
     unvoteForModel,
     getModelJobStatus,

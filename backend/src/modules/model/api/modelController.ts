@@ -2,6 +2,7 @@ import { AuthedRequest } from "../../../shared/authenticate";
 import { Response } from "express";
 import { getUserModelLibrary } from "../application/getModelLibrary";
 import { getAllModels } from "../application/getAllModels";
+import { getIslandModels } from "../application/getIslandModels";
 import { notFound, sendErrorResponse, unauthorized, } from "../../../shared/errors/applicationError";
 import { modelRepo } from "../infrastructure/modelRepo";
 import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
@@ -33,6 +34,15 @@ export async function getUserModelsController(req: AuthedRequest, res: Response)
 export async function getAllModelsController(req: AuthedRequest, res: Response) {
   try {
     const catalog = await getAllModels(modelDependencies, req.user?.sub);
+    return res.status(200).json(catalog);
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function getIslandModelsController(req: AuthedRequest, res: Response) {
+  try {
+    const catalog = await getIslandModels(modelDependencies, req.user?.sub);
     return res.status(200).json(catalog);
   } catch (error) {
     return sendErrorResponse(res, error);

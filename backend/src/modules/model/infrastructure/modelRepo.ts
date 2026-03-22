@@ -1,4 +1,5 @@
 import type { Model, ModelRepository, CreateModelInput } from '../domain/modelRepository';
+import { MIN_ISLAND_MODEL_VOTES } from '../domain/islandVisibility';
 import { ModelSchema } from './db/ModelSchema';
 
 function toDomain(doc: any): Model {
@@ -41,6 +42,14 @@ export const modelRepo: ModelRepository = {
 
   async listCatalog(): Promise<Model[]> {
     const docs = await ModelSchema.find().sort({ createdAt: -1 }).lean();
+    return docs.map(toDomain);
+  },
+
+  async listIslandCatalog(): Promise<Model[]> {
+    const requiredVoteIndex = MIN_ISLAND_MODEL_VOTES - 1;
+    const docs = await ModelSchema.find({
+      [`userVotesIds.${requiredVoteIndex}`]: { $exists: true },
+    }).sort({ createdAt: -1 }).lean();
     return docs.map(toDomain);
   },
 
