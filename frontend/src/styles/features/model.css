@@ -169,6 +169,70 @@
   pointer-events: none;
 }
 
+.model-form-upload-status {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgb(155 174 212 / 0.14);
+  background: linear-gradient(
+    180deg,
+    rgb(14 21 31 / 0.96),
+    rgb(11 16 25 / 0.94)
+  );
+  box-shadow: 0 18px 36px rgb(0 0 0 / 0.18);
+}
+
+.model-form-upload-status--active {
+  border-color: rgb(94 143 214 / 0.3);
+}
+
+.model-form-upload-status-title,
+.model-form-upload-status-copy,
+.model-form-upload-status-warning,
+.model-form-upload-status-meta {
+  margin: 0;
+}
+
+.model-form-upload-status-title {
+  font-size: 0.76rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9ec8ff;
+}
+
+.model-form-upload-status-copy {
+  color: #f4f8ff;
+  font-weight: var(--font-weight-semibold);
+}
+
+.model-form-upload-status-warning {
+  color: #ffd6a3;
+  line-height: 1.55;
+}
+
+.model-form-upload-status-meta {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.model-form-upload-progress {
+  height: 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+
+.model-form-upload-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0d79ff, #4aa3ff);
+  transition: width 160ms ease;
+}
+
 .model-form-inline-success {
   display: grid;
   justify-items: center;

@@ -35,8 +35,7 @@ export class DebugOverlayService {
     host.appendChild(frameTimeStats.dom)
     this.statsPanels = [fpsStats, frameTimeStats]
 
-    const supportsMemoryPanel =
-      typeof performance !== 'undefined' && 'memory' in performance
+    const supportsMemoryPanel = typeof performance !== 'undefined' && 'memory' in performance
     if (supportsMemoryPanel) {
       const memoryStats = new Stats()
       memoryStats.showPanel(2)
@@ -45,7 +44,7 @@ export class DebugOverlayService {
       this.statsPanels.push(memoryStats)
     }
 
-    document.body.appendChild(host)
+    // document.body.appendChild(host)
     this.host = host
   }
 

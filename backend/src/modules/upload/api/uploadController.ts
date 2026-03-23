@@ -1,19 +1,18 @@
 import { Response } from "express";
 import type { AuthedRequest } from "../../../shared/authenticate";
-import { startUpload } from "../application/upload";
+import { appendUploadBatch, finalizeUpload, startUpload } from "../application/upload";
 import {
   badRequest,
   sendErrorResponse,
 } from "../../../shared/errors/applicationError";
 import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
 import { FileStorage } from "../infrastructure/fileStorage";
+import { uploadDraftStore } from "../infrastructure/uploadDraftStore";
 
 const uploadDependencies = {
   modelJobs: modelJobRepo,
-  fileStorage: {
-    stageUpload: (baseUpload: string, title: string, files: Express.Multer.File[]) =>
-      FileStorage.stageUpload(baseUpload, title, files),
-  },
+  uploadDrafts: uploadDraftStore,
+  fileStorage: FileStorage,
 };
 
 function parseCoordinates(input: unknown) {
@@ -26,17 +25,57 @@ function parseCoordinates(input: unknown) {
   }
 }
 
-export async function uploadController(req: AuthedRequest, res: Response) {
+export async function uploadInitController(req: AuthedRequest, res: Response) {
   try {
-    const files = req.files as Express.Multer.File[];
-    const { title, coordinates } = req.body ?? {};
+    const { title, coordinates, totalFiles } = req.body ?? {};
     const parsedCoordinates = parseCoordinates(coordinates);
 
     const result = await startUpload(uploadDependencies, {
       ownerId: req.user?.sub,
       title,
+      totalFiles,
+      coordinates: parsedCoordinates,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Upload started",
+      uploadId: result.uploadId,
+      totalFiles: result.totalFiles,
+    });
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function uploadBatchController(req: AuthedRequest, res: Response) {
+  try {
+    const files = req.files as Express.Multer.File[];
+    const { batchIndex } = req.body ?? {};
+
+    const result = await appendUploadBatch(uploadDependencies, {
+      ownerId: req.user?.sub,
+      uploadId: req.params.uploadId,
+      batchIndex,
       files,
-      coordinates: parsedCoordinates
+    });
+
+    return res.status(202).json({
+      success: true,
+      message: "Batch uploaded",
+      uploadedFiles: result.uploadedFiles,
+      totalFiles: result.totalFiles,
+    });
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function uploadFinalizeController(req: AuthedRequest, res: Response) {
+  try {
+    const result = await finalizeUpload(uploadDependencies, {
+      ownerId: req.user?.sub,
+      uploadId: req.params.uploadId,
     });
 
     return res.status(202).json({

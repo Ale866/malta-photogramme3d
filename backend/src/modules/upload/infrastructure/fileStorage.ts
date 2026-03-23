@@ -10,28 +10,63 @@ export class FileStorage {
     fs.renameSync(src, dest);
   }
 
-  static createJobDirectories(baseUpload: string, title: string) {
-    const timestamp = Date.now();
-    const safeTitle = title.replace(/\s+/g, "_");
-    const inputFolder = path.resolve(baseUpload, `${timestamp}_${safeTitle}`);
-    const outputFolder = path.resolve("output", `${timestamp}_${safeTitle}`);
+  static deleteFile(filePath: string) {
+    if (!fs.existsSync(filePath)) return;
+    fs.unlinkSync(filePath);
+  }
 
-    this.ensureDir(inputFolder);
-    this.ensureDir(outputFolder);
+  static deleteFiles(filePaths: string[]) {
+    for (const filePath of filePaths) {
+      FileStorage.deleteFile(filePath);
+    }
+  }
+
+  static createUploadDirectories(baseUpload: string, title: string, uploadId: string) {
+    const safeTitle = title.replace(/\s+/g, "_");
+    const inputFolder = path.resolve(baseUpload, `${uploadId}_${safeTitle}`);
+    const outputFolder = path.resolve("output", `${uploadId}_${safeTitle}`);
+
+    FileStorage.ensureDir(inputFolder);
+    FileStorage.ensureDir(outputFolder);
 
     return { inputFolder, outputFolder };
   }
 
-  static stageUpload(baseUpload: string, title: string, files: Express.Multer.File[]) {
-    const { inputFolder, outputFolder } = this.createJobDirectories(baseUpload, title);
-
+  static appendBatchFiles(inputFolder: string, batchIndex: number, files: Express.Multer.File[]) {
     const imagePaths: string[] = [];
-    for (const file of files) {
-      const dest = path.join(inputFolder, file.originalname);
-      this.moveFile(file.path, dest);
-      imagePaths.push(dest);
-    }
 
-    return { inputFolder, outputFolder, imagePaths };
+    try {
+      files.forEach((file, fileIndex) => {
+        const dest = FileStorage.buildBatchDestination(inputFolder, batchIndex, fileIndex, file.originalname);
+        if (fs.existsSync(dest)) fs.unlinkSync(dest);
+        FileStorage.moveFile(file.path, dest);
+        imagePaths.push(dest);
+      });
+
+      return imagePaths;
+    } catch (error) {
+      FileStorage.deleteFiles(imagePaths);
+      FileStorage.deleteFiles(files.map((file) => file.path));
+      throw error;
+    }
+  }
+
+  static listFiles(inputFolder: string) {
+    if (!fs.existsSync(inputFolder)) return [];
+
+    return fs.readdirSync(inputFolder)
+      .map((fileName) => path.join(inputFolder, fileName))
+      .filter((filePath) => fs.statSync(filePath).isFile())
+      .sort();
+  }
+
+  private static buildBatchDestination(
+    inputFolder: string,
+    batchIndex: number,
+    fileIndex: number,
+    originalName: string
+  ) {
+    const fileName = path.basename(originalName).replace(/[^\w.-]+/g, "_");
+    return path.join(inputFolder, `${batchIndex}_${fileIndex}_${fileName}`);
   }
 }

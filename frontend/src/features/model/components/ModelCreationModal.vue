@@ -1,10 +1,11 @@
 <template>
   <Teleport to="body">
-    <div v-if="open" class="model-sheet-host" @click.self="close">
+    <div v-if="open" class="model-sheet-host" @click.self="handleBackdropClick">
       <section class="model-sheet" role="dialog" aria-modal="true" aria-label="Create model" @click.stop>
         <header class="model-sheet-header">
           <h2 class="model-sheet-title">Create Model</h2>
-          <button type="button" class="btn btn-icon model-sheet-close" aria-label="Close popup" @click="close">
+          <button type="button" class="btn btn-icon model-sheet-close" aria-label="Close popup" :disabled="isSubmitting"
+            @click="close">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"
               stroke-linejoin="round" aria-hidden="true">
               <path d="M18 6 6 18" />
@@ -20,7 +21,8 @@
           :is-submitting="isSubmitting"
           :is-locked="Boolean(submittedJobId)"
           :submitted-job-id="submittedJobId"
-          :submit-label="submittedJobId ? 'Model submitted' : 'Upload model'"
+          :upload-progress="uploadProgress"
+          :submit-label="submittedJobId ? 'Model submitted' : isSubmitting ? 'Uploading images...' : 'Upload model'"
           @submit="handleSubmit"
           @open-job-details="openJobDetails"
         />
@@ -30,10 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import ModelCreationForm from '@/features/model/components/ModelCreationForm.vue'
 import { use3dModel } from '@/features/model/application/useModel'
 import type { ModelCreationDraft } from '@/features/model/domain/ModelCreationDraft'
+import type { UploadProgressSnapshot } from '@/features/model/infrastructure/api'
 
 const props = withDefaults(defineProps<{
   open: boolean
@@ -51,15 +54,23 @@ const { uploadModel } = use3dModel()
 const isSubmitting = ref(false)
 const errorMessage = ref<string | null>(null)
 const submittedJobId = ref<string | null>(null)
+const uploadProgress = ref<UploadProgressSnapshot | null>(null)
 
 function resetModalState() {
   errorMessage.value = null
   submittedJobId.value = null
+  uploadProgress.value = null
 }
 
 const close = () => {
+  if (isSubmitting.value) return
   resetModalState()
   emit('close')
+}
+
+const handleBackdropClick = () => {
+  if (isSubmitting.value) return
+  close()
 }
 
 const openJobDetails = () => {
@@ -72,16 +83,45 @@ watch(() => props.open, (isOpen) => {
   resetModalState()
 })
 
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (!isSubmitting.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+watch(isSubmitting, (uploading) => {
+  if (uploading) {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return
+  }
+
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
 const handleSubmit = async (draft: ModelCreationDraft) => {
   if (isSubmitting.value) return
 
   isSubmitting.value = true
   errorMessage.value = null
+  uploadProgress.value = {
+    totalFiles: draft.files.length,
+    uploadedFiles: 0,
+    activeBatches: 0,
+    progressPercent: 0,
+  }
 
   try {
     const result = await uploadModel({
       ...draft,
       coordinates: props.coordinates ?? draft.coordinates,
+    }, {
+      onProgress: (snapshot) => {
+        uploadProgress.value = snapshot
+      },
     })
     submittedJobId.value = result.jobId
   } catch (err) {

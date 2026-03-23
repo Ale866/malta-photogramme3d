@@ -1,4 +1,5 @@
 import { ModelApi } from "../infrastructure/api";
+import type { UploadProgressSnapshot } from "../infrastructure/api";
 import { authStore, requireAccessToken } from "@/features/auth/application/useAuth";
 import type { ModelCreationDraft } from "../domain/ModelCreationDraft";
 import type { ModelJobDetails } from "../domain/ModelJobDetails";
@@ -7,13 +8,16 @@ import type { ModelJobSnapshot } from "../domain/ModelJob";
 import type { ModelSummary, ModelVoteState } from "../domain/ModelSummary";
 
 export function use3dModel() {
-  async function uploadModel(input: ModelCreationDraft) {
+  async function uploadModel(
+    input: ModelCreationDraft,
+    hooks?: { onProgress?: (snapshot: UploadProgressSnapshot) => void }
+  ) {
     const accessToken = await requireAccessToken();
     const result = await ModelApi.upload({
       title: input.title,
       files: input.files,
       coordinates: input.coordinates,
-    }, accessToken);
+    }, accessToken, hooks);
     return result;
   }
 

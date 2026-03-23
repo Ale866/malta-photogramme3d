@@ -10,6 +10,28 @@
       Selected area: {{ placeLabel }}
     </div>
 
+    <div v-if="uploadProgress && !submittedJobId" class="model-form-upload-status"
+      :class="{ 'model-form-upload-status--active': isSubmitting }">
+      <p class="model-form-upload-status-title">
+        {{ isSubmitting ? 'Uploading images' : 'Upload ready to retry' }}
+      </p>
+      <p class="model-form-upload-status-copy">
+        {{ uploadProgress.uploadedFiles }} / {{ uploadProgress.totalFiles }}
+        {{ uploadProgress.totalFiles === 1 ? 'image uploaded' : 'images uploaded' }}
+      </p>
+      <p v-if="isSubmitting" class="model-form-upload-status-warning">
+        Upload in progress. Please do not close or refresh this page until all images are uploaded. If you close or
+        refresh before it finishes, the upload is lost.
+      </p>
+      <p v-if="isSubmitting && uploadProgress.activeBatches > 0" class="model-form-upload-status-meta">
+        {{ uploadProgress.activeBatches }} {{ uploadProgress.activeBatches === 1 ? 'batch is' : 'batches are' }} currently uploading
+      </p>
+      <div class="model-form-upload-progress" aria-hidden="true">
+        <span :style="{ width: `${uploadProgress.progressPercent}%` }" />
+      </div>
+      <p class="model-form-upload-status-meta">{{ uploadProgress.progressPercent }}%</p>
+    </div>
+
     <div v-if="submittedJobId" class="model-form-inline-success">
       <p class="model-form-inline-success-title">Model job created</p>
       <p class="model-form-inline-success-copy">You can keep inspecting the uploaded images here, or open the details
@@ -96,6 +118,7 @@
 import { computed, onMounted, onUnmounted, ref, toRefs, watch } from 'vue'
 import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import type { ModelCreationDraft } from '@/features/model/domain/ModelCreationDraft'
+import type { UploadProgressSnapshot } from '@/features/model/infrastructure/api'
 
 interface UploadedFile {
   file: File
@@ -108,15 +131,17 @@ const props = withDefaults(defineProps<{
   isLocked?: boolean
   submittedJobId?: string | null
   submitLabel?: string
+  uploadProgress?: UploadProgressSnapshot | null
 }>(), {
   coordinates: () => ({ x: 0, y: 0, z: 0 }),
   isSubmitting: false,
   isLocked: false,
   submittedJobId: null,
   submitLabel: 'Submit',
+  uploadProgress: null,
 })
 
-const { coordinates, isSubmitting, isLocked, submittedJobId, submitLabel } = toRefs(props)
+const { coordinates, isSubmitting, isLocked, submittedJobId, submitLabel, uploadProgress } = toRefs(props)
 const { placeLabel } = usePlaceLabel(() => coordinates.value)
 
 const emit = defineEmits<{

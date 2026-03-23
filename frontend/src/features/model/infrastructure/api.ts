@@ -11,6 +11,31 @@ export type UploadResponse = {
   jobId: string;
 };
 
+export type UploadProgressSnapshot = {
+  totalFiles: number;
+  uploadedFiles: number;
+  activeBatches: number;
+  progressPercent: number;
+};
+
+type UploadInitResponse = {
+  success: boolean;
+  message: string;
+  uploadId: string;
+  totalFiles: number;
+};
+
+type UploadBatchResponse = {
+  success: boolean;
+  message: string;
+  uploadedFiles: number;
+  totalFiles: number;
+};
+
+type UploadHooks = {
+  onProgress?: (snapshot: UploadProgressSnapshot) => void;
+};
+
 type ModelDto = {
   id: string;
   ownerId: string;
@@ -64,6 +89,10 @@ type ModelVoteStateDto = {
   voteCount: number;
   hasVoted: boolean;
 };
+
+const UPLOAD_BATCH_SIZE = 5;
+const MAX_CONCURRENT_UPLOADS = 3;
+const MAX_BATCH_ATTEMPTS = 2;
 
 function toModelSummary(dto: ModelDto): ModelSummary {
   return {
@@ -122,20 +151,93 @@ function toModelJobDetails(dto: ModelJobDetailsDto): ModelJobDetails {
 }
 
 export const ModelApi = {
-  async upload(input: ModelCreationDraft, accessToken: string): Promise<UploadResponse> {
+  async upload(input: ModelCreationDraft, accessToken: string, hooks?: UploadHooks): Promise<UploadResponse> {
     try {
-      const formData = new FormData();
-      formData.append('title', input.title);
-      input.files.forEach((f) => formData.append('files', f));
-      if (input.coordinates) {
-        formData.append('coordinates', JSON.stringify(input.coordinates));
-      }
-
-      const res = await http.post<UploadResponse>('/upload', formData, {
+      const initRes = await http.post<UploadInitResponse>('/upload/init', {
+        title: input.title,
+        coordinates: input.coordinates,
+        totalFiles: input.files.length,
+      }, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+
+      const uploadId = initRes.data.uploadId;
+      const batches = splitIntoBatches(input.files, UPLOAD_BATCH_SIZE);
+      const batchProgress = new Map<number, number>();
+      let uploadedFiles = 0;
+      let activeBatches = 0;
+
+      const emitProgress = () => {
+        const partialFiles = batches.reduce((sum, batch, index) => {
+          return sum + batch.length * (batchProgress.get(index) ?? 0);
+        }, 0);
+
+        const progressPercent = input.files.length === 0
+          ? 0
+          : Math.min(100, Math.round(((uploadedFiles + partialFiles) / input.files.length) * 100));
+
+        hooks?.onProgress?.({
+          totalFiles: input.files.length,
+          uploadedFiles,
+          activeBatches,
+          progressPercent,
+        });
+      };
+
+      emitProgress();
+
+      await runWithConcurrency(batches, MAX_CONCURRENT_UPLOADS, async (files, batchIndex) => {
+        let attempt = 0;
+
+        while (attempt < MAX_BATCH_ATTEMPTS) {
+          attempt += 1;
+          activeBatches += 1;
+          batchProgress.set(batchIndex, 0);
+          emitProgress();
+
+          try {
+            const formData = new FormData();
+            formData.append('batchIndex', String(batchIndex));
+            files.forEach((file) => formData.append('files', file));
+
+            const res = await http.post<UploadBatchResponse>(`/upload/${uploadId}/batches`, formData, {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+              onUploadProgress: (event) => {
+                if (!event.total) return;
+                batchProgress.set(batchIndex, event.loaded / event.total);
+                emitProgress();
+              },
+            });
+
+            batchProgress.delete(batchIndex);
+            activeBatches -= 1;
+            uploadedFiles = Math.max(uploadedFiles, res.data.uploadedFiles);
+            emitProgress();
+            return;
+          } catch (err) {
+            batchProgress.delete(batchIndex);
+            activeBatches -= 1;
+            emitProgress();
+
+            if (attempt >= MAX_BATCH_ATTEMPTS) {
+              throw new Error(`Batch ${batchIndex + 1} failed: ${getErrorMessage(err)}`);
+            }
+          }
+        }
+      });
+
+      const res = await http.post<UploadResponse>(`/upload/${uploadId}/finalize`, undefined, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      uploadedFiles = input.files.length;
+      emitProgress();
 
       return res.data;
     } catch (err) {
@@ -284,3 +386,34 @@ export const ModelApi = {
     }
   }
 };
+
+function splitIntoBatches(files: File[], size: number): File[][] {
+  const batches: File[][] = [];
+
+  for (let index = 0; index < files.length; index += size) {
+    batches.push(files.slice(index, index + size));
+  }
+
+  return batches;
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<void>
+) {
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      const item = items[currentIndex];
+      if (item === undefined) return;
+      await worker(item, currentIndex);
+    }
+  }
+
+  const poolSize = Math.max(1, Math.min(concurrency, items.length));
+  await Promise.all(Array.from({ length: poolSize }, () => runWorker()));
+}
