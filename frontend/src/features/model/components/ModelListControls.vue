@@ -16,7 +16,6 @@ const props = defineProps<{
   selectedFilter: ModelListFilterKey
   selectedSort: ModelListSortKey
   sortOptions: SortOption[]
-  visibleCountLabel: string
 }>()
 
 const emit = defineEmits<{
@@ -32,9 +31,8 @@ function onSortChange(event: Event) {
 <template>
   <div class="model-list-header-tools">
     <div class="model-list-header-toolbar">
-      <span class="model-list-sort-label">{{ props.visibleCountLabel }}</span>
       <label class="model-list-sort-field">
-        <span>Order</span>
+        <span class="model-list-sort-field-label">Order</span>
         <select class="model-list-sort-select" :value="props.selectedSort" @change="onSortChange">
           <option v-for="option in props.sortOptions" :key="option.key" :value="option.key">
             {{ option.label }}

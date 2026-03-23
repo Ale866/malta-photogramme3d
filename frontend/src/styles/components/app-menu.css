@@ -50,7 +50,8 @@
 
 @media (max-width: 700px) {
   .app-menu {
-    width: calc(100vw - 1rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.7rem);
+    width: calc(100vw - 0.75rem);
     max-width: 30rem;
   }
 
@@ -58,12 +59,15 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
+    gap: 0.35rem;
+    padding: 0.3rem;
   }
 
   .app-menu-link {
     min-width: 0;
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
-    font-size: 0.88rem;
+    min-height: 2.35rem;
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+    font-size: 0.84rem;
   }
 }

@@ -242,6 +242,9 @@
 }
 
 .profile-dock-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
   border: 1px solid rgb(255 255 255 / 0.22);

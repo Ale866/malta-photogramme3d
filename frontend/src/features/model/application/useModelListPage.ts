@@ -101,10 +101,6 @@ export function useModelListPage() {
       }
     })
   })
-  const visibleCountLabel = computed(() => {
-    const count = visibleCards.value.length
-    return `${count} ${count === 1 ? 'item' : 'items'}`
-  })
   const pendingJobIds = computed(() => {
     if (modelSource.value !== 'private' || !library.value) return []
 
@@ -218,7 +214,6 @@ export function useModelListPage() {
     isVoteDisabled: voting.isVoteDisabled,
     viewOnIsland,
     visibleCards,
-    visibleCountLabel,
   }
 }
 
