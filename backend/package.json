@@ -1,7 +1,6 @@
 {
   "name": "express-ts-esm",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "dev": "npm run dev:server",
     "dev:server": "tsx watch src/server.ts",
