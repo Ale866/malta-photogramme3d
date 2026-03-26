@@ -26,6 +26,12 @@ const confirmPasswordError = ref<string | null>(null)
 const formError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const isSubmitting = ref(false)
+const isFormComplete = computed(() => (
+  isTokenValid.value
+  && password.value.length >= 6
+  && confirmPassword.value.length > 0
+  && confirmPassword.value === password.value
+))
 
 const expiresAtLabel = computed(() => {
   if (!expiresAt.value) return null
@@ -191,7 +197,7 @@ watch(
 
         <p v-if="formError" class="auth-field-error">{{ formError }}</p>
 
-        <button class="btn btn-primary btn-block" type="submit" :disabled="isSubmitting">
+        <button class="btn btn-primary btn-block" type="submit" :disabled="isSubmitting || !isFormComplete">
           {{ isSubmitting ? 'Resetting password...' : 'Reset password' }}
         </button>
 

@@ -31,14 +31,17 @@ const {
   confirmEmail,
   password,
   confirmPassword,
+  consentAccepted,
   nicknameError,
   emailError,
   confirmEmailError,
   passwordError,
   confirmPasswordError,
+  consentError,
   formError,
   isLoading,
   isRegisterMode,
+  isFormComplete,
   switchMode,
   markFieldTouched,
   submit,
@@ -131,6 +134,62 @@ async function onSubmit() {
         @blur="markFieldTouched('confirmPassword')"
       />
 
+      <section v-if="mode === 'register'" class="auth-consent auth-form-span-full" aria-labelledby="auth-consent-title">
+        <div class="auth-consent__header">
+          <h3 id="auth-consent-title" class="auth-consent__title">Research consent</h3>
+          <p class="auth-consent__subtitle text-muted">
+            Please read this short consent notice before creating an account.
+          </p>
+        </div>
+
+        <div class="auth-consent__body">
+          <p>
+            By registering, you agree to take part in this Final Year Project study evaluating the Malta
+            Photogramme3D platform.
+          </p>
+          <ol class="auth-consent__list">
+            <li>
+              You have been given clear information about the purpose of the study and may ask questions before
+              taking part.
+            </li>
+            <li>
+              Participation is voluntary. You may stop participating at any time without penalty, and where
+              technically possible your data can be erased before it is anonymised or published.
+            </li>
+            <li>
+              Your participation consists of creating an account and using this web application as part of the
+              evaluation of the FYP system.
+            </li>
+            <li>
+              The only personal data collected during registration is your email address.
+            </li>
+            <li>
+              No direct personal benefit is guaranteed, but the study may help improve this research project and
+              future work built on it.
+            </li>
+            <li>
+              Under GDPR and applicable national legislation, you may request access to, correction of, or erasure
+              of your personal data where applicable.
+            </li>
+            <li>
+              Your identity will not be revealed in publications, reports, or presentations resulting from this
+              study.
+            </li>
+          </ol>
+        </div>
+
+        <label class="auth-consent__check">
+          <input
+            v-model="consentAccepted"
+            class="auth-consent__checkbox"
+            type="checkbox"
+            @change="markFieldTouched('consent')"
+          />
+          <span>I have read and understood the consent information and agree to participate in this study.</span>
+        </label>
+        <p v-if="consentError" class="auth-field-error">{{ consentError }}</p>
+      </section>
+
       <div v-if="mode === 'login'" class="auth-card-actions auth-form-span-full">
         <RouterLink class="auth-inline-link" :to="forgotPasswordRoute">
           Forgot password?
@@ -139,7 +198,8 @@ async function onSubmit() {
 
       <p v-if="formError" class="auth-field-error auth-form-span-full">{{ formError }}</p>
 
-      <button class="btn btn-primary btn-block auth-form-span-full" type="submit" :disabled="isLoading">
+      <button class="btn btn-primary btn-block auth-form-span-full" type="submit"
+        :disabled="isLoading || !isFormComplete">
         {{ isLoading ? 'Submitting...' : submitLabel }}
       </button>
     </form>

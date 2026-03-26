@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { useAuth } from '@/features/auth/application/useAuth'
 import type { AuthMode } from '@/features/auth/domain/AuthMode'
 
-type FieldName = 'nickname' | 'email' | 'confirmEmail' | 'password' | 'confirmPassword'
+type FieldName = 'nickname' | 'email' | 'confirmEmail' | 'password' | 'confirmPassword' | 'consent'
 
 type UseAuthFormOptions = {
   initialMode?: AuthMode
@@ -10,6 +10,10 @@ type UseAuthFormOptions = {
 
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase()
+}
+
+function isValidEmailFormat(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value))
 }
 
 export function useAuthForm(options: UseAuthFormOptions = {}) {
@@ -21,12 +25,14 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
   const confirmEmail = ref('')
   const password = ref('')
   const confirmPassword = ref('')
+  const consentAccepted = ref(false)
 
   const nicknameError = ref<string | null>(null)
   const emailError = ref<string | null>(null)
   const confirmEmailError = ref<string | null>(null)
   const passwordError = ref<string | null>(null)
   const confirmPasswordError = ref<string | null>(null)
+  const consentError = ref<string | null>(null)
   const formError = ref<string | null>(null)
 
   const isLoading = ref(false)
@@ -37,8 +43,25 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
   const confirmEmailTouched = ref(false)
   const passwordTouched = ref(false)
   const confirmPasswordTouched = ref(false)
+  const consentTouched = ref(false)
 
   const isRegisterMode = computed(() => mode.value === 'register')
+  const isFormComplete = computed(() => {
+    const hasValidEmail = isValidEmailFormat(email.value)
+
+    if (!isRegisterMode.value) {
+      return hasValidEmail && password.value.length > 0
+    }
+
+    return nickname.value.trim().length >= 3
+      && hasValidEmail
+      && confirmEmail.value.trim().length > 0
+      && normalizeEmail(email.value) === normalizeEmail(confirmEmail.value)
+      && password.value.length >= 6
+      && confirmPassword.value.length > 0
+      && password.value === confirmPassword.value
+      && consentAccepted.value
+  })
 
   function clearErrors() {
     nicknameError.value = null
@@ -46,6 +69,7 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     confirmEmailError.value = null
     passwordError.value = null
     confirmPasswordError.value = null
+    consentError.value = null
     formError.value = null
   }
 
@@ -56,6 +80,7 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     confirmEmailTouched.value = false
     passwordTouched.value = false
     confirmPasswordTouched.value = false
+    consentTouched.value = false
   }
 
   function resetValues() {
@@ -64,6 +89,7 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     confirmEmail.value = ''
     password.value = ''
     confirmPassword.value = ''
+    consentAccepted.value = false
   }
 
   function shouldValidateField(touched: boolean) {
@@ -86,6 +112,9 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
         break
       case 'confirmPassword':
         confirmPasswordTouched.value = true
+        break
+      case 'consent':
+        consentTouched.value = true
         break
     }
   }
@@ -122,6 +151,8 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
 
     if (!email.value.trim()) {
       emailError.value = 'Email is required'
+    } else if (!isValidEmailFormat(email.value)) {
+      emailError.value = 'Enter a valid email address'
     } else {
       emailError.value = null
     }
@@ -190,6 +221,26 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     return !confirmPasswordError.value
   }
 
+  function validateConsent() {
+    if (!isRegisterMode.value) {
+      consentError.value = null
+      return true
+    }
+
+    if (!shouldValidateField(consentTouched.value)) {
+      consentError.value = null
+      return true
+    }
+
+    if (!consentAccepted.value) {
+      consentError.value = 'You must accept the research consent before registering'
+    } else {
+      consentError.value = null
+    }
+
+    return !consentError.value
+  }
+
   function validate() {
     hasSubmitted.value = true
 
@@ -198,6 +249,7 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
       && validateConfirmEmail()
       && validatePassword()
       && validateConfirmPassword()
+      && validateConsent()
   }
 
   function switchMode(nextMode: AuthMode) {
@@ -251,13 +303,14 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     }
   }
 
-  watch([nickname, email, confirmEmail, password, confirmPassword, mode], () => {
+  watch([nickname, email, confirmEmail, password, confirmPassword, consentAccepted, mode], () => {
     formError.value = null
     validateNickname()
     validateEmail()
     validateConfirmEmail()
     validatePassword()
     validateConfirmPassword()
+    validateConsent()
   })
 
   return {
@@ -267,14 +320,17 @@ export function useAuthForm(options: UseAuthFormOptions = {}) {
     confirmEmail,
     password,
     confirmPassword,
+    consentAccepted,
     nicknameError,
     emailError,
     confirmEmailError,
     passwordError,
     confirmPasswordError,
+    consentError,
     formError,
     isLoading,
     isRegisterMode,
+    isFormComplete,
     switchMode,
     markFieldTouched,
     submit,

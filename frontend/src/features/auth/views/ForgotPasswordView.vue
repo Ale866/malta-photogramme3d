@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { AuthApi, AuthApiError } from '@/features/auth/infrastructure/api'
 
@@ -8,6 +8,7 @@ const emailError = ref<string | null>(null)
 const formError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const isLoading = ref(false)
+const isFormComplete = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim().toLowerCase()))
 
 function clearMessages() {
   emailError.value = null
@@ -19,6 +20,8 @@ function validate() {
 
   if (!email.value.trim()) {
     emailError.value = 'Email is required'
+  } else if (!isFormComplete.value) {
+    emailError.value = 'Enter a valid email address'
   }
 
   return !emailError.value
@@ -65,7 +68,7 @@ async function onSubmit() {
         <p v-if="successMessage" class="text-success auth-card-status">{{ successMessage }}</p>
         <p v-if="formError" class="auth-field-error">{{ formError }}</p>
 
-        <button class="btn btn-primary btn-block" type="submit" :disabled="isLoading">
+        <button class="btn btn-primary btn-block" type="submit" :disabled="isLoading || !isFormComplete">
           {{ isLoading ? 'Sending link...' : 'Send reset link' }}
         </button>
       </form>
