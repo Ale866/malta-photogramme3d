@@ -1,5 +1,5 @@
 import { processNextQueuedModelJob } from "./modules/pipeline/application/processNextQueuedModelJob";
-import { runMeshroom } from "./modules/pipeline/infrastructure/meshroomRunner";
+import { runFeatureExtraction, runFeatureMatching, runSparseMapping, } from "./modules/pipeline/infrastructure/colmapRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
 import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
 import { connectDb, disconnectDb } from "./shared/db/mongoConnection";
@@ -9,7 +9,9 @@ const workerDependencies = {
   modelJobs: modelJobRepo,
   models: modelRepo,
   pipeline: {
-    runMeshroom,
+    runFeatureExtraction,
+    runFeatureMatching,
+    runSparseMapping,
   },
 };
 

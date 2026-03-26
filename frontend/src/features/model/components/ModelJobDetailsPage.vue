@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { usePlaceLabel } from '@/core/application/usePlaceLabel'
+import { MODEL_JOB_STATUS, isModelJobPendingStatus } from '@/features/model/domain/ModelJob'
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
 
 const props = defineProps<{
@@ -47,20 +48,23 @@ const stageLabel = computed(() => formatLabel(props.job.stage))
 const { placeLabel } = usePlaceLabel(() => props.job.coordinates!)
 
 const summary = computed(() => {
-  switch (props.job.status) {
-    case 'queued':
-      return 'The reconstruction is queued and waiting to start.'
-    case 'running':
-      return 'The reconstruction is in progress.'
-    case 'failed':
-      return 'The reconstruction stopped before completion. The latest job state is shown below.'
-    case 'succeeded':
-      return 'The reconstruction finished successfully. The generated model is ready.'
+  if (props.job.status === MODEL_JOB_STATUS.QUEUED) {
+    return 'The reconstruction is queued and waiting to start.'
   }
+
+  if (props.job.status === MODEL_JOB_STATUS.FAILED) {
+    return 'The reconstruction stopped before completion. The latest job state is shown below.'
+  }
+
+  if (props.job.status === MODEL_JOB_STATUS.COMPLETED) {
+    return 'The reconstruction finished successfully. The generated model is ready.'
+  }
+
+  return 'The sparse COLMAP reconstruction is in progress.'
 })
 
 const progressNote = computed(() => {
-  if (props.job.status === 'queued' || props.job.status === 'running') {
+  if (isModelJobPendingStatus(props.job.status)) {
     return 'Live updates arrive automatically while this page is open.'
   }
 

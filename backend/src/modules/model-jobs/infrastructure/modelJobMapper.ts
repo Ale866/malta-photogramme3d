@@ -1,4 +1,4 @@
-import type { ModelJob, ModelJobCoordinates } from "../domain/modelJobRepository";
+import { MODEL_JOB_STATUS, type ModelJob, type ModelJobCoordinates } from "../domain/modelJobRepository";
 import { clampProgress, normalizeModelJobStatus } from "../domain/modelJobState";
 
 function toCoordinates(value: unknown): ModelJobCoordinates | null {
@@ -30,9 +30,8 @@ export function toModelJobDomain(doc: any): ModelJob {
     imagePaths: doc.imagePaths ?? [],
     coordinates: toCoordinates(doc.coordinates),
     status: normalizeModelJobStatus(doc.status),
-    stage: doc.stage ?? "starting",
+    stage: doc.stage ?? MODEL_JOB_STATUS.QUEUED,
     progress: clampProgress(doc.progress ?? 0),
-    logTail: Array.isArray(doc.logTail) ? doc.logTail : [],
     error: doc.error ?? null,
     modelId: doc.modelId ?? null,
     startedAt: doc.startedAt ?? null,

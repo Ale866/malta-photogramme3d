@@ -4,6 +4,7 @@ import { use3dModel } from '@/features/model/application/useModel'
 import { useModelLibraryAutoRefresh } from '@/features/model/application/useModelLibraryAutoRefresh'
 import { useModelVoting } from '@/features/model/application/useModelVoting'
 import { toModelLibraryCardViewModels, type ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter'
+import { isModelJobPendingStatus } from '@/features/model/domain/ModelJob'
 import type { ModelLibrary } from '@/features/model/domain/ModelLibrary'
 import { canRenderModelOnIsland } from '@/features/model/domain/ModelSummary'
 
@@ -105,7 +106,7 @@ export function useModelListPage() {
     if (modelSource.value !== 'private' || !library.value) return []
 
     return library.value.modelJobs
-      .filter((job) => job.status === 'queued' || job.status === 'running')
+      .filter((job) => isModelJobPendingStatus(job.status))
       .map((job) => job.id)
   })
 

@@ -1,26 +1,38 @@
 import type {
+  ModelJobStatus,
   ModelJobRepository,
   CreateModelJobInput,
   ModelJob,
   UpdateModelJobStateInput,
 } from '../domain/modelJobRepository';
+import { MODEL_JOB_STATUS } from '../domain/modelJobRepository';
 import { clampProgress } from '../domain/modelJobState';
 import { ModelJobSchema } from './db/ModelJobSchema';
 import { toModelJobDomain } from './modelJobMapper';
+
+const NON_COMPLETED_MODEL_JOB_STATUSES: readonly ModelJobStatus[] = [
+  MODEL_JOB_STATUS.QUEUED,
+  MODEL_JOB_STATUS.FEATURE_EXTRACTION_RUNNING,
+  MODEL_JOB_STATUS.FEATURE_EXTRACTION_COMPLETED,
+  MODEL_JOB_STATUS.FEATURE_MATCHING_RUNNING,
+  MODEL_JOB_STATUS.FEATURE_MATCHING_COMPLETED,
+  MODEL_JOB_STATUS.SPARSE_MAPPING_RUNNING,
+  MODEL_JOB_STATUS.SPARSE_MAPPING_COMPLETED,
+  MODEL_JOB_STATUS.FAILED,
+];
 
 export const modelJobRepo: ModelJobRepository = {
   async create(input: CreateModelJobInput): Promise<ModelJob> {
     const created = await ModelJobSchema.create({
       ownerId: input.ownerId,
       title: input.title,
-      status: input.status ?? 'queued',
+      status: input.status ?? MODEL_JOB_STATUS.QUEUED,
       inputFolder: input.inputFolder ?? '',
       outputFolder: input.outputFolder ?? '',
       imagePaths: input.imagePaths ?? [],
       coordinates: input.coordinates ?? null,
-      stage: input.stage ?? 'starting',
+      stage: input.stage ?? MODEL_JOB_STATUS.QUEUED,
       progress: clampProgress(input.progress ?? 0),
-      logTail: input.logTail ?? [],
       error: input.error ?? null,
       modelId: input.modelId ?? null,
       startedAt: input.startedAt ?? null,
@@ -40,12 +52,12 @@ export const modelJobRepo: ModelJobRepository = {
   async claimNextQueued(): Promise<ModelJob | null> {
     const startedAt = new Date();
     const doc = await ModelJobSchema.findOneAndUpdate(
-      { status: 'queued' },
+      { status: MODEL_JOB_STATUS.QUEUED },
       {
         $set: {
-          status: 'running',
-          stage: 'starting',
-          progress: 1,
+          status: MODEL_JOB_STATUS.QUEUED,
+          stage: MODEL_JOB_STATUS.QUEUED,
+          progress: 0,
           error: null,
           startedAt,
         },
@@ -66,7 +78,6 @@ export const modelJobRepo: ModelJobRepository = {
     if (typeof patch.status === 'string') update.status = patch.status;
     if (typeof patch.stage === 'string') update.stage = patch.stage;
     if (typeof patch.progress === 'number') update.progress = clampProgress(patch.progress);
-    if (Array.isArray(patch.logTail)) update.logTail = patch.logTail;
     if (typeof patch.error === 'string' || patch.error === null) update.error = patch.error;
     if (typeof patch.modelId === 'string' || patch.modelId === null) update.modelId = patch.modelId;
     if (patch.startedAt instanceof Date || patch.startedAt === null) update.startedAt = patch.startedAt;
@@ -77,7 +88,13 @@ export const modelJobRepo: ModelJobRepository = {
       return this.findById(jobId);
     }
 
-    const doc = await ModelJobSchema.findByIdAndUpdate(jobId, { $set: update }, { returnDocument: 'after' }).lean();
+    const doc = await ModelJobSchema.findByIdAndUpdate(
+      jobId,
+      {
+        $set: update,
+      },
+      { returnDocument: 'after' }
+    ).lean();
     if (!doc) return null;
 
     return toModelJobDomain(doc);
@@ -86,7 +103,9 @@ export const modelJobRepo: ModelJobRepository = {
   async listNonCompletedByOwner(ownerId: string): Promise<ModelJob[]> {
     const docs = await ModelJobSchema.find({
       ownerId,
-      status: { $in: ['queued', 'running', 'failed'] },
+      status: {
+        $in: [...NON_COMPLETED_MODEL_JOB_STATUSES],
+      },
     }).sort({ createdAt: -1 }).lean();
     return docs.map((doc) => toModelJobDomain(doc));
   }

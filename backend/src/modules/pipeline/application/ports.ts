@@ -1,15 +1,19 @@
-export type PipelineStage = "starting" | "sfm" | "mvs" | "mesh_or_splat" | "packaging";
+export type PipelineStage =
+  | "feature_extraction"
+  | "feature_matching"
+  | "sparse_mapping";
 
 export type PipelineProgressEvent = {
   stage: PipelineStage;
   progress: number;
-  line?: string;
 };
 
-export type RunMeshroomHooks = {
+export type RunColmapStageHooks = {
   onProgress?: (event: PipelineProgressEvent) => void;
 };
 
 export type PipelineServices = {
-  runMeshroom: (inputFolder: string, outputFolder: string, hooks?: RunMeshroomHooks) => Promise<void>;
+  runFeatureExtraction: (inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
+  runFeatureMatching: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
+  runSparseMapping: (inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
 };

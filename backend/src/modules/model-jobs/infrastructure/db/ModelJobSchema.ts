@@ -1,4 +1,5 @@
 import mongoose, { Schema, InferSchemaType, Model } from 'mongoose';
+import { MODEL_JOB_STATUS } from '../../domain/modelJobRepository';
 
 const modelJobSchema = new Schema(
   {
@@ -44,14 +45,14 @@ const modelJobSchema = new Schema(
     status: {
       type: String,
       required: true,
-      enum: ['queued', 'running', 'succeeded', 'failed', 'done'],
-      default: 'queued',
+      enum: Object.values(MODEL_JOB_STATUS),
+      default: MODEL_JOB_STATUS.QUEUED,
       index: true,
     },
     stage: {
       type: String,
       required: true,
-      default: 'starting',
+      default: MODEL_JOB_STATUS.QUEUED,
     },
     progress: {
       type: Number,
@@ -59,11 +60,6 @@ const modelJobSchema = new Schema(
       min: 0,
       max: 100,
       default: 0,
-    },
-    logTail: {
-      type: [String],
-      required: true,
-      default: [],
     },
     error: {
       type: String,

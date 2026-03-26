@@ -1,14 +1,15 @@
 import { createModelFromJob } from "../../model/application/createModelFromJob";
 import {
   setModelJobFailed,
-  setModelJobRunning,
-  setModelJobSucceeded,
+  setModelJobCompleted,
+  setModelJobStageCompleted,
+  setModelJobStageRunning,
   updateModelJobRuntime,
 } from "../../model-jobs/application/jobLifecycle";
-import type { ModelJobRepository } from "../../model-jobs/domain/modelJobRepository";
+import { MODEL_JOB_STATUS, type ModelJobRepository, type ModelJobStatus } from "../../model-jobs/domain/modelJobRepository";
 import type { ModelRepository } from "../../model/domain/modelRepository";
-import { runMeshroomPipeline } from "./runMeshroomPipeline";
 import type { PipelineServices } from "./ports";
+import type { PipelineStage } from "./ports";
 import { badRequest, notFound, } from "../../../shared/errors/applicationError";
 
 export type ExecuteModelJobInput = {
@@ -21,8 +22,67 @@ export type ExecuteModelJobServices = {
   pipeline: PipelineServices;
 };
 
-const LOG_TAIL_MAX_LINES = 200;
 const JOB_UPDATE_THROTTLE_MS = 1000;
+
+type SparsePipelineStage = {
+  key: PipelineStage;
+  runningStatus: Extract<ModelJobStatus, `${string}_running`>;
+  completedStatus: Extract<ModelJobStatus, `${string}_completed`>;
+  runningStageLabel: string;
+  completedStageLabel: string;
+  startProgress: number;
+  completedProgress: number;
+  run: (
+    services: PipelineServices,
+    job: { inputFolder: string; outputFolder: string },
+    onProgress: (stage: PipelineStage, progress: number) => void
+  ) => Promise<void>;
+};
+
+const SPARSE_PIPELINE_STAGES: readonly SparsePipelineStage[] = [
+  {
+    key: "feature_extraction",
+    runningStatus: MODEL_JOB_STATUS.FEATURE_EXTRACTION_RUNNING,
+    completedStatus: MODEL_JOB_STATUS.FEATURE_EXTRACTION_COMPLETED,
+    runningStageLabel: MODEL_JOB_STATUS.FEATURE_EXTRACTION_RUNNING,
+    completedStageLabel: MODEL_JOB_STATUS.FEATURE_EXTRACTION_COMPLETED,
+    startProgress: 1,
+    completedProgress: 30,
+    run: async (services, job, onProgress) => {
+      await services.runFeatureExtraction(job.inputFolder, job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+  {
+    key: "feature_matching",
+    runningStatus: MODEL_JOB_STATUS.FEATURE_MATCHING_RUNNING,
+    completedStatus: MODEL_JOB_STATUS.FEATURE_MATCHING_COMPLETED,
+    runningStageLabel: MODEL_JOB_STATUS.FEATURE_MATCHING_RUNNING,
+    completedStageLabel: MODEL_JOB_STATUS.FEATURE_MATCHING_COMPLETED,
+    startProgress: 31,
+    completedProgress: 60,
+    run: async (services, job, onProgress) => {
+      await services.runFeatureMatching(job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+  {
+    key: "sparse_mapping",
+    runningStatus: MODEL_JOB_STATUS.SPARSE_MAPPING_RUNNING,
+    completedStatus: MODEL_JOB_STATUS.SPARSE_MAPPING_COMPLETED,
+    runningStageLabel: MODEL_JOB_STATUS.SPARSE_MAPPING_RUNNING,
+    completedStageLabel: MODEL_JOB_STATUS.SPARSE_MAPPING_COMPLETED,
+    startProgress: 61,
+    completedProgress: 95,
+    run: async (services, job, onProgress) => {
+      await services.runSparseMapping(job.inputFolder, job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+];
 
 export async function executeModelJob(services: ExecuteModelJobServices, input: ExecuteModelJobInput): Promise<void> {
   const jobId = requireJobId(input.jobId);
@@ -30,23 +90,20 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
   if (!job) throw notFound("Job not found", "job_not_found");
   if (!job.coordinates) throw badRequest("Missing job coordinates", "job_coordinates_required");
 
-  let stage = "starting";
-  let progress = 1;
-  let logTail: string[] = [];
-
+  let stage: string = MODEL_JOB_STATUS.QUEUED;
+  let progress = 0;
   const persistRuntime = async () => {
     await updateModelJobRuntime({ modelJobs: services.modelJobs }, job.id, {
       stage,
       progress,
-      logTail: [...logTail],
     });
   };
 
   const interval = setInterval(() => {
-    void persistRuntime();
+    persistRuntime();
   }, JOB_UPDATE_THROTTLE_MS);
 
-  const captureRuntime = (next: { stage?: string; progress?: number; line?: string }) => {
+  const captureRuntime = (next: { stage?: string; progress?: number }) => {
     if (typeof next.stage === "string" && next.stage.trim()) {
       stage = next.stage.trim();
     }
@@ -54,35 +111,69 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
     if (typeof next.progress === "number" && Number.isFinite(next.progress)) {
       progress = Math.max(progress, Math.round(next.progress));
     }
-
-    if (typeof next.line === "string" && next.line.trim()) {
-      logTail.push(next.line.trim());
-      if (logTail.length > LOG_TAIL_MAX_LINES) {
-        logTail = logTail.slice(-LOG_TAIL_MAX_LINES);
-      }
-    }
   };
 
   try {
-    await setModelJobRunning({ modelJobs: services.modelJobs }, job.id);
-    captureRuntime({ stage: "starting", progress: 1 });
+    for (const pipelineStage of SPARSE_PIPELINE_STAGES) {
+      await setModelJobStageRunning(
+        { modelJobs: services.modelJobs },
+        job.id,
+        {
+          status: pipelineStage.runningStatus,
+          stage: pipelineStage.runningStageLabel,
+          progress: pipelineStage.startProgress,
+        }
+      );
 
-    await runMeshroomPipeline(
-      services.pipeline,
-      {
-        inputFolder: job.inputFolder,
-        outputFolder: job.outputFolder,
-      },
-      {
-        onProgress: (event) => {
-          captureRuntime({
-            stage: event.stage,
-            progress: event.progress,
-            line: event.line,
-          });
-        },
+      captureRuntime({
+        stage: pipelineStage.runningStageLabel,
+        progress: pipelineStage.startProgress,
+      });
+
+      await persistRuntime();
+
+      try {
+        await pipelineStage.run(
+          services.pipeline,
+          {
+            inputFolder: job.inputFolder,
+            outputFolder: job.outputFolder,
+          },
+          (eventStage, eventProgress) => {
+            captureRuntime({
+              stage: pipelineStage.runningStageLabel,
+              progress: mapStageProgress(eventStage, eventProgress),
+            });
+          }
+        );
+      } catch (error) {
+        captureRuntime({
+          stage: `${pipelineStage.key}_failed`,
+          progress,
+        });
+
+        await persistRuntime();
+
+        throw new Error(`${pipelineStage.key} failed: ${toErrorMessage(error)}`);
       }
-    );
+
+      await setModelJobStageCompleted(
+        { modelJobs: services.modelJobs },
+        job.id,
+        {
+          status: pipelineStage.completedStatus,
+          stage: pipelineStage.completedStageLabel,
+          progress: pipelineStage.completedProgress,
+        }
+      );
+
+      captureRuntime({
+        stage: pipelineStage.completedStageLabel,
+        progress: pipelineStage.completedProgress,
+      });
+
+      await persistRuntime();
+    }
 
     await persistRuntime();
 
@@ -97,16 +188,40 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
       }
     );
 
-    await setModelJobSucceeded({ modelJobs: services.modelJobs }, job.id, {
+    await setModelJobCompleted({ modelJobs: services.modelJobs }, job.id, {
       modelId: model.id,
     });
   } catch (error) {
     await setModelJobFailed({ modelJobs: services.modelJobs }, job.id, {
       error: toErrorMessage(error),
+      stage: stage.endsWith("_failed") ? stage : `${stage}_failed`,
+      progress,
     });
   } finally {
     clearInterval(interval);
   }
+}
+
+function mapStageProgress(stage: string, stageProgress: number): number {
+  const normalized = clampStageProgress(stageProgress);
+
+  switch (stage) {
+    case "feature_extraction":
+      return Math.round((normalized / 100) * 30);
+    case "feature_matching":
+      return 30 + Math.round((normalized / 100) * 30);
+    case "sparse_mapping":
+      return 60 + Math.round((normalized / 100) * 35);
+    default:
+      return normalized;
+  }
+}
+
+function clampStageProgress(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return Math.round(value);
 }
 
 function requireJobId(jobId: string): string {

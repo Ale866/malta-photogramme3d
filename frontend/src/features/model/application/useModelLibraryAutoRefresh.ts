@@ -1,11 +1,11 @@
 import { onUnmounted } from 'vue'
-import type { ModelJobStatus } from '../domain/ModelJob'
+import { isModelJobTerminalStatus, type ModelJobStatus } from '../domain/ModelJob'
 import { useModelJobRealtime } from './useModelJobRealtime'
 
 const DEFAULT_POLL_INTERVAL_MS = 5000
 
 function isTerminal(status: ModelJobStatus): boolean {
-  return status === 'succeeded' || status === 'failed'
+  return isModelJobTerminalStatus(status)
 }
 
 export function useModelLibraryAutoRefresh(options: {

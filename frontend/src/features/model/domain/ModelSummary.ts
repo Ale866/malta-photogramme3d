@@ -1,4 +1,4 @@
-import type { ModelJobSnapshot } from './ModelJob';
+import { MODEL_JOB_STATUS, isModelJobPendingStatus, type ModelJobSnapshot } from './ModelJob';
 
 export type ModelVoteState = {
   modelId: string;
@@ -41,7 +41,7 @@ export function applyVoteStateToModel(model: ModelSummary, voteState: ModelVoteS
 export function getModelLifecycleStatus(model: ModelSummary): ModelLifecycleStatus {
   const status = model.modelJob?.status;
 
-  if (status === 'queued' || status === 'running') return 'pending';
-  if (status === 'failed') return 'failed';
+  if (status && isModelJobPendingStatus(status)) return 'pending';
+  if (status === MODEL_JOB_STATUS.FAILED) return 'failed';
   return 'ready';
 }

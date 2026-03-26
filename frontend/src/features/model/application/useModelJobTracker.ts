@@ -1,12 +1,12 @@
 import { onUnmounted, ref } from "vue";
-import type { ModelJobSnapshot } from "../domain/ModelJob";
+import { isModelJobTerminalStatus, type ModelJobSnapshot } from "../domain/ModelJob";
 import { use3dModel } from "./useModel";
 import { useModelJobRealtime } from "./useModelJobRealtime";
 
 const DEFAULT_POLL_INTERVAL_MS = 5000;
 
 function isTerminal(status: ModelJobSnapshot["status"]): boolean {
-  return status === "succeeded" || status === "failed";
+  return isModelJobTerminalStatus(status);
 }
 
 export function useModelJobTracker() {
