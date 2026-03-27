@@ -42,6 +42,23 @@ function formatCoordinateLabel(lat: number, lon: number) {
   return `${formatCoordinateValue(lat)}, ${formatCoordinateValue(lon)}`
 }
 
+export function createCoordinateSearchEntry(lat: number, lon: number): SearchEntry | null {
+  if (!isInMaltaBounds(lat, lon)) {
+    return null
+  }
+
+  const label = formatCoordinateLabel(lat, lon)
+
+  return {
+    id: `coordinates:${lat}:${lon}`,
+    name: 'Coordinates',
+    city: label,
+    type: 'coordinates',
+    lat,
+    lon,
+  }
+}
+
 export function toCoordinateSearchEntry(query: string): SearchEntry | null {
   const values = query.match(/[+-]?\d+(?:\.\d+)?/g)
   if (!values || values.length !== 2) {
@@ -59,14 +76,5 @@ export function toCoordinateSearchEntry(query: string): SearchEntry | null {
     return null
   }
 
-  const label = formatCoordinateLabel(coordinates.lat, coordinates.lon)
-
-  return {
-    id: `coordinates:${coordinates.lat}:${coordinates.lon}`,
-    name: 'Coordinates',
-    city: label,
-    type: 'coordinates',
-    lat: coordinates.lat,
-    lon: coordinates.lon,
-  }
+  return createCoordinateSearchEntry(coordinates.lat, coordinates.lon)
 }

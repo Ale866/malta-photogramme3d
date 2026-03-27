@@ -16,6 +16,21 @@
         </svg>
       </span>
     </div>
+    <button
+      class="btn btn-icon search-locate-button"
+      type="button"
+      :disabled="isLocating || !canGeolocate"
+      :title="canGeolocate ? 'Use my current location' : 'Geolocation is not supported in this browser'"
+      :aria-label="canGeolocate ? 'Use my current location' : 'Geolocation is not supported in this browser'"
+      @click="locateUser"
+    >
+      <svg class="search-locate-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M11.25 3a.75.75 0 0 1 1.5 0v1.56a7.5 7.5 0 0 1 6.69 6.69H21a.75.75 0 0 1 0 1.5h-1.56a7.5 7.5 0 0 1-6.69 6.69V21a.75.75 0 0 1-1.5 0v-1.56a7.5 7.5 0 0 1-6.69-6.69H3a.75.75 0 0 1 0-1.5h1.56a7.5 7.5 0 0 1 6.69-6.69V3Zm.75 3a6 6 0 1 0 0 12a6 6 0 0 0 0-12Zm0 3.25a2.75 2.75 0 1 1 0 5.5a2.75 2.75 0 0 1 0-5.5Z"
+          fill="currentColor"
+        />
+      </svg>
+    </button>
 
     <div v-if="results.length" class="search-results">
       <button
@@ -29,12 +44,13 @@
         <small class="search-item-city">{{ result.city }}</small>
       </button>
     </div>
+    <p v-if="locationError" class="search-message">{{ locationError }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
-import { toCoordinateSearchEntry } from '@/utils/searchCoordinates'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { createCoordinateSearchEntry, toCoordinateSearchEntry } from '@/utils/searchCoordinates'
 
 type SearchResult = SearchEntry & { score: number }
 
@@ -45,6 +61,9 @@ const emit = defineEmits<{
 const rootRef = ref<HTMLElement | null>(null)
 const inputText = ref('')
 const results = ref<SearchResult[]>([])
+const isLocating = ref(false)
+const locationError = ref('')
+const canGeolocate = computed(() => typeof navigator !== 'undefined' && 'geolocation' in navigator)
 
 let debounceTimer: number | null = null
 let searchIndexPromise: Promise<SearchEntry[]> | null = null
@@ -204,6 +223,10 @@ function clearResults() {
   results.value = []
 }
 
+function clearLocationError() {
+  locationError.value = ''
+}
+
 function handleDocumentPointerDown(event: PointerEvent) {
   const target = event.target as Node | null
   if (!target || !rootRef.value) return
@@ -217,15 +240,58 @@ function selectResult(entry = results.value[0]) {
   skipNextSearchUpdate = true
   inputText.value = getResultInputValue(entry)
   clearResults()
+  clearLocationError()
   emit('search-selected', entry)
 }
 
+function selectCoordinateEntry(entry: SearchEntry) {
+  selectResult({ ...entry, score: Number.MAX_SAFE_INTEGER })
+}
+
+function locateUser() {
+  if (!canGeolocate.value || isLocating.value) {
+    return
+  }
+
+  clearLocationError()
+  isLocating.value = true
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      isLocating.value = false
+
+      const entry = createCoordinateSearchEntry(
+        position.coords.latitude,
+        position.coords.longitude
+      )
+
+      if (!entry) {
+        locationError.value = 'Your current location is outside the Malta map area.'
+        return
+      }
+
+      selectCoordinateEntry(entry)
+    },
+    () => {
+      isLocating.value = false
+      locationError.value = 'Location access was unavailable.'
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 30000,
+    }
+  )
+}
+
 watch(inputText, (value) => {
+  clearLocationError()
+
   if (debounceTimer !== null) {
     window.clearTimeout(debounceTimer)
   }
 
-   if (skipNextSearchUpdate) {
+  if (skipNextSearchUpdate) {
     skipNextSearchUpdate = false
     return
   }
