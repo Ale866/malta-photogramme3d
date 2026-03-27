@@ -4,7 +4,7 @@
       <input
         v-model="inputText"
         class="form-input search-input"
-        placeholder="Search"
+        placeholder="Search place or coordinates"
         @keyup.enter="selectResult()"
       />
       <span class="search-icon" aria-hidden="true">
@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { toCoordinateSearchEntry } from '@/utils/searchCoordinates'
 
 type SearchResult = SearchEntry & { score: number }
 
@@ -184,6 +185,21 @@ function rankResults(entries: SearchEntry[], query: string): SearchResult[] {
     .slice(0, 8)
 }
 
+function buildResults(entries: SearchEntry[], query: string): SearchResult[] {
+  const placeResults = rankResults(entries, query)
+  const coordinateResult = toCoordinateSearchEntry(query)
+
+  if (!coordinateResult) {
+    return placeResults
+  }
+
+  return [{ ...coordinateResult, score: Number.MAX_SAFE_INTEGER }, ...placeResults].slice(0, 8)
+}
+
+function getResultInputValue(entry: SearchEntry) {
+  return entry.type === 'coordinates' ? entry.city : entry.name
+}
+
 function clearResults() {
   results.value = []
 }
@@ -199,7 +215,7 @@ function selectResult(entry = results.value[0]) {
   if (!entry) return
 
   skipNextSearchUpdate = true
-  inputText.value = entry.name
+  inputText.value = getResultInputValue(entry)
   clearResults()
   emit('search-selected', entry)
 }
@@ -220,13 +236,15 @@ watch(inputText, (value) => {
   }
 
   debounceTimer = window.setTimeout(async () => {
+    let placeResults: SearchEntry[] = []
+
     try {
-      const entries = await loadSearchIndex()
-      results.value = rankResults(entries, value)
+      placeResults = await loadSearchIndex()
     } catch (error) {
       console.error('Failed to update search results:', error)
-      clearResults()
     }
+
+    results.value = buildResults(placeResults, value)
   }, 300)
 })
 
