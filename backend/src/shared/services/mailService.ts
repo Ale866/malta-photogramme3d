@@ -50,7 +50,8 @@ function createTransporter() {
       user: config.SMTP_USER,
       pass: config.SMTP_PASS,
     },
-  });
+    family: 4
+  } as nodemailer.TransportOptions);
 }
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
