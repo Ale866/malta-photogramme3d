@@ -21,6 +21,15 @@ export class FileStorage {
     }
   }
 
+  static deleteDirectory(dirPath: string) {
+    const normalizedInput = typeof dirPath === "string" ? dirPath.trim() : "";
+    if (!normalizedInput) return;
+
+    const normalizedPath = path.resolve(normalizedInput);
+    if (!fs.existsSync(normalizedPath)) return;
+    fs.rmSync(normalizedPath, { recursive: true, force: true });
+  }
+
   static createUploadDirectories(baseUpload: string, title: string, uploadId: string) {
     const safeTitle = title.replace(/\s+/g, "_");
     const inputFolder = path.resolve(baseUpload, `${uploadId}_${safeTitle}`);

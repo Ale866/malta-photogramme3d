@@ -70,4 +70,5 @@ export interface ModelJobRepository {
   claimNextQueued(): Promise<ModelJob | null>;
   updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null>;
   listNonCompletedByOwner(ownerId: string): Promise<ModelJob[]>;
+  deleteById(jobId: string): Promise<boolean>;
 }

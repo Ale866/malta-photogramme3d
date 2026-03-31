@@ -12,3 +12,9 @@ export type ModelLibraryServices = {
   modelJobs: ModelJobRepository;
   users: UserRepository;
 };
+
+export type ModelDeletionServices = {
+  models: ModelRepository;
+  modelJobs: ModelJobRepository;
+  deleteDirectory: (directoryPath: string) => void;
+};

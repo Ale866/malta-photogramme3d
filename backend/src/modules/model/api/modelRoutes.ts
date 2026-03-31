@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { authenticate, optionalAuthenticate } from "../../../shared/authenticate";
-import { getAllModelsController, getCatalogModelByIdController, getIslandModelsController, getUserModelByIdController, getUserModelsController, unvoteForModelController, voteForModelController } from "./modelController";
+import { deleteModelController, getAllModelsController, getCatalogModelByIdController, getIslandModelsController, getUserModelByIdController, getUserModelsController, unvoteForModelController, voteForModelController } from "./modelController";
 
 const router = Router();
 
 router.get("/list", authenticate, getUserModelsController);
 router.get("/list/:modelId", authenticate, getUserModelByIdController);
+router.delete("/list/:modelId", authenticate, deleteModelController);
 router.get("/catalog", optionalAuthenticate, getAllModelsController)
 router.get("/catalog/:modelId", optionalAuthenticate, getCatalogModelByIdController)
 router.get("/island", optionalAuthenticate, getIslandModelsController)

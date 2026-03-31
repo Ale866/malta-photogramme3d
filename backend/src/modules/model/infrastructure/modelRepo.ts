@@ -61,5 +61,10 @@ export const modelRepo: ModelRepository = {
   async unvote(modelId: string, userId: string) {
     const result = await ModelSchema.updateOne({ _id: modelId }, { $pull: { userVotesIds: userId } });
     return { changed: result.modifiedCount > 0 };
+  },
+
+  async deleteById(modelId: string) {
+    const result = await ModelSchema.deleteOne({ _id: modelId });
+    return result.deletedCount > 0;
   }
 };

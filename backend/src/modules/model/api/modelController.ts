@@ -9,6 +9,8 @@ import { modelRepo } from "../infrastructure/modelRepo";
 import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
 import { authServices } from "../../auth/infrastructure/authServices";
 import { unvoteForModel, voteForModel } from "../application/voteForModel";
+import { deleteModel } from "../application/deleteModel";
+import { FileStorage } from "../../upload/infrastructure/fileStorage";
 
 const modelLibraryDependencies = {
   models: modelRepo,
@@ -19,6 +21,12 @@ const modelLibraryDependencies = {
 const modelDependencies = {
   models: modelRepo,
   users: authServices.users,
+};
+
+const deleteModelDependencies = {
+  models: modelRepo,
+  modelJobs: modelJobRepo,
+  deleteDirectory: FileStorage.deleteDirectory,
 };
 
 export async function getUserModelsController(req: AuthedRequest, res: Response) {
@@ -98,6 +106,24 @@ export async function unvoteForModelController(req: AuthedRequest, res: Response
     return res.status(200).json({
       message: "Vote unregistered",
       ...voteState,
+    });
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function deleteModelController(req: AuthedRequest, res: Response) {
+  try {
+    if (!req.user) throw unauthorized("Not authenticated");
+
+    await deleteModel(deleteModelDependencies, {
+      modelId: req.params.modelId,
+      ownerId: req.user.sub,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Model deleted",
     });
   } catch (error) {
     return sendErrorResponse(res, error);

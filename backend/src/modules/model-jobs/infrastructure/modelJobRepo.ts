@@ -108,5 +108,10 @@ export const modelJobRepo: ModelJobRepository = {
       },
     }).sort({ createdAt: -1 }).lean();
     return docs.map((doc) => toModelJobDomain(doc));
+  },
+
+  async deleteById(jobId: string) {
+    const result = await ModelJobSchema.deleteOne({ _id: jobId });
+    return result.deletedCount > 0;
   }
 };

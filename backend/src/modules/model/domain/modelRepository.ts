@@ -29,4 +29,5 @@ export interface ModelRepository {
   listByOwner(ownerId: string): Promise<Model[]>;
   vote(modelId: string, userId: string): Promise<VoteChangeResult>;
   unvote(modelId: string, userId: string): Promise<VoteChangeResult>;
+  deleteById(modelId: string): Promise<boolean>;
 }
