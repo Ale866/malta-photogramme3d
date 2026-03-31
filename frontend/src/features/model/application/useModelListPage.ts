@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { use3dModel } from '@/features/model/application/useModel'
+import { useModelDeletion } from '@/features/model/application/useModelDeletion'
 import { useModelLibraryAutoRefresh } from '@/features/model/application/useModelLibraryAutoRefresh'
 import { useModelVoting } from '@/features/model/application/useModelVoting'
 import { toModelLibraryCardViewModels, type ModelCardViewModel } from '@/features/model/application/presenters/modelCardPresenter'
@@ -45,7 +46,7 @@ export function useModelListPage() {
   const pageSecondaryDescription = computed(() =>
     showVoting.value
       ? 'A model needs at least 3 votes before it is placed on the island'
-      : 'Open any card to inspect details, follow progress, or preview it on the island. Models become visible there from 3 votes onward'
+      : 'Open any card to inspect details, follow progress, or remove finished and failed items from your workspace. Models become visible on the island from 3 votes onward'
   )
   const filterOptions = computed<FilterOption[]>(() =>
     showVoting.value
@@ -143,6 +144,11 @@ export function useModelListPage() {
     onRefresh: loadModels,
   })
 
+  const deletion = useModelDeletion({
+    isEnabled: computed(() => !showVoting.value),
+    reload: loadModels,
+  })
+
   function openDetails(card: ModelCardViewModel) {
     const from = modelSource.value === 'public' ? 'catalog' : 'list'
 
@@ -178,6 +184,7 @@ export function useModelListPage() {
   watch(() => modelSource.value, async () => {
     selectedFilter.value = 'all'
     selectedSort.value = 'newest'
+    deletion.closeDeleteDialog()
     await loadModels()
   }, { immediate: true })
 
@@ -215,6 +222,7 @@ export function useModelListPage() {
     isVoteDisabled: voting.isVoteDisabled,
     viewOnIsland,
     visibleCards,
+    ...deletion,
   }
 }
 

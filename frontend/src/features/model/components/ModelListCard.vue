@@ -17,6 +17,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'open-details', card: ModelCardViewModel): void;
   (event: 'view-on-island', modelId: string): void;
+  (event: 'request-delete', card: ModelCardViewModel): void;
   (event: 'toggle-vote', card: ModelCardViewModel): void;
 }>();
 
@@ -27,6 +28,10 @@ const openDetails = () => {
 const viewOnIsland = () => {
   if (props.card.type !== 'model') return;
   emit('view-on-island', props.card.id);
+};
+
+const requestDelete = () => {
+  emit('request-delete', props.card);
 };
 
 const statusLabelByStatus = {
@@ -61,20 +66,32 @@ function islandButtonTitle(card: ModelCardViewModel): string | undefined {
   return `Needs at least ${MIN_ISLAND_MODEL_VOTES} votes to appear on the island`
 }
 
+const showIslandAction = computed(() => props.showVoting && props.card.type === 'model')
+const showDeleteAction = computed(() => !props.showVoting && (props.card.type === 'model' || props.card.status === 'failed'))
+const deleteButtonLabel = computed(() =>
+  props.card.type === 'model' ? 'Delete model' : 'Delete failed job'
+)
+
 </script>
 
 <template>
   <div class="model-list-card" :class="`model-list-card--${card.status}`" @click="openDetails">
     <header class="model-list-card-header">
       <h2 class="model-list-card-title">{{ card.title }}</h2>
-      <span class="model-list-card-status">{{ statusLabelByStatus[card.status] }}</span>
+      <span class="model-list-card-status" :class="`model-list-card-status--${card.status}`">{{ statusLabelByStatus[card.status] }}</span>
     </header>
 
     <div class="model-list-card-preview">
       <model-preview-viewport v-if="card.type === 'model'" :interactive="false" :show-overlay="false" />
       <div v-else class="model-list-card-job-stage">
         <div class="model-list-card-job-stage-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+          <svg v-if="card.status === 'failed'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 3 21 19H3L12 3Z" />
+            <path d="M12 9v4.5" />
+            <path d="M12 17h.01" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
             stroke-linejoin="round">
             <path d="M12 2v4" />
             <path d="m16.24 7.76 2.83-2.83" />
@@ -108,6 +125,20 @@ function islandButtonTitle(card: ModelCardViewModel): string | undefined {
           <div class="model-list-card-meta-value">{{ card.ownerName }}</div>
         </div>
       </div>
+      <div v-else-if="card.type === 'job'" class="model-list-card-meta-item">
+        <div class="model-list-card-meta-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M12 3 21 19H3L12 3Z" />
+            <path d="M12 9v4.5" />
+            <path d="M12 17h.01" />
+          </svg>
+        </div>
+        <div>
+          <div class="model-list-card-meta-label">Job</div>
+          <div class="model-list-card-meta-value">{{ card.status === 'failed' ? 'Failed reconstruction' : 'Processing job' }}</div>
+        </div>
+      </div>
       <div class="model-list-card-meta-item">
         <div class="model-list-card-meta-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
@@ -138,14 +169,24 @@ function islandButtonTitle(card: ModelCardViewModel): string | undefined {
       </div>
     </div>
 
-    <div v-if="card.type === 'model'" class="model-list-card-actions">
+    <div v-if="showIslandAction || showDeleteAction" class="model-list-card-actions">
+      <button
+        v-if="showDeleteAction"
+        class="btn model-list-card-danger-button"
+        :class="{ 'model-list-card-danger-button--solo': !showVoting }"
+        type="button"
+        @click.stop="requestDelete"
+      >
+        {{ deleteButtonLabel }}
+      </button>
       <button class="btn btn-primary model-list-card-island-button"
+        v-if="showIslandAction"
         :class="{ 'model-list-card-island-button--solo': !showVoting }" type="button"
         :disabled="isIslandButtonDisabled(card)" :title="islandButtonTitle(card)"
         @click.stop="viewOnIsland">
         View on island
       </button>
-      <button v-if="showVoting" class="btn model-list-card-vote-button"
+      <button v-if="showVoting && card.type === 'model'" class="btn model-list-card-vote-button"
         :class="{ 'model-list-card-vote-button--active': card.hasVoted }" type="button" :disabled="voteDisabled"
         @click.stop="toggleVote">
         <svg viewBox="0 0 24 24" :fill="card.hasVoted ? 'currentColor' : 'none'" stroke="currentColor"

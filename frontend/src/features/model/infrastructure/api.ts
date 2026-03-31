@@ -358,6 +358,30 @@ export const ModelApi = {
     }
   },
 
+  async deleteModel(modelId: string, accessToken: string): Promise<void> {
+    try {
+      await http.delete(`/model/list/${modelId}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async deleteFailedModelJob(jobId: string, accessToken: string): Promise<void> {
+    try {
+      await http.delete(`/model-jobs/${jobId}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
   async voteForModel(modelId: string, accessToken: string): Promise<ModelVoteState> {
     try {
       const res = await http.post<ModelVoteStateDto>(`/model/${modelId}/vote`, undefined, {

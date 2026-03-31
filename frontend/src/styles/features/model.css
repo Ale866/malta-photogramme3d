@@ -94,6 +94,61 @@
   margin: 0 0 var(--space-3);
 }
 
+.model-delete-sheet {
+  width: min(480px, 100%);
+}
+
+.model-delete-sheet-heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.model-delete-sheet-eyebrow {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 167 167 / 0.88);
+}
+
+.model-delete-sheet-copy,
+.model-delete-sheet-name {
+  margin: 0;
+}
+
+.model-delete-sheet-copy {
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.model-delete-sheet-name {
+  margin-top: var(--space-3);
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 0.04);
+  color: #f6fbff;
+  font-weight: var(--font-weight-semibold);
+}
+
+.model-delete-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.model-delete-sheet-confirm {
+  border-color: rgb(168 64 64 / 0.45);
+  background: linear-gradient(180deg, rgb(149 46 46 / 0.95), rgb(108 31 31 / 0.98));
+}
+
+.model-delete-sheet-confirm:hover,
+.model-delete-sheet-confirm:focus-visible {
+  background: linear-gradient(180deg, rgb(168 53 53 / 0.98), rgb(123 36 36 / 0.98));
+}
+
 .model-form {
   display: flex;
   flex-direction: column;
@@ -830,14 +885,6 @@
   outline-offset: 2px;
 }
 
-.model-list-card--pending {
-  border-color: rgb(180 130 36 / 0.34);
-}
-
-.model-list-card--failed {
-  border-color: rgb(170 84 84 / 0.34);
-}
-
 .model-list-card-header {
   display: flex;
   align-items: flex-start;
@@ -861,14 +908,38 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   line-height: 1;
-  border: 1px solid rgb(168 205 246 / 0.22);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.model-list-card-status--ready {
+  border-color: rgb(168 205 246 / 0.22);
   background: linear-gradient(
     180deg,
     rgb(34 53 83 / 0.58),
     rgb(20 32 50 / 0.62)
   );
   color: #bedbff;
-  white-space: nowrap;
+}
+
+.model-list-card-status--pending {
+  border-color: rgb(210 169 88 / 0.22);
+  background: linear-gradient(
+    180deg,
+    rgb(68 50 20 / 0.58),
+    rgb(46 34 14 / 0.62)
+  );
+  color: rgb(248 221 156 / 0.95);
+}
+
+.model-list-card-status--failed {
+  border-color: rgb(190 112 112 / 0.22);
+  background: linear-gradient(
+    180deg,
+    rgb(75 33 33 / 0.58),
+    rgb(52 22 22 / 0.62)
+  );
+  color: rgb(255 197 197 / 0.95);
 }
 
 .model-list-card-preview {
@@ -920,6 +991,12 @@
 .model-list-card-job-stage-icon svg {
   width: 1.2rem;
   height: 1.2rem;
+}
+
+.model-list-card--failed .model-list-card-job-stage-icon {
+  border-color: rgb(255 156 156 / 0.16);
+  background: rgb(120 32 32 / 0.16);
+  color: rgb(255 168 168 / 0.95);
 }
 
 .model-list-card-job-stage-title,
@@ -1082,6 +1159,23 @@
 .model-list-card-island-button:hover,
 .model-list-card-island-button:focus-visible {
   background: linear-gradient(180deg, var(--accent-primary), var(--accent-primary-hover));
+}
+
+.model-list-card-danger-button {
+  flex: 1 1 auto;
+  border-radius: 6px;
+  border-color: rgb(172 80 80 / 0.28);
+  background: linear-gradient(180deg, rgb(66 25 25 / 0.96), rgb(48 18 18 / 0.98));
+  color: rgb(255 220 220 / 0.96);
+}
+
+.model-list-card-danger-button:hover,
+.model-list-card-danger-button:focus-visible {
+  background: linear-gradient(180deg, rgb(82 31 31 / 0.98), rgb(57 21 21 / 0.98));
+}
+
+.model-list-card-danger-button--solo {
+  width: 100%;
 }
 
 @media (max-width: 700px) {

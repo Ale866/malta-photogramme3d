@@ -1,17 +1,26 @@
 <script setup lang="ts">
 import { useModelListPage } from '@/features/model/application/useModelListPage'
+import ModelDeleteModal from '@/features/model/components/ModelDeleteModal.vue'
 import ModelListCard from '@/features/model/components/ModelListCard.vue'
 import ModelListControls from '@/features/model/components/ModelListControls.vue'
 
 const {
+  closeDeleteDialog,
+  confirmDelete,
+  deleteDialogDescription,
+  deleteDialogTitle,
+  deleteErrorMessage,
+  deleteTarget,
   errorMessage,
   filterOptions,
   isLoading,
+  isDeleting,
   isLibraryEmpty,
   openDetails,
   pageDescription,
   pageHeading,
   pageSecondaryDescription,
+  requestDelete,
   selectedFilter,
   selectedSort,
   setSelectedFilter,
@@ -97,8 +106,19 @@ const {
       <div v-else class="model-list-grid">
         <model-list-card v-for="card in visibleCards" :key="`${card.type}:${card.id}`" :card="card"
           :show-voting="showVoting" :vote-disabled="isVoteDisabled(card)" @open-details="openDetails"
-          @view-on-island="viewOnIsland" @toggle-vote="toggleVote"></model-list-card>
+          @view-on-island="viewOnIsland" @toggle-vote="toggleVote" @request-delete="requestDelete"></model-list-card>
       </div>
     </div>
+
+    <model-delete-modal
+      :open="Boolean(deleteTarget)"
+      :title="deleteDialogTitle"
+      :item-title="deleteTarget?.title ?? ''"
+      :description="deleteDialogDescription"
+      :error-message="deleteErrorMessage"
+      :is-deleting="isDeleting"
+      @close="closeDeleteDialog"
+      @confirm="confirmDelete"
+    />
   </section>
 </template>

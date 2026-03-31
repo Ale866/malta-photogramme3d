@@ -73,6 +73,16 @@ export function use3dModel() {
     return result;
   }
 
+  async function deleteModel(modelId: string): Promise<void> {
+    const accessToken = await requireAccessToken();
+    await ModelApi.deleteModel(modelId, accessToken);
+  }
+
+  async function deleteFailedModelJob(jobId: string): Promise<void> {
+    const accessToken = await requireAccessToken();
+    await ModelApi.deleteFailedModelJob(jobId, accessToken);
+  }
+
   return {
     uploadModel,
     getModelLibrary,
@@ -84,5 +94,7 @@ export function use3dModel() {
     unvoteForModel,
     getModelJobStatus,
     getModelJobDetails,
+    deleteModel,
+    deleteFailedModelJob,
   }
 }
