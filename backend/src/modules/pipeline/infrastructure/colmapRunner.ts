@@ -10,6 +10,11 @@ const GPU_ENABLED = "1";
 const OUTPUT_DIRECTORIES = {
   sparseRoot: "sparse",
   sparseModel: path.join("sparse", "0"),
+  denseWorkspace: "dense",
+  denseImages: path.join("dense", "images"),
+  denseSparse: path.join("dense", "sparse"),
+  denseStereo: path.join("dense", "stereo"),
+  denseDepthMaps: path.join("dense", "stereo", "depth_maps"),
 };
 
 type StageCommand = {
@@ -19,7 +24,24 @@ type StageCommand = {
   logLabel: string;
 };
 
+type OutputPaths = {
+  root: string;
+  database: string;
+  sparseRoot: string;
+  sparseModel: string;
+  denseWorkspace: string;
+  denseImages: string;
+  denseSparse: string;
+  denseStereo: string;
+  denseDepthMaps: string;
+};
+
 function ensureDirectory(dir: string) {
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+function resetDirectory(dir: string) {
+  fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -32,10 +54,10 @@ function resolveRequiredPath(targetPath: string, label: string) {
   return path.resolve(normalizedInput);
 }
 
-function requireExistingDirectory(dir: string, label: string) {
-  const normalized = resolveRequiredPath(dir, label);
+function requireExistingDirectory(dir: string) {
+  const normalized = resolveRequiredPath(dir, "Directory path");
   if (!fs.existsSync(normalized) || !fs.statSync(normalized).isDirectory()) {
-    throw new Error(`${label} does not exist: ${normalized}`);
+    throw new Error(`Directory does not exist: ${normalized}`);
   }
 
   return normalized;
@@ -50,20 +72,34 @@ function requireExistingFile(filePath: string, label: string) {
   return normalized;
 }
 
-function buildDatabasePath(outputFolder: string) {
-  return path.join(resolveRequiredPath(outputFolder, "COLMAP output path"), "database.db");
+function resolveImagePath(inputFolder: string) {
+  return requireExistingDirectory(inputFolder);
 }
 
-function buildImagePath(inputFolder: string) {
-  return requireExistingDirectory(inputFolder, "COLMAP image_path");
+function resolveOutputPaths(outputFolder: string): OutputPaths {
+  const root = resolveRequiredPath(outputFolder, "COLMAP output path");
+
+  return {
+    root,
+    database: path.join(root, "database.db"),
+    sparseRoot: path.join(root, OUTPUT_DIRECTORIES.sparseRoot),
+    sparseModel: path.join(root, OUTPUT_DIRECTORIES.sparseModel),
+    denseWorkspace: path.join(root, OUTPUT_DIRECTORIES.denseWorkspace),
+    denseImages: path.join(root, OUTPUT_DIRECTORIES.denseImages),
+    denseSparse: path.join(root, OUTPUT_DIRECTORIES.denseSparse),
+    denseStereo: path.join(root, OUTPUT_DIRECTORIES.denseStereo),
+    denseDepthMaps: path.join(root, OUTPUT_DIRECTORIES.denseDepthMaps),
+  };
 }
 
-function buildSparseRootPath(outputFolder: string) {
-  return path.join(resolveRequiredPath(outputFolder, "COLMAP output path"), OUTPUT_DIRECTORIES.sparseRoot);
-}
+function ensureDirectoryHasFiles(dir: string, label: string) {
+  const normalized = requireExistingDirectory(dir);
+  const entries = fs.readdirSync(normalized);
+  if (entries.length === 0) {
+    throw new Error(`${label} is empty: ${normalized}`);
+  }
 
-function buildSparseModelPath(outputFolder: string) {
-  return path.join(resolveRequiredPath(outputFolder, "COLMAP output path"), OUTPUT_DIRECTORIES.sparseModel);
+  return normalized;
 }
 
 function clampPercent(value: number) {
@@ -194,8 +230,9 @@ function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Prom
 }
 
 function buildFeatureExtractionCommand(inputFolder: string, outputFolder: string): StageCommand {
-  buildImagePath(inputFolder);
-  ensureDirectory(resolveRequiredPath(outputFolder, "COLMAP output path"));
+  const imagePath = resolveImagePath(inputFolder);
+  const outputPaths = resolveOutputPaths(outputFolder);
+  ensureDirectory(outputPaths.root);
 
   return {
     stage: "feature_extraction",
@@ -203,8 +240,8 @@ function buildFeatureExtractionCommand(inputFolder: string, outputFolder: string
     logLabel: "feature_extraction",
     args: [
       "feature_extractor",
-      "--database_path", buildDatabasePath(outputFolder),
-      "--image_path", buildImagePath(inputFolder),
+      "--database_path", outputPaths.database,
+      "--image_path", imagePath,
       "--FeatureExtraction.use_gpu", GPU_ENABLED,
       "--FeatureExtraction.num_threads", CPU_THREAD_LIMIT,
     ],
@@ -212,8 +249,9 @@ function buildFeatureExtractionCommand(inputFolder: string, outputFolder: string
 }
 
 function buildFeatureMatchingCommand(outputFolder: string): StageCommand {
-  ensureDirectory(resolveRequiredPath(outputFolder, "COLMAP output path"));
-  requireExistingFile(buildDatabasePath(outputFolder), "COLMAP database_path");
+  const outputPaths = resolveOutputPaths(outputFolder);
+  ensureDirectory(outputPaths.root);
+  requireExistingFile(outputPaths.database, "COLMAP database_path");
 
   return {
     stage: "feature_matching",
@@ -221,7 +259,7 @@ function buildFeatureMatchingCommand(outputFolder: string): StageCommand {
     logLabel: "feature_matching",
     args: [
       "exhaustive_matcher",
-      "--database_path", buildDatabasePath(outputFolder),
+      "--database_path", outputPaths.database,
       "--FeatureMatching.use_gpu", GPU_ENABLED,
       "--FeatureMatching.num_threads", CPU_THREAD_LIMIT,
     ],
@@ -229,11 +267,11 @@ function buildFeatureMatchingCommand(outputFolder: string): StageCommand {
 }
 
 function buildSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
-  buildImagePath(inputFolder);
-  requireExistingFile(buildDatabasePath(outputFolder), "COLMAP database_path");
-  const sparseRoot = buildSparseRootPath(outputFolder);
+  const imagePath = resolveImagePath(inputFolder);
+  const outputPaths = resolveOutputPaths(outputFolder);
+  requireExistingFile(outputPaths.database, "COLMAP database_path");
 
-  ensureDirectory(sparseRoot);
+  ensureDirectory(outputPaths.sparseRoot);
 
   return {
     stage: "sparse_mapping",
@@ -241,9 +279,49 @@ function buildSparseMappingCommand(inputFolder: string, outputFolder: string): S
     logLabel: "sparse_mapping",
     args: [
       "mapper",
-      "--database_path", buildDatabasePath(outputFolder),
-      "--image_path", buildImagePath(inputFolder),
-      "--output_path", sparseRoot,
+      "--database_path", outputPaths.database,
+      "--image_path", imagePath,
+      "--output_path", outputPaths.sparseRoot,
+    ],
+  };
+}
+
+function buildDensePreparationCommand(inputFolder: string, outputFolder: string): StageCommand {
+  const imagePath = resolveImagePath(inputFolder);
+  const outputPaths = resolveOutputPaths(outputFolder);
+  requireExistingDirectory(outputPaths.sparseModel);
+
+  resetDirectory(outputPaths.denseWorkspace);
+
+  return {
+    stage: "dense_preparation",
+    command: config.COLMAP_BIN,
+    logLabel: "dense_preparation",
+    args: [
+      "image_undistorter",
+      "--image_path", imagePath,
+      "--input_path", outputPaths.sparseModel,
+      "--output_path", outputPaths.denseWorkspace,
+      "--output_type", "COLMAP",
+    ],
+  };
+}
+
+function buildDenseStereoCommand(outputFolder: string): StageCommand {
+  const outputPaths = resolveOutputPaths(outputFolder);
+  requireExistingDirectory(outputPaths.denseWorkspace);
+  requireExistingDirectory(outputPaths.denseImages);
+  requireExistingDirectory(outputPaths.denseSparse);
+
+  return {
+    stage: "dense_stereo",
+    command: config.COLMAP_BIN,
+    logLabel: "dense_stereo",
+    args: [
+      "patch_match_stereo",
+      "--workspace_path", outputPaths.denseWorkspace,
+      "--workspace_format", "COLMAP",
+      "--PatchMatchStereo.geom_consistency", "true",
     ],
   };
 }
@@ -258,9 +336,26 @@ export function runFeatureMatching(outputFolder: string, hooks?: RunColmapStageH
 
 export function runSparseMapping(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   return runStage(buildSparseMappingCommand(inputFolder, outputFolder), hooks).then(() => {
-    const sparseModelPath = buildSparseModelPath(outputFolder);
-    if (!fs.existsSync(sparseModelPath)) {
-      throw new Error(`COLMAP sparse mapping did not produce the expected output at ${sparseModelPath}`);
+    const outputPaths = resolveOutputPaths(outputFolder);
+    if (!fs.existsSync(outputPaths.sparseModel)) {
+      throw new Error(`COLMAP sparse mapping did not produce the expected output at ${outputPaths.sparseModel}`);
     }
+  });
+}
+
+export function runDensePreparation(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  return runStage(buildDensePreparationCommand(inputFolder, outputFolder), hooks).then(() => {
+    const outputPaths = resolveOutputPaths(outputFolder);
+    requireExistingDirectory(outputPaths.denseWorkspace);
+    requireExistingDirectory(outputPaths.denseImages);
+    ensureDirectoryHasFiles(outputPaths.denseSparse, "COLMAP dense sparse path");
+  });
+}
+
+export function runDenseStereo(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  return runStage(buildDenseStereoCommand(outputFolder), hooks).then(() => {
+    const outputPaths = resolveOutputPaths(outputFolder);
+    requireExistingDirectory(outputPaths.denseStereo);
+    ensureDirectoryHasFiles(outputPaths.denseDepthMaps, "COLMAP dense depth maps");
   });
 }

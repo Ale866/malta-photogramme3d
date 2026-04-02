@@ -2,8 +2,7 @@ import { createModelFromJob } from "../../model/application/createModelFromJob";
 import {
   setModelJobFailed,
   setModelJobCompleted,
-  setModelJobStageCompleted,
-  setModelJobStageRunning,
+  setModelJobStageActive,
   updateModelJobRuntime,
 } from "../../model-jobs/application/jobLifecycle";
 import { MODEL_JOB_STATUS, type ModelJobRepository, type ModelJobStatus } from "../../model-jobs/domain/modelJobRepository";
@@ -24,12 +23,10 @@ export type ExecuteModelJobServices = {
 
 const JOB_UPDATE_THROTTLE_MS = 1000;
 
-type SparsePipelineStage = {
+type PipelineExecutionStage = {
   key: PipelineStage;
-  runningStatus: Extract<ModelJobStatus, `${string}_running`>;
-  completedStatus: Extract<ModelJobStatus, `${string}_completed`>;
-  runningStageLabel: string;
-  completedStageLabel: string;
+  activeStatus: ModelJobStatus;
+  activeStageLabel: string;
   startProgress: number;
   completedProgress: number;
   run: (
@@ -39,13 +36,11 @@ type SparsePipelineStage = {
   ) => Promise<void>;
 };
 
-const SPARSE_PIPELINE_STAGES: readonly SparsePipelineStage[] = [
+const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
   {
     key: "feature_extraction",
-    runningStatus: MODEL_JOB_STATUS.FEATURE_EXTRACTION_RUNNING,
-    completedStatus: MODEL_JOB_STATUS.FEATURE_EXTRACTION_COMPLETED,
-    runningStageLabel: MODEL_JOB_STATUS.FEATURE_EXTRACTION_RUNNING,
-    completedStageLabel: MODEL_JOB_STATUS.FEATURE_EXTRACTION_COMPLETED,
+    activeStatus: MODEL_JOB_STATUS.FEATURE_EXTRACTION,
+    activeStageLabel: MODEL_JOB_STATUS.FEATURE_EXTRACTION,
     startProgress: 1,
     completedProgress: 30,
     run: async (services, job, onProgress) => {
@@ -56,10 +51,8 @@ const SPARSE_PIPELINE_STAGES: readonly SparsePipelineStage[] = [
   },
   {
     key: "feature_matching",
-    runningStatus: MODEL_JOB_STATUS.FEATURE_MATCHING_RUNNING,
-    completedStatus: MODEL_JOB_STATUS.FEATURE_MATCHING_COMPLETED,
-    runningStageLabel: MODEL_JOB_STATUS.FEATURE_MATCHING_RUNNING,
-    completedStageLabel: MODEL_JOB_STATUS.FEATURE_MATCHING_COMPLETED,
+    activeStatus: MODEL_JOB_STATUS.FEATURE_MATCHING,
+    activeStageLabel: MODEL_JOB_STATUS.FEATURE_MATCHING,
     startProgress: 31,
     completedProgress: 60,
     run: async (services, job, onProgress) => {
@@ -70,14 +63,36 @@ const SPARSE_PIPELINE_STAGES: readonly SparsePipelineStage[] = [
   },
   {
     key: "sparse_mapping",
-    runningStatus: MODEL_JOB_STATUS.SPARSE_MAPPING_RUNNING,
-    completedStatus: MODEL_JOB_STATUS.SPARSE_MAPPING_COMPLETED,
-    runningStageLabel: MODEL_JOB_STATUS.SPARSE_MAPPING_RUNNING,
-    completedStageLabel: MODEL_JOB_STATUS.SPARSE_MAPPING_COMPLETED,
+    activeStatus: MODEL_JOB_STATUS.SPARSE_MAPPING,
+    activeStageLabel: MODEL_JOB_STATUS.SPARSE_MAPPING,
     startProgress: 61,
-    completedProgress: 95,
+    completedProgress: 75,
     run: async (services, job, onProgress) => {
       await services.runSparseMapping(job.inputFolder, job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+  {
+    key: "dense_preparation",
+    activeStatus: MODEL_JOB_STATUS.DENSE_PREPARATION,
+    activeStageLabel: MODEL_JOB_STATUS.DENSE_PREPARATION,
+    startProgress: 76,
+    completedProgress: 85,
+    run: async (services, job, onProgress) => {
+      await services.runDensePreparation(job.inputFolder, job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+  {
+    key: "dense_stereo",
+    activeStatus: MODEL_JOB_STATUS.DENSE_STEREO,
+    activeStageLabel: MODEL_JOB_STATUS.DENSE_STEREO,
+    startProgress: 86,
+    completedProgress: 95,
+    run: async (services, job, onProgress) => {
+      await services.runDenseStereo(job.outputFolder, {
         onProgress: (event) => onProgress(event.stage, event.progress),
       });
     },
@@ -114,19 +129,19 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
   };
 
   try {
-    for (const pipelineStage of SPARSE_PIPELINE_STAGES) {
-      await setModelJobStageRunning(
+    for (const pipelineStage of PIPELINE_STAGES) {
+      await setModelJobStageActive(
         { modelJobs: services.modelJobs },
         job.id,
         {
-          status: pipelineStage.runningStatus,
-          stage: pipelineStage.runningStageLabel,
+          status: pipelineStage.activeStatus,
+          stage: pipelineStage.activeStageLabel,
           progress: pipelineStage.startProgress,
         }
       );
 
       captureRuntime({
-        stage: pipelineStage.runningStageLabel,
+        stage: pipelineStage.activeStageLabel,
         progress: pipelineStage.startProgress,
       });
 
@@ -141,7 +156,7 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
           },
           (eventStage, eventProgress) => {
             captureRuntime({
-              stage: pipelineStage.runningStageLabel,
+              stage: pipelineStage.activeStageLabel,
               progress: mapStageProgress(eventStage, eventProgress),
             });
           }
@@ -157,18 +172,8 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
         throw new Error(`${pipelineStage.key} failed: ${toErrorMessage(error)}`);
       }
 
-      await setModelJobStageCompleted(
-        { modelJobs: services.modelJobs },
-        job.id,
-        {
-          status: pipelineStage.completedStatus,
-          stage: pipelineStage.completedStageLabel,
-          progress: pipelineStage.completedProgress,
-        }
-      );
-
       captureRuntime({
-        stage: pipelineStage.completedStageLabel,
+        stage: pipelineStage.activeStageLabel,
         progress: pipelineStage.completedProgress,
       });
 
@@ -211,7 +216,11 @@ function mapStageProgress(stage: string, stageProgress: number): number {
     case "feature_matching":
       return 30 + Math.round((normalized / 100) * 30);
     case "sparse_mapping":
-      return 60 + Math.round((normalized / 100) * 35);
+      return 60 + Math.round((normalized / 100) * 15);
+    case "dense_preparation":
+      return 75 + Math.round((normalized / 100) * 10);
+    case "dense_stereo":
+      return 85 + Math.round((normalized / 100) * 10);
     default:
       return normalized;
   }

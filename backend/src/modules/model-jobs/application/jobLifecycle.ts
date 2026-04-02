@@ -29,17 +29,17 @@ export async function createQueuedModelJob(services: ModelJobServices, input: Cr
     throw badRequest("No images uploaded", "images_required");
   }
 
-    return services.modelJobs.create({
-      ownerId,
-      title,
-      status: MODEL_JOB_STATUS.QUEUED,
-      imagePaths: input.imagePaths,
-      inputFolder: input.inputFolder,
-      outputFolder: input.outputFolder,
-      coordinates: input.coordinates,
-      stage: MODEL_JOB_STATUS.QUEUED,
-      progress: 0,
-      error: null,
+  return services.modelJobs.create({
+    ownerId,
+    title,
+    status: MODEL_JOB_STATUS.QUEUED,
+    imagePaths: input.imagePaths,
+    inputFolder: input.inputFolder,
+    outputFolder: input.outputFolder,
+    coordinates: input.coordinates,
+    stage: MODEL_JOB_STATUS.QUEUED,
+    progress: 0,
+    error: null,
     modelId: null,
     startedAt: null,
     finishedAt: null,
@@ -52,10 +52,10 @@ function requireJobId(jobId: string) {
   return normalized;
 }
 
-export async function setModelJobStageRunning(
+export async function setModelJobStageActive(
   services: ModelJobServices,
   jobId: string,
-  input: { status: Extract<ModelJob["status"], `${string}_running`>; stage: string; progress: number }
+  input: { status: ModelJob["status"]; stage: string; progress: number }
 ): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const job = await requireExistingJob(services, normalizedJobId);
@@ -66,24 +66,6 @@ export async function setModelJobStageRunning(
     progress: Math.max(clampProgress(input.progress), clampProgress(job.progress)),
     startedAt: job.startedAt ?? new Date(),
     error: null,
-  });
-
-  if (!updated) throw notFound("Job not found", "job_not_found");
-  return updated;
-}
-
-export async function setModelJobStageCompleted(
-  services: ModelJobServices,
-  jobId: string,
-  input: { status: Extract<ModelJob["status"], `${string}_completed`>; stage: string; progress: number }
-): Promise<ModelJob> {
-  const normalizedJobId = requireJobId(jobId);
-  const job = await requireExistingJob(services, normalizedJobId);
-
-  const updated = await services.modelJobs.updateState(normalizedJobId, {
-    status: input.status,
-    stage: input.stage.trim(),
-    progress: Math.max(clampProgress(input.progress), clampProgress(job.progress)),
   });
 
   if (!updated) throw notFound("Job not found", "job_not_found");

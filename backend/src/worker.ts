@@ -1,5 +1,12 @@
 import { processNextQueuedModelJob } from "./modules/pipeline/application/processNextQueuedModelJob";
-import { runFeatureExtraction, runFeatureMatching, runSparseMapping, verifyColmapBinary, } from "./modules/pipeline/infrastructure/colmapRunner";
+import {
+  runDensePreparation,
+  runDenseStereo,
+  runFeatureExtraction,
+  runFeatureMatching,
+  runSparseMapping,
+  verifyColmapBinary,
+} from "./modules/pipeline/infrastructure/colmapRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
 import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
 import { config } from "./shared/config/env";
@@ -14,6 +21,8 @@ const workerDependencies = {
     runFeatureExtraction,
     runFeatureMatching,
     runSparseMapping,
+    runDensePreparation,
+    runDenseStereo,
   },
 };
 

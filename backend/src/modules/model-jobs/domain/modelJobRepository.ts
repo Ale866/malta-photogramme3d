@@ -1,11 +1,10 @@
 export const MODEL_JOB_STATUS = {
   QUEUED: "queued",
-  FEATURE_EXTRACTION_RUNNING: "feature_extraction_running",
-  FEATURE_EXTRACTION_COMPLETED: "feature_extraction_completed",
-  FEATURE_MATCHING_RUNNING: "feature_matching_running",
-  FEATURE_MATCHING_COMPLETED: "feature_matching_completed",
-  SPARSE_MAPPING_RUNNING: "sparse_mapping_running",
-  SPARSE_MAPPING_COMPLETED: "sparse_mapping_completed",
+  FEATURE_EXTRACTION: "feature_extraction",
+  FEATURE_MATCHING: "feature_matching",
+  SPARSE_MAPPING: "sparse_mapping",
+  DENSE_PREPARATION: "dense_preparation",
+  DENSE_STEREO: "dense_stereo",
   COMPLETED: "completed",
   FAILED: "failed",
 } as const;
