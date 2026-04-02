@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 import { config } from "../../../shared/config/env";
 
 export class FileStorage {
@@ -46,16 +47,17 @@ export class FileStorage {
     return { inputFolder, outputFolder };
   }
 
-  static appendBatchFiles(inputFolder: string, batchIndex: number, files: Express.Multer.File[]) {
+  static async appendBatchFiles(inputFolder: string, batchIndex: number, files: Express.Multer.File[]) {
     const imagePaths: string[] = [];
 
     try {
-      files.forEach((file, fileIndex) => {
+      for (const [fileIndex, file] of files.entries()) {
         const dest = FileStorage.buildBatchDestination(inputFolder, batchIndex, fileIndex, file.originalname);
         if (fs.existsSync(dest)) fs.unlinkSync(dest);
         FileStorage.moveFile(file.path, dest);
+        await FileStorage.normalizeImageForPipeline(dest, file.mimetype);
         imagePaths.push(dest);
-      });
+      }
 
       return imagePaths;
     } catch (error) {
@@ -82,5 +84,23 @@ export class FileStorage {
   ) {
     const fileName = path.basename(originalName).replace(/[^\w.-]+/g, "_");
     return path.join(inputFolder, `${batchIndex}_${fileIndex}_${fileName}`);
+  }
+
+  private static async normalizeImageForPipeline(filePath: string, mimeType?: string) {
+    if (!FileStorage.isJpeg(filePath, mimeType)) return;
+
+    const sanitized = await sharp(filePath)
+      .jpeg({ quality: 100, mozjpeg: false })
+      .toBuffer();
+
+    fs.writeFileSync(filePath, sanitized);
+  }
+
+  private static isJpeg(filePath: string, mimeType?: string) {
+    if (typeof mimeType === "string" && mimeType.toLowerCase() === "image/jpeg") {
+      return true;
+    }
+
+    return /\.(jpe?g)$/i.test(filePath);
   }
 }

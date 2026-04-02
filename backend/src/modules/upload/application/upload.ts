@@ -70,7 +70,7 @@ export async function appendUploadBatch(services: UploadServices, input: AppendU
   if (files.length === 0) throw badRequest("No images uploaded", "images_required");
 
   const draft = requireOwnedUploadDraft(services, uploadId, ownerId);
-  services.fileStorage.appendBatchFiles(draft.inputFolder, batchIndex, files);
+  await services.fileStorage.appendBatchFiles(draft.inputFolder, batchIndex, files);
   const imagePaths = services.fileStorage.listFiles(draft.inputFolder);
   return {
     uploadedFiles: imagePaths.length,

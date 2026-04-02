@@ -36,7 +36,7 @@ export type UploadServices = {
       inputFolder: string,
       batchIndex: number,
       files: Express.Multer.File[]
-    ) => string[];
+    ) => Promise<string[]>;
     listFiles: (inputFolder: string) => string[];
   };
 };
