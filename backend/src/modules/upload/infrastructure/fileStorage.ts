@@ -55,8 +55,8 @@ export class FileStorage {
         const dest = FileStorage.buildBatchDestination(inputFolder, batchIndex, fileIndex, file.originalname);
         if (fs.existsSync(dest)) fs.unlinkSync(dest);
         FileStorage.moveFile(file.path, dest);
-        await FileStorage.normalizeImageForPipeline(dest, file.mimetype);
-        imagePaths.push(dest);
+        const normalizedPath = await FileStorage.normalizeImageForPipeline(dest, file.mimetype);
+        imagePaths.push(normalizedPath);
       }
 
       return imagePaths;
@@ -87,13 +87,19 @@ export class FileStorage {
   }
 
   private static async normalizeImageForPipeline(filePath: string, mimeType?: string) {
-    if (!FileStorage.isJpeg(filePath, mimeType)) return;
+    if (!FileStorage.isJpeg(filePath, mimeType)) return filePath;
 
+    const normalizedPath = filePath.replace(/\.(jpe?g)$/i, ".png");
     const sanitized = await sharp(filePath)
-      .jpeg({ quality: 100, mozjpeg: false })
+      .png()
       .toBuffer();
 
-    fs.writeFileSync(filePath, sanitized);
+    fs.writeFileSync(normalizedPath, sanitized);
+    if (normalizedPath !== filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    return normalizedPath;
   }
 
   private static isJpeg(filePath: string, mimeType?: string) {
