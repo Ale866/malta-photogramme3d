@@ -1,7 +1,8 @@
 import { processNextQueuedModelJob } from "./modules/pipeline/application/processNextQueuedModelJob";
-import { runFeatureExtraction, runFeatureMatching, runSparseMapping, } from "./modules/pipeline/infrastructure/colmapRunner";
+import { runFeatureExtraction, runFeatureMatching, runSparseMapping, verifyColmapBinary, } from "./modules/pipeline/infrastructure/colmapRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
 import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
+import { config } from "./shared/config/env";
 import { ensureStorageDirectories } from "./shared/config/storage";
 import { connectDb, disconnectDb } from "./shared/db/mongoConnection";
 
@@ -22,7 +23,9 @@ async function sleep(ms: number): Promise<void> {
 
 async function startWorker(): Promise<void> {
   ensureStorageDirectories();
+  verifyColmapBinary();
   await connectDb();
+  console.log(`COLMAP binary ready: ${config.COLMAP_BIN}`);
   console.log("Model job worker started");
 
   let keepRunning = true;

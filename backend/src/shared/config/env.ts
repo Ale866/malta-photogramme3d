@@ -19,8 +19,23 @@ function parseBoolean(value: string | undefined, fallback: boolean) {
 
 const BACKEND_ROOT = path.resolve(__dirname, "../../..");
 
-function resolveBackendPath(targetPath: string) {
-  return path.resolve(BACKEND_ROOT, targetPath);
+function resolveConfiguredPath(name: string, targetPath: string) {
+  const normalized = targetPath.trim();
+  if (!normalized) {
+    throw new Error(`${name} cannot be empty`);
+  }
+
+  if (path.isAbsolute(normalized)) {
+    return normalized;
+  }
+
+  return path.resolve(BACKEND_ROOT, normalized);
+}
+
+function resolveColmapExecutable(value: string | undefined) {
+  const configured = value?.trim();
+  if (!configured) return "colmap";
+  return configured;
 }
 
 export const config = {
@@ -29,9 +44,10 @@ export const config = {
   FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
   APP_BASE_URL: process.env.APP_BASE_URL ?? process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
 
-  UPLOAD_DIR: resolveBackendPath(process.env.UPLOAD_DIR ?? 'uploads'),
-  OUTPUT_DIR: resolveBackendPath(process.env.OUTPUT_DIR ?? 'output'),
-  UPLOAD_TMP: resolveBackendPath(process.env.UPLOAD_TMP ?? path.join('uploads', 'tmp')),
+  UPLOAD_DIR: resolveConfiguredPath("UPLOAD_DIR", process.env.UPLOAD_DIR ?? 'uploads'),
+  OUTPUT_DIR: resolveConfiguredPath("OUTPUT_DIR", process.env.OUTPUT_DIR ?? 'output'),
+  UPLOAD_TMP: resolveConfiguredPath("UPLOAD_TMP", process.env.UPLOAD_TMP ?? path.join('uploads', 'tmp')),
+  COLMAP_BIN: resolveColmapExecutable(process.env.COLMAP_BIN),
 
   MONGODB_URI: requireEnv('MONGODB_URI'),
 

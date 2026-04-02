@@ -1,10 +1,11 @@
 import fs from "fs";
 import path from "path";
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import type { PipelineStage, PipelineProgressEvent, RunColmapStageHooks } from "../application/ports";
+import { config } from "../../../shared/config/env";
 
-const COLMAP_EXECUTABLE = "C:\\Users\\Alessandro\\Documents\\UNI\\FYP\\colmap\\COLMAP.bat";
-const CPU_THREAD_LIMIT = "2";
+const CPU_THREAD_LIMIT = "8";
+const GPU_ENABLED = "1";
 
 const OUTPUT_DIRECTORIES = {
   sparseRoot: "sparse",
@@ -22,27 +23,47 @@ function ensureDirectory(dir: string) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function resolveRequiredPath(targetPath: string, label: string) {
+  const normalizedInput = typeof targetPath === "string" ? targetPath.trim() : "";
+  if (!normalizedInput) {
+    throw new Error(`${label} is required`);
+  }
+
+  return path.resolve(normalizedInput);
+}
+
 function requireExistingDirectory(dir: string, label: string) {
-  const normalized = path.resolve(dir);
+  const normalized = resolveRequiredPath(dir, label);
   if (!fs.existsSync(normalized) || !fs.statSync(normalized).isDirectory()) {
     throw new Error(`${label} does not exist: ${normalized}`);
   }
+
+  return normalized;
+}
+
+function requireExistingFile(filePath: string, label: string) {
+  const normalized = resolveRequiredPath(filePath, label);
+  if (!fs.existsSync(normalized) || !fs.statSync(normalized).isFile()) {
+    throw new Error(`${label} does not exist: ${normalized}`);
+  }
+
+  return normalized;
 }
 
 function buildDatabasePath(outputFolder: string) {
-  return path.join(outputFolder, "database.db");
+  return path.join(resolveRequiredPath(outputFolder, "COLMAP output path"), "database.db");
 }
 
 function buildImagePath(inputFolder: string) {
-  return path.resolve(inputFolder);
+  return requireExistingDirectory(inputFolder, "COLMAP image_path");
 }
 
 function buildSparseRootPath(outputFolder: string) {
-  return path.join(outputFolder, OUTPUT_DIRECTORIES.sparseRoot);
+  return path.join(resolveRequiredPath(outputFolder, "COLMAP output path"), OUTPUT_DIRECTORIES.sparseRoot);
 }
 
 function buildSparseModelPath(outputFolder: string) {
-  return path.join(outputFolder, OUTPUT_DIRECTORIES.sparseModel);
+  return path.join(resolveRequiredPath(outputFolder, "COLMAP output path"), OUTPUT_DIRECTORIES.sparseModel);
 }
 
 function clampPercent(value: number) {
@@ -88,12 +109,44 @@ function isColmapErrorLine(line: string): boolean {
   return /^E\d{8}\s/.test(line);
 }
 
+function formatCommandForLog(command: string, args: string[]) {
+  const quoted = [command, ...args].map((part) => {
+    if (/[\s"]/u.test(part)) {
+      return `"${part.replace(/"/g, '\\"')}"`;
+    }
+
+    return part;
+  });
+
+  return quoted.join(" ");
+}
+
+export function verifyColmapBinary(): void {
+  const result = spawnSync(config.COLMAP_BIN, ["-h"], {
+    shell: false,
+    windowsHide: true,
+    encoding: "utf8",
+    timeout: 15000,
+  });
+
+  if (result.error) {
+    throw new Error(`COLMAP_BIN is invalid or not available: ${config.COLMAP_BIN}. ${result.error.message}`);
+  }
+
+  if (typeof result.status === "number" && result.status !== 0) {
+    const details = result.stderr?.trim() || result.stdout?.trim() || `exit code ${result.status}`;
+    throw new Error(`COLMAP_BIN failed validation: ${config.COLMAP_BIN}. ${details}`);
+  }
+}
+
 function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Promise<void> {
   return new Promise((resolve, reject) => {
     let lastProgress = 0;
 
+    console.log(`[COLMAP ${stageCommand.logLabel}] Executing ${formatCommandForLog(stageCommand.command, stageCommand.args)}`);
+
     const child = spawn(stageCommand.command, stageCommand.args, {
-      shell: true,
+      shell: false,
       windowsHide: true,
     });
 
@@ -126,7 +179,7 @@ function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Prom
     });
 
     child.on("error", (error) => {
-      reject(error);
+      reject(new Error(`Failed to start COLMAP executable "${stageCommand.command}": ${error.message}`));
     });
 
     child.on("close", (code) => {
@@ -141,46 +194,50 @@ function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Prom
 }
 
 function buildFeatureExtractionCommand(inputFolder: string, outputFolder: string): StageCommand {
-  requireExistingDirectory(inputFolder, "COLMAP image_path");
-  ensureDirectory(outputFolder);
+  buildImagePath(inputFolder);
+  ensureDirectory(resolveRequiredPath(outputFolder, "COLMAP output path"));
 
   return {
     stage: "feature_extraction",
-    command: COLMAP_EXECUTABLE,
+    command: config.COLMAP_BIN,
     logLabel: "feature_extraction",
     args: [
       "feature_extractor",
       "--database_path", buildDatabasePath(outputFolder),
       "--image_path", buildImagePath(inputFolder),
-      "--FeatureExtraction.use_gpu", "0",
+      "--FeatureExtraction.use_gpu", GPU_ENABLED,
       "--FeatureExtraction.num_threads", CPU_THREAD_LIMIT,
     ],
   };
 }
 
 function buildFeatureMatchingCommand(outputFolder: string): StageCommand {
+  ensureDirectory(resolveRequiredPath(outputFolder, "COLMAP output path"));
+  requireExistingFile(buildDatabasePath(outputFolder), "COLMAP database_path");
+
   return {
     stage: "feature_matching",
-    command: COLMAP_EXECUTABLE,
+    command: config.COLMAP_BIN,
     logLabel: "feature_matching",
     args: [
       "exhaustive_matcher",
       "--database_path", buildDatabasePath(outputFolder),
-      "--FeatureMatching.use_gpu", "0",
+      "--FeatureMatching.use_gpu", GPU_ENABLED,
       "--FeatureMatching.num_threads", CPU_THREAD_LIMIT,
     ],
   };
 }
 
 function buildSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
-  requireExistingDirectory(inputFolder, "COLMAP image_path");
+  buildImagePath(inputFolder);
+  requireExistingFile(buildDatabasePath(outputFolder), "COLMAP database_path");
   const sparseRoot = buildSparseRootPath(outputFolder);
 
   ensureDirectory(sparseRoot);
 
   return {
     stage: "sparse_mapping",
-    command: COLMAP_EXECUTABLE,
+    command: config.COLMAP_BIN,
     logLabel: "sparse_mapping",
     args: [
       "mapper",
