@@ -2,6 +2,7 @@ import { processNextQueuedModelJob } from "./modules/pipeline/application/proces
 import { runFeatureExtraction, runFeatureMatching, runSparseMapping, } from "./modules/pipeline/infrastructure/colmapRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
 import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
+import { ensureStorageDirectories } from "./shared/config/storage";
 import { connectDb, disconnectDb } from "./shared/db/mongoConnection";
 
 const POLL_INTERVAL_MS = 3000;
@@ -20,6 +21,7 @@ async function sleep(ms: number): Promise<void> {
 }
 
 async function startWorker(): Promise<void> {
+  ensureStorageDirectories();
   await connectDb();
   console.log("Model job worker started");
 

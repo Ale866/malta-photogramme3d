@@ -1,10 +1,8 @@
 import multer from "multer";
-import fs from "fs";
 import { config } from "../../../shared/config/env";
+import { ensureStorageDirectories } from "../../../shared/config/storage";
 
-if (!fs.existsSync(config.UPLOAD_TMP)) {
-  fs.mkdirSync(config.UPLOAD_TMP, { recursive: true });
-}
+ensureStorageDirectories();
 
 const storage = multer.diskStorage({
   destination: (_, __, cb) => cb(null, config.UPLOAD_TMP),

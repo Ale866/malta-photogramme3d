@@ -8,6 +8,7 @@ import {
   notFound,
   unauthorized,
 } from "../../../shared/errors/applicationError";
+import { config } from "../../../shared/config/env";
 
 type CoordinatesInput = { x: number, y: number, z: number };
 
@@ -38,7 +39,7 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
   const uploadId = createUploadId();
 
   const prepared = services.fileStorage.createUploadDirectories(
-    "uploads",
+    config.UPLOAD_DIR,
     title,
     uploadId
   );

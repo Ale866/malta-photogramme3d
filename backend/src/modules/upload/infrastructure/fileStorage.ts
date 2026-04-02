@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { config } from "../../../shared/config/env";
 
 export class FileStorage {
   static ensureDir(dir: string) {
@@ -32,9 +33,13 @@ export class FileStorage {
 
   static createUploadDirectories(baseUpload: string, title: string, uploadId: string) {
     const safeTitle = title.replace(/\s+/g, "_");
-    const inputFolder = path.resolve(baseUpload, `${uploadId}_${safeTitle}`);
-    const outputFolder = path.resolve("output", `${uploadId}_${safeTitle}`);
+    const inputRoot = path.resolve(baseUpload);
+    const outputRoot = path.resolve(config.OUTPUT_DIR);
+    const inputFolder = path.resolve(inputRoot, `${uploadId}_${safeTitle}`);
+    const outputFolder = path.resolve(outputRoot, `${uploadId}_${safeTitle}`);
 
+    FileStorage.ensureDir(inputRoot);
+    FileStorage.ensureDir(outputRoot);
     FileStorage.ensureDir(inputFolder);
     FileStorage.ensureDir(outputFolder);
 

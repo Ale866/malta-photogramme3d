@@ -6,8 +6,10 @@ import cors from "cors";
 import modelRoutes from "./modules/model/api/modelRoutes";
 import modelJobRoutes from "./modules/model-jobs/api/modelJobRoutes";
 import { config } from "./shared/config/env";
+import { ensureStorageDirectories } from "./shared/config/storage";
 
 export function createApp() {
+  ensureStorageDirectories();
   const app = express();
 
   app.use(cors({

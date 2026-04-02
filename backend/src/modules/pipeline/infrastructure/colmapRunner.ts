@@ -22,6 +22,13 @@ function ensureDirectory(dir: string) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+function requireExistingDirectory(dir: string, label: string) {
+  const normalized = path.resolve(dir);
+  if (!fs.existsSync(normalized) || !fs.statSync(normalized).isDirectory()) {
+    throw new Error(`${label} does not exist: ${normalized}`);
+  }
+}
+
 function buildDatabasePath(outputFolder: string) {
   return path.join(outputFolder, "database.db");
 }
@@ -134,6 +141,7 @@ function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Prom
 }
 
 function buildFeatureExtractionCommand(inputFolder: string, outputFolder: string): StageCommand {
+  requireExistingDirectory(inputFolder, "COLMAP image_path");
   ensureDirectory(outputFolder);
 
   return {
@@ -165,6 +173,7 @@ function buildFeatureMatchingCommand(outputFolder: string): StageCommand {
 }
 
 function buildSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
+  requireExistingDirectory(inputFolder, "COLMAP image_path");
   const sparseRoot = buildSparseRootPath(outputFolder);
 
   ensureDirectory(sparseRoot);

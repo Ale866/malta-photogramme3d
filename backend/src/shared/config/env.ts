@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import path from "path";
 
 function requireEnv(name: string): string {
   const v = process.env[name];
@@ -16,13 +17,21 @@ function parseBoolean(value: string | undefined, fallback: boolean) {
   return value.trim().toLowerCase() === 'true';
 }
 
+const BACKEND_ROOT = path.resolve(__dirname, "../../..");
+
+function resolveBackendPath(targetPath: string) {
+  return path.resolve(BACKEND_ROOT, targetPath);
+}
+
 export const config = {
+  BACKEND_ROOT,
   PORT: Number(process.env.PORT ?? 3000),
   FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
   APP_BASE_URL: process.env.APP_BASE_URL ?? process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
 
-  OUTPUT_DIR: process.env.OUTPUT_DIR ?? 'output',
-  UPLOAD_TMP: process.env.UPLOAD_TMP ?? 'uploads/tmp',
+  UPLOAD_DIR: resolveBackendPath(process.env.UPLOAD_DIR ?? 'uploads'),
+  OUTPUT_DIR: resolveBackendPath(process.env.OUTPUT_DIR ?? 'output'),
+  UPLOAD_TMP: resolveBackendPath(process.env.UPLOAD_TMP ?? path.join('uploads', 'tmp')),
 
   MONGODB_URI: requireEnv('MONGODB_URI'),
 
