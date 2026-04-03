@@ -1,5 +1,5 @@
 import { config } from "../../../../shared/config/env";
-import type { RunColmapStageHooks } from "../../application/ports";
+import type { PipelineProfile, RunColmapStageHooks } from "../../application/ports";
 import {
   ensureDirectoryHasFiles,
   requireExistingDirectory,
@@ -9,7 +9,7 @@ import {
   type StageCommand,
 } from "../colmapRunner";
 
-function buildFusionCommand(outputFolder: string): StageCommand {
+function buildStrictFusionCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.denseWorkspace);
   requireExistingDirectory(outputPaths.denseImages);
@@ -30,8 +30,29 @@ function buildFusionCommand(outputFolder: string): StageCommand {
   };
 }
 
-export function runFusion(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildFusionCommand(outputFolder), hooks).then(() => {
+function buildRelaxedFusionCommand(outputFolder: string): StageCommand {
+  const command = buildStrictFusionCommand(outputFolder);
+
+  return {
+    ...command,
+    args: [
+      ...command.args.slice(0, 5),
+      "--input_type", "photometric",
+      "--output_path", resolveOutputPaths(outputFolder).denseFused,
+      "--StereoFusion.min_num_pixels", "3",
+      "--StereoFusion.max_depth_error", "0.02",
+      "--StereoFusion.max_reproj_error", "4",
+    ],
+  };
+}
+
+export function runFusion(outputFolder: string, hooks?: RunColmapStageHooks, profile: PipelineProfile = "strict"
+): Promise<void> {
+  const command = profile === "relaxed"
+    ? buildRelaxedFusionCommand(outputFolder)
+    : buildStrictFusionCommand(outputFolder);
+
+  return runStage(command, hooks).then(() => {
     const outputPaths = resolveOutputPaths(outputFolder);
     requireExistingFile(outputPaths.denseFused, "COLMAP fused point cloud");
   });

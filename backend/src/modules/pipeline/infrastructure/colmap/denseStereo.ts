@@ -1,5 +1,5 @@
 import { config } from "../../../../shared/config/env";
-import type { RunColmapStageHooks } from "../../application/ports";
+import type { PipelineProfile, RunColmapStageHooks } from "../../application/ports";
 import {
   ensureDirectoryHasFiles,
   requireExistingDirectory,
@@ -8,7 +8,7 @@ import {
   type StageCommand,
 } from "../colmapRunner";
 
-function buildDenseStereoCommand(outputFolder: string): StageCommand {
+function buildStrictDenseStereoCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.denseWorkspace);
   requireExistingDirectory(outputPaths.denseImages);
@@ -28,8 +28,28 @@ function buildDenseStereoCommand(outputFolder: string): StageCommand {
   };
 }
 
-export function runDenseStereo(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildDenseStereoCommand(outputFolder), hooks).then(() => {
+function buildRelaxedDenseStereoCommand(outputFolder: string): StageCommand {
+  const command = buildStrictDenseStereoCommand(outputFolder);
+
+  return {
+    ...command,
+    args: [
+      "patch_match_stereo",
+      "--workspace_path", resolveOutputPaths(outputFolder).denseWorkspace,
+      "--workspace_format", "COLMAP",
+      "--PatchMatchStereo.geom_consistency", "false",
+      "--PatchMatchStereo.filter", "true",
+    ],
+  };
+}
+
+export function runDenseStereo(outputFolder: string, hooks?: RunColmapStageHooks, profile: PipelineProfile = "strict"
+): Promise<void> {
+  const command = profile === "relaxed"
+    ? buildRelaxedDenseStereoCommand(outputFolder)
+    : buildStrictDenseStereoCommand(outputFolder);
+
+  return runStage(command, hooks).then(() => {
     const outputPaths = resolveOutputPaths(outputFolder);
     requireExistingDirectory(outputPaths.denseStereo);
     ensureDirectoryHasFiles(outputPaths.denseDepthMaps, "COLMAP dense depth maps");

@@ -9,6 +9,8 @@ export type PipelineStage =
   | "simplification"
   | "texturing";
 
+export type PipelineProfile = "strict" | "relaxed";
+
 export type PipelineProgressEvent = {
   stage: PipelineStage;
   progress: number;

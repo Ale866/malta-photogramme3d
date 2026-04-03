@@ -1,15 +1,5 @@
 import { processNextQueuedModelJob } from "./modules/pipeline/application/processNextQueuedModelJob";
-import {
-  runDensePreparation,
-  runDenseStereo,
-  runFeatureExtraction,
-  runFeatureMatching,
-  runFusion,
-  runMeshing,
-  runSimplification,
-  runSparseMapping,
-  runTexturing,
-} from "./modules/pipeline/infrastructure/colmap";
+import { strictColmapPipelineServices } from "./modules/pipeline/infrastructure/colmapPipelines";
 import { verifyColmapBinary } from "./modules/pipeline/infrastructure/colmapRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
 import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
@@ -21,17 +11,7 @@ const POLL_INTERVAL_MS = 3000;
 const workerDependencies = {
   modelJobs: modelJobRepo,
   models: modelRepo,
-  pipeline: {
-    runFeatureExtraction,
-    runFeatureMatching,
-    runSparseMapping,
-    runDensePreparation,
-    runDenseStereo,
-    runFusion,
-    runMeshing,
-    runSimplification,
-    runTexturing,
-  },
+  pipeline: strictColmapPipelineServices,
 };
 
 async function sleep(ms: number): Promise<void> {
