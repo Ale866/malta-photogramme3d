@@ -21,7 +21,7 @@ export async function registerController(req: Request, res: Response) {
       userAgent: req.headers['user-agent'],
     });
 
-    setRefreshCookie(res, result.refreshToken);
+    setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(201).json({
       accessToken: result.accessToken,
@@ -43,7 +43,7 @@ export async function loginController(req: Request, res: Response) {
       userAgent: req.headers['user-agent'],
     });
 
-    setRefreshCookie(res, result.refreshToken);
+    setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(200).json({
       accessToken: result.accessToken,
@@ -65,7 +65,7 @@ export async function refreshController(req: Request, res: Response) {
       userAgent: req.headers['user-agent'],
     });
 
-    setRefreshCookie(res, result.refreshToken);
+    setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(200).json({
       accessToken: result.accessToken,
@@ -81,7 +81,7 @@ export async function refreshController(req: Request, res: Response) {
         || error.code === 'refresh_token_revoked'
       )
     ) {
-      clearRefreshCookie(res);
+      clearRefreshCookie(req, res);
     }
     return sendErrorResponse(res, error, 'Refresh failed');
   }
@@ -93,7 +93,7 @@ export async function logoutController(req: Request, res: Response) {
     const refreshToken = req.cookies?.[cookieName];
 
     if (refreshToken) await logout(authServices, { refreshToken })
-    clearRefreshCookie(res);
+    clearRefreshCookie(req, res);
 
     return res.status(204).send()
   } catch (error) {
@@ -137,7 +137,7 @@ export async function resetPasswordController(req: Request, res: Response) {
       confirmPassword,
     });
 
-    clearRefreshCookie(res);
+    clearRefreshCookie(req, res);
 
     return res.status(200).json(result);
   } catch (error) {

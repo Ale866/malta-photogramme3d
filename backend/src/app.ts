@@ -11,6 +11,7 @@ import { ensureStorageDirectories } from "./shared/config/storage";
 export function createApp() {
   ensureStorageDirectories();
   const app = express();
+  app.set('trust proxy', 1);
 
   app.use(cors({
     origin: config.FRONTEND_ORIGIN,
