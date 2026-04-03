@@ -1,5 +1,4 @@
 import type {
-  ModelJobStatus,
   ModelJobRepository,
   CreateModelJobInput,
   ModelJob,
@@ -9,16 +8,6 @@ import { MODEL_JOB_STATUS } from '../domain/modelJobRepository';
 import { clampProgress } from '../domain/modelJobState';
 import { ModelJobSchema } from './db/ModelJobSchema';
 import { toModelJobDomain } from './modelJobMapper';
-
-const NON_COMPLETED_MODEL_JOB_STATUSES: readonly ModelJobStatus[] = [
-  MODEL_JOB_STATUS.QUEUED,
-  MODEL_JOB_STATUS.FEATURE_EXTRACTION,
-  MODEL_JOB_STATUS.FEATURE_MATCHING,
-  MODEL_JOB_STATUS.SPARSE_MAPPING,
-  MODEL_JOB_STATUS.DENSE_PREPARATION,
-  MODEL_JOB_STATUS.DENSE_STEREO,
-  MODEL_JOB_STATUS.FAILED,
-];
 
 export const modelJobRepo: ModelJobRepository = {
   async create(input: CreateModelJobInput): Promise<ModelJob> {
@@ -102,9 +91,7 @@ export const modelJobRepo: ModelJobRepository = {
   async listNonCompletedByOwner(ownerId: string): Promise<ModelJob[]> {
     const docs = await ModelJobSchema.find({
       ownerId,
-      status: {
-        $in: [...NON_COMPLETED_MODEL_JOB_STATUSES],
-      },
+      status: { $ne: MODEL_JOB_STATUS.COMPLETED },
     }).sort({ createdAt: -1 }).lean();
     return docs.map((doc) => toModelJobDomain(doc));
   },

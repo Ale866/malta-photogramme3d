@@ -4,6 +4,7 @@ import {
   runDenseStereo,
   runFeatureExtraction,
   runFeatureMatching,
+  runFusion,
   runSparseMapping,
   verifyColmapBinary,
 } from "./modules/pipeline/infrastructure/colmapRunner";
@@ -23,6 +24,7 @@ const workerDependencies = {
     runSparseMapping,
     runDensePreparation,
     runDenseStereo,
+    runFusion,
   },
 };
 

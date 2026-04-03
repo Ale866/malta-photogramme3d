@@ -3,7 +3,8 @@ export type PipelineStage =
   | "feature_matching"
   | "sparse_mapping"
   | "dense_preparation"
-  | "dense_stereo";
+  | "dense_stereo"
+  | "fusion";
 
 export type PipelineProgressEvent = {
   stage: PipelineStage;
@@ -20,4 +21,5 @@ export type PipelineServices = {
   runSparseMapping: (inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
   runDensePreparation: (inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
   runDenseStereo: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
+  runFusion: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
 };

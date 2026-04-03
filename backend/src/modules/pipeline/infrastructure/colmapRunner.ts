@@ -15,6 +15,7 @@ const OUTPUT_DIRECTORIES = {
   denseSparse: path.join("dense", "sparse"),
   denseStereo: path.join("dense", "stereo"),
   denseDepthMaps: path.join("dense", "stereo", "depth_maps"),
+  denseFused: path.join("dense", "fused.ply"),
 };
 
 type StageCommand = {
@@ -34,6 +35,7 @@ type OutputPaths = {
   denseSparse: string;
   denseStereo: string;
   denseDepthMaps: string;
+  denseFused: string;
 };
 
 function ensureDirectory(dir: string) {
@@ -89,6 +91,7 @@ function resolveOutputPaths(outputFolder: string): OutputPaths {
     denseSparse: path.join(root, OUTPUT_DIRECTORIES.denseSparse),
     denseStereo: path.join(root, OUTPUT_DIRECTORIES.denseStereo),
     denseDepthMaps: path.join(root, OUTPUT_DIRECTORIES.denseDepthMaps),
+    denseFused: path.join(root, OUTPUT_DIRECTORIES.denseFused),
   };
 }
 
@@ -326,6 +329,27 @@ function buildDenseStereoCommand(outputFolder: string): StageCommand {
   };
 }
 
+function buildFusionCommand(outputFolder: string): StageCommand {
+  const outputPaths = resolveOutputPaths(outputFolder);
+  requireExistingDirectory(outputPaths.denseWorkspace);
+  requireExistingDirectory(outputPaths.denseImages);
+  requireExistingDirectory(outputPaths.denseStereo);
+  ensureDirectoryHasFiles(outputPaths.denseDepthMaps, "COLMAP dense depth maps");
+
+  return {
+    stage: "fusion",
+    command: config.COLMAP_BIN,
+    logLabel: "fusion",
+    args: [
+      "stereo_fusion",
+      "--workspace_path", outputPaths.denseWorkspace,
+      "--workspace_format", "COLMAP",
+      "--input_type", "geometric",
+      "--output_path", outputPaths.denseFused,
+    ],
+  };
+}
+
 export function runFeatureExtraction(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   return runStage(buildFeatureExtractionCommand(inputFolder, outputFolder), hooks);
 }
@@ -357,5 +381,12 @@ export function runDenseStereo(outputFolder: string, hooks?: RunColmapStageHooks
     const outputPaths = resolveOutputPaths(outputFolder);
     requireExistingDirectory(outputPaths.denseStereo);
     ensureDirectoryHasFiles(outputPaths.denseDepthMaps, "COLMAP dense depth maps");
+  });
+}
+
+export function runFusion(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  return runStage(buildFusionCommand(outputFolder), hooks).then(() => {
+    const outputPaths = resolveOutputPaths(outputFolder);
+    requireExistingFile(outputPaths.denseFused, "COLMAP fused point cloud");
   });
 }

@@ -5,6 +5,7 @@ export const MODEL_JOB_STATUS = {
   SPARSE_MAPPING: "sparse_mapping",
   DENSE_PREPARATION: "dense_preparation",
   DENSE_STEREO: "dense_stereo",
+  FUSION: "fusion",
   COMPLETED: "completed",
   FAILED: "failed",
 } as const;
