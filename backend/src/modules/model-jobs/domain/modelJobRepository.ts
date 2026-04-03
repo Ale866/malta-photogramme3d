@@ -6,6 +6,9 @@ export const MODEL_JOB_STATUS = {
   DENSE_PREPARATION: "dense_preparation",
   DENSE_STEREO: "dense_stereo",
   FUSION: "fusion",
+  MESHING: "meshing",
+  SIMPLIFICATION: "simplification",
+  TEXTURING: "texturing",
   COMPLETED: "completed",
   FAILED: "failed",
 } as const;

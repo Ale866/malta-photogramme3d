@@ -27,8 +27,6 @@ type PipelineExecutionStage = {
   key: PipelineStage;
   activeStatus: ModelJobStatus;
   activeStageLabel: string;
-  startProgress: number;
-  completedProgress: number;
   run: (
     services: PipelineServices,
     job: { inputFolder: string; outputFolder: string },
@@ -36,13 +34,28 @@ type PipelineExecutionStage = {
   ) => Promise<void>;
 };
 
+type PipelineProgressRange = {
+  baseProgress: number;
+  span: number;
+};
+
+const PIPELINE_PROGRESS_RANGES: Record<PipelineStage, PipelineProgressRange> = {
+  feature_extraction: { baseProgress: 0, span: 10 },
+  feature_matching: { baseProgress: 10, span: 10 },
+  sparse_mapping: { baseProgress: 20, span: 25 },
+  dense_preparation: { baseProgress: 45, span: 10 },
+  dense_stereo: { baseProgress: 55, span: 30 },
+  fusion: { baseProgress: 85, span: 5 },
+  meshing: { baseProgress: 90, span: 4 },
+  simplification: { baseProgress: 94, span: 3 },
+  texturing: { baseProgress: 97, span: 2 },
+};
+
 const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
   {
     key: "feature_extraction",
     activeStatus: MODEL_JOB_STATUS.FEATURE_EXTRACTION,
     activeStageLabel: MODEL_JOB_STATUS.FEATURE_EXTRACTION,
-    startProgress: 1,
-    completedProgress: 10,
     run: async (services, job, onProgress) => {
       await services.runFeatureExtraction(job.inputFolder, job.outputFolder, {
         onProgress: (event) => onProgress(event.stage, event.progress),
@@ -53,8 +66,6 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     key: "feature_matching",
     activeStatus: MODEL_JOB_STATUS.FEATURE_MATCHING,
     activeStageLabel: MODEL_JOB_STATUS.FEATURE_MATCHING,
-    startProgress: 11,
-    completedProgress: 20,
     run: async (services, job, onProgress) => {
       await services.runFeatureMatching(job.outputFolder, {
         onProgress: (event) => onProgress(event.stage, event.progress),
@@ -65,8 +76,6 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     key: "sparse_mapping",
     activeStatus: MODEL_JOB_STATUS.SPARSE_MAPPING,
     activeStageLabel: MODEL_JOB_STATUS.SPARSE_MAPPING,
-    startProgress: 21,
-    completedProgress: 45,
     run: async (services, job, onProgress) => {
       await services.runSparseMapping(job.inputFolder, job.outputFolder, {
         onProgress: (event) => onProgress(event.stage, event.progress),
@@ -77,8 +86,6 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     key: "dense_preparation",
     activeStatus: MODEL_JOB_STATUS.DENSE_PREPARATION,
     activeStageLabel: MODEL_JOB_STATUS.DENSE_PREPARATION,
-    startProgress: 46,
-    completedProgress: 55,
     run: async (services, job, onProgress) => {
       await services.runDensePreparation(job.inputFolder, job.outputFolder, {
         onProgress: (event) => onProgress(event.stage, event.progress),
@@ -89,8 +96,6 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     key: "dense_stereo",
     activeStatus: MODEL_JOB_STATUS.DENSE_STEREO,
     activeStageLabel: MODEL_JOB_STATUS.DENSE_STEREO,
-    startProgress: 56,
-    completedProgress: 90,
     run: async (services, job, onProgress) => {
       await services.runDenseStereo(job.outputFolder, {
         onProgress: (event) => onProgress(event.stage, event.progress),
@@ -101,10 +106,38 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     key: "fusion",
     activeStatus: MODEL_JOB_STATUS.FUSION,
     activeStageLabel: MODEL_JOB_STATUS.FUSION,
-    startProgress: 91,
-    completedProgress: 99,
     run: async (services, job, onProgress) => {
       await services.runFusion(job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+  {
+    key: "meshing",
+    activeStatus: MODEL_JOB_STATUS.MESHING,
+    activeStageLabel: MODEL_JOB_STATUS.MESHING,
+    run: async (services, job, onProgress) => {
+      await services.runMeshing(job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+  {
+    key: "simplification",
+    activeStatus: MODEL_JOB_STATUS.SIMPLIFICATION,
+    activeStageLabel: MODEL_JOB_STATUS.SIMPLIFICATION,
+    run: async (services, job, onProgress) => {
+      await services.runSimplification(job.outputFolder, {
+        onProgress: (event) => onProgress(event.stage, event.progress),
+      });
+    },
+  },
+  {
+    key: "texturing",
+    activeStatus: MODEL_JOB_STATUS.TEXTURING,
+    activeStageLabel: MODEL_JOB_STATUS.TEXTURING,
+    run: async (services, job, onProgress) => {
+      await services.runTexturing(job.outputFolder, {
         onProgress: (event) => onProgress(event.stage, event.progress),
       });
     },
@@ -142,19 +175,22 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
 
   try {
     for (const pipelineStage of PIPELINE_STAGES) {
+      const stageStartProgress = getStageStartProgress(pipelineStage.key);
+      const stageCompletedProgress = getStageCompletedProgress(pipelineStage.key);
+
       await setModelJobStageActive(
         { modelJobs: services.modelJobs },
         job.id,
         {
           status: pipelineStage.activeStatus,
           stage: pipelineStage.activeStageLabel,
-          progress: pipelineStage.startProgress,
+          progress: stageStartProgress,
         }
       );
 
       captureRuntime({
         stage: pipelineStage.activeStageLabel,
-        progress: pipelineStage.startProgress,
+        progress: stageStartProgress,
       });
 
       await persistRuntime();
@@ -186,7 +222,7 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
 
       captureRuntime({
         stage: pipelineStage.activeStageLabel,
-        progress: pipelineStage.completedProgress,
+        progress: stageCompletedProgress,
       });
 
       await persistRuntime();
@@ -221,23 +257,10 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
 
 function mapStageProgress(stage: string, stageProgress: number): number {
   const normalized = clampStageProgress(stageProgress);
+  if (!(stage in PIPELINE_PROGRESS_RANGES)) return normalized;
 
-  switch (stage) {
-    case "feature_extraction":
-      return Math.round((normalized / 100) * 10);
-    case "feature_matching":
-      return 10 + Math.round((normalized / 100) * 10);
-    case "sparse_mapping":
-      return 20 + Math.round((normalized / 100) * 25);
-    case "dense_preparation":
-      return 45 + Math.round((normalized / 100) * 10);
-    case "dense_stereo":
-      return 55 + Math.round((normalized / 100) * 35);
-    case "fusion":
-      return 90 + Math.round((normalized / 100) * 9);
-    default:
-      return normalized;
-  }
+  const range = PIPELINE_PROGRESS_RANGES[stage as PipelineStage];
+  return range.baseProgress + Math.round((normalized / 100) * range.span);
 }
 
 function clampStageProgress(value: number): number {
@@ -256,4 +279,14 @@ function requireJobId(jobId: string): string {
 function toErrorMessage(error: any): string {
   if (error instanceof Error && error.message.trim()) return error.message.trim();
   return "Pipeline failed";
+}
+
+function getStageStartProgress(stage: PipelineStage): number {
+  const { baseProgress } = PIPELINE_PROGRESS_RANGES[stage];
+  return baseProgress === 0 ? 1 : baseProgress + 1;
+}
+
+function getStageCompletedProgress(stage: PipelineStage): number {
+  const { baseProgress, span } = PIPELINE_PROGRESS_RANGES[stage];
+  return baseProgress + span;
 }

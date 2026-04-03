@@ -16,6 +16,9 @@ const OUTPUT_DIRECTORIES = {
   denseStereo: path.join("dense", "stereo"),
   denseDepthMaps: path.join("dense", "stereo", "depth_maps"),
   denseFused: path.join("dense", "fused.ply"),
+  denseMeshedPoisson: path.join("dense", "meshed-poisson.ply"),
+  denseMeshedPoissonSimplified: path.join("dense", "meshed-poisson-simplified.ply"),
+  denseTextured: path.join("dense", "textured"),
 };
 
 type StageCommand = {
@@ -36,6 +39,9 @@ type OutputPaths = {
   denseStereo: string;
   denseDepthMaps: string;
   denseFused: string;
+  denseMeshedPoisson: string;
+  denseMeshedPoissonSimplified: string;
+  denseTextured: string;
 };
 
 function ensureDirectory(dir: string) {
@@ -92,6 +98,9 @@ function resolveOutputPaths(outputFolder: string): OutputPaths {
     denseStereo: path.join(root, OUTPUT_DIRECTORIES.denseStereo),
     denseDepthMaps: path.join(root, OUTPUT_DIRECTORIES.denseDepthMaps),
     denseFused: path.join(root, OUTPUT_DIRECTORIES.denseFused),
+    denseMeshedPoisson: path.join(root, OUTPUT_DIRECTORIES.denseMeshedPoisson),
+    denseMeshedPoissonSimplified: path.join(root, OUTPUT_DIRECTORIES.denseMeshedPoissonSimplified),
+    denseTextured: path.join(root, OUTPUT_DIRECTORIES.denseTextured),
   };
 }
 
@@ -350,6 +359,63 @@ function buildFusionCommand(outputFolder: string): StageCommand {
   };
 }
 
+function buildMeshingCommand(outputFolder: string): StageCommand {
+  const outputPaths = resolveOutputPaths(outputFolder);
+  requireExistingDirectory(outputPaths.denseWorkspace);
+  requireExistingFile(outputPaths.denseFused, "COLMAP fused point cloud");
+
+  return {
+    stage: "meshing",
+    command: config.COLMAP_BIN,
+    logLabel: "meshing",
+    args: [
+      "poisson_mesher",
+      "--input_path", outputPaths.denseFused,
+      "--output_path", outputPaths.denseMeshedPoisson,
+    ],
+  };
+}
+
+function buildSimplificationCommand(outputFolder: string): StageCommand {
+  const outputPaths = resolveOutputPaths(outputFolder);
+  requireExistingDirectory(outputPaths.denseWorkspace);
+  requireExistingFile(outputPaths.denseMeshedPoisson, "COLMAP meshed point cloud");
+
+  return {
+    stage: "simplification",
+    command: config.COLMAP_BIN,
+    logLabel: "simplification",
+    args: [
+      "mesh_simplifier",
+      "--input_path", outputPaths.denseMeshedPoisson,
+      "--output_path", outputPaths.denseMeshedPoissonSimplified,
+    ],
+  };
+}
+
+function buildTexturingCommand(outputFolder: string): StageCommand {
+  const outputPaths = resolveOutputPaths(outputFolder);
+  requireExistingDirectory(outputPaths.denseWorkspace);
+  requireExistingDirectory(outputPaths.denseImages);
+  requireExistingDirectory(outputPaths.denseSparse);
+  requireExistingFile(outputPaths.denseMeshedPoissonSimplified, "COLMAP simplified mesh");
+
+  resetDirectory(outputPaths.denseTextured);
+
+  return {
+    stage: "texturing",
+    command: config.COLMAP_BIN,
+    logLabel: "texturing",
+    args: [
+      "mesh_texturer",
+      "--input_path", outputPaths.denseMeshedPoissonSimplified,
+      "--output_path", outputPaths.denseTextured,
+      "--workspace_path", outputPaths.denseWorkspace,
+      "--workspace_format", "COLMAP",
+    ],
+  };
+}
+
 export function runFeatureExtraction(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   return runStage(buildFeatureExtractionCommand(inputFolder, outputFolder), hooks);
 }
@@ -388,5 +454,26 @@ export function runFusion(outputFolder: string, hooks?: RunColmapStageHooks): Pr
   return runStage(buildFusionCommand(outputFolder), hooks).then(() => {
     const outputPaths = resolveOutputPaths(outputFolder);
     requireExistingFile(outputPaths.denseFused, "COLMAP fused point cloud");
+  });
+}
+
+export function runMeshing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  return runStage(buildMeshingCommand(outputFolder), hooks).then(() => {
+    const outputPaths = resolveOutputPaths(outputFolder);
+    requireExistingFile(outputPaths.denseMeshedPoisson, "COLMAP meshed point cloud");
+  });
+}
+
+export function runSimplification(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  return runStage(buildSimplificationCommand(outputFolder), hooks).then(() => {
+    const outputPaths = resolveOutputPaths(outputFolder);
+    requireExistingFile(outputPaths.denseMeshedPoissonSimplified, "COLMAP simplified mesh");
+  });
+}
+
+export function runTexturing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  return runStage(buildTexturingCommand(outputFolder), hooks).then(() => {
+    const outputPaths = resolveOutputPaths(outputFolder);
+    ensureDirectoryHasFiles(outputPaths.denseTextured, "COLMAP textured mesh output");
   });
 }

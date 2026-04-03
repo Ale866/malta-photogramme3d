@@ -5,7 +5,10 @@ import {
   runFeatureExtraction,
   runFeatureMatching,
   runFusion,
+  runMeshing,
+  runSimplification,
   runSparseMapping,
+  runTexturing,
   verifyColmapBinary,
 } from "./modules/pipeline/infrastructure/colmapRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
@@ -25,6 +28,9 @@ const workerDependencies = {
     runDensePreparation,
     runDenseStereo,
     runFusion,
+    runMeshing,
+    runSimplification,
+    runTexturing,
   },
 };
 
