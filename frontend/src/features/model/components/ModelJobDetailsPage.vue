@@ -7,14 +7,21 @@ import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails'
 const props = defineProps<{
   job: ModelJobDetails
   trackingError: string | null
+  retryError: string | null
+  isRetrying: boolean
   canOpenGeneratedModel: boolean
 }>()
 const emit = defineEmits<{
   (event: 'open-generated-model'): void
+  (event: 'retry-job'): void
 }>()
 
 const openGeneratedModel = () => {
   emit('open-generated-model')
+}
+
+const retryJob = () => {
+  emit('retry-job')
 }
 
 function formatDate(value: string | undefined) {
@@ -52,15 +59,19 @@ const summary = computed(() => {
     return 'The reconstruction is queued and waiting to start.'
   }
 
+  if (props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN) {
+    return 'A second attempt is queued using gentler settings on the same pictures. This may recover more of the scene, but the final model may look rougher or less accurate than a result built from better pictures.'
+  }
+
   if (props.job.status === MODEL_JOB_STATUS.FAILED) {
-    return 'The reconstruction stopped before completion. The latest job state is shown below.'
+    return 'We could not build a complete result from these pictures. You can try one more time with less strict settings, but that is only a fallback. The best way to improve the result is to have a more complete and clearer dataset.'
   }
 
   if (props.job.status === MODEL_JOB_STATUS.COMPLETED) {
     return 'The reconstruction finished successfully. The generated model is ready.'
   }
 
-  return 'The sparse COLMAP reconstruction is in progress.'
+  return 'We are building the 3D result from your pictures.'
 })
 
 const progressNote = computed(() => {
@@ -70,6 +81,8 @@ const progressNote = computed(() => {
 
   return null
 })
+
+const canRetry = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED)
 
 const details = computed(() => [
   { key: 'images', label: 'Images', value: String(props.job.imageCount) },
@@ -101,8 +114,19 @@ const details = computed(() => [
 
       <p v-if="progressNote" class="model-job-progress-note">{{ progressNote }}</p>
 
-      <p v-if="job.error" class="text-error model-job-error">{{ job.error }}</p>
+      <p v-if="retryError" class="text-error model-job-error">{{ retryError }}</p>
+      <p v-else-if="job.error" class="text-error model-job-error">{{ job.error }}</p>
       <p v-else-if="trackingError" class="text-error model-job-error">{{ trackingError }}</p>
+
+      <div v-if="canRetry" class="model-job-retry-callout">
+        <p class="model-job-retry-title">Try again with the same photos</p>
+        <p class="model-job-retry-copy">
+          We can make one more attempt using gentler settings on the same photos. This may help recover more of the shape, but the final model may be less clean or less accurate. Taking more photos, or taking clearer ones with better coverage of the object, is still the best option.
+        </p>
+        <button class="btn model-job-retry-button" type="button" :disabled="isRetrying" @click="retryJob">
+          {{ isRetrying ? 'Starting second attempt...' : 'Try again anyway' }}
+        </button>
+      </div>
 
       <dl class="model-job-details-grid">
         <div v-for="detail in details" :key="detail.key" class="model-job-detail-card">

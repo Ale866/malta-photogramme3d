@@ -8,3 +8,8 @@ export type FailedModelJobDeletionServices = {
   modelJobs: ModelJobRepository;
   deleteDirectory: (directoryPath: string) => void;
 };
+
+export type FailedModelJobRerunServices = {
+  modelJobs: ModelJobRepository;
+  deleteDirectory: (directoryPath: string) => void;
+};

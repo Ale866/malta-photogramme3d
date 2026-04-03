@@ -382,6 +382,18 @@ export const ModelApi = {
     }
   },
 
+  async rerunFailedModelJob(jobId: string, accessToken: string): Promise<void> {
+    try {
+      await http.post(`/model-jobs/${jobId}/rerun`, undefined, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
   async voteForModel(modelId: string, accessToken: string): Promise<ModelVoteState> {
     try {
       const res = await http.post<ModelVoteStateDto>(`/model/${modelId}/vote`, undefined, {

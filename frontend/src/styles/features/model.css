@@ -1622,6 +1622,41 @@
   max-width: 42rem;
 }
 
+.model-job-retry-callout {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 42rem;
+  padding: 1rem 1.05rem;
+  border-radius: 18px;
+  border: 1px solid rgb(255 196 115 / 0.18);
+  background: linear-gradient(180deg, rgb(54 35 12 / 0.42), rgb(34 23 10 / 0.5));
+}
+
+.model-job-retry-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+  color: #ffd9a6;
+}
+
+.model-job-retry-copy {
+  margin: 0;
+  color: #f2dfc2;
+  line-height: 1.65;
+}
+
+.model-job-retry-button {
+  justify-self: start;
+  border-color: rgb(255 198 118 / 0.3);
+  background: linear-gradient(180deg, rgb(110 70 20 / 0.96), rgb(82 51 15 / 0.98));
+  color: #fff2df;
+}
+
+.model-job-retry-button:hover,
+.model-job-retry-button:focus-visible {
+  background: linear-gradient(180deg, rgb(126 81 24 / 0.98), rgb(97 60 18 / 0.98));
+}
+
 .model-job-actions {
   display: flex;
   flex-wrap: wrap;

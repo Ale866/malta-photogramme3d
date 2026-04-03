@@ -10,7 +10,7 @@ type DetailMode = 'job' | 'model'
 export function useModelDetails() {
   const route = useRoute()
   const router = useRouter()
-  const { getPublicModelById, getUserModelById, getModelJobDetails } = use3dModel()
+  const { getPublicModelById, getUserModelById, getModelJobDetails, rerunFailedModelJob } = use3dModel()
   const {
     job: liveJobSnapshot,
     trackingError,
@@ -22,6 +22,8 @@ export function useModelDetails() {
   const jobDetails = ref<ModelJobDetails | null>(null)
   const isLoading = ref(false)
   const errorMessage = ref<string | null>(null)
+  const retryError = ref<string | null>(null)
+  const isRetrying = ref(false)
 
   const detailMode = computed<DetailMode>(() => route.name === 'ModelJobDetails' ? 'job' : 'model')
   const detailSource = computed<'catalog' | 'list'>(() => route.query.from === 'catalog' ? 'catalog' : 'list')
@@ -69,6 +71,7 @@ export function useModelDetails() {
   async function loadDetails() {
     isLoading.value = true
     errorMessage.value = null
+    retryError.value = null
     stopTracking()
     liveJobSnapshot.value = null
 
@@ -126,6 +129,26 @@ export function useModelDetails() {
     void router.push({ name: 'Island', query: { modelId: currentModel.id } })
   }
 
+  async function retryCurrentJob() {
+    const currentJobId = jobId.value.trim()
+    if (!currentJobId) {
+      retryError.value = 'Missing job ID'
+      return
+    }
+
+    isRetrying.value = true
+    retryError.value = null
+
+    try {
+      await rerunFailedModelJob(currentJobId)
+      await loadJobDetails()
+    } catch (error) {
+      retryError.value = error instanceof Error ? error.message : 'Could not start the retry'
+    } finally {
+      isRetrying.value = false
+    }
+  }
+
   watch(
     () => [detailMode.value, modelId.value, jobId.value, detailSource.value],
     async () => {
@@ -145,12 +168,15 @@ export function useModelDetails() {
     liveJobDetails,
     trackingError,
     errorMessage,
+    retryError,
     isLoading,
+    isRetrying,
     applyVoteState,
     setError,
     goBack,
     openGeneratedModel,
     openGeneratedModelOnIsland,
     openCurrentModelOnIsland,
+    retryCurrentJob,
   }
 }

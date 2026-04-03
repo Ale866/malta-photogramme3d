@@ -40,16 +40,19 @@ export const modelJobRepo: ModelJobRepository = {
   async claimNextQueued(): Promise<ModelJob | null> {
     const startedAt = new Date();
     const doc = await ModelJobSchema.findOneAndUpdate(
-      { status: MODEL_JOB_STATUS.QUEUED },
-      {
-        $set: {
-          status: MODEL_JOB_STATUS.QUEUED,
-          stage: MODEL_JOB_STATUS.QUEUED,
-          progress: 0,
-          error: null,
-          startedAt,
+      { status: { $in: [MODEL_JOB_STATUS.QUEUED, MODEL_JOB_STATUS.QUEUED_TO_RERUN] } },
+      [
+        {
+          $set: {
+            stage: "$status",
+            progress: 0,
+            error: null,
+            modelId: null,
+            startedAt,
+            finishedAt: null,
+          },
         },
-      },
+      ],
       {
         sort: { createdAt: 1, _id: 1 },
         returnDocument: 'after',

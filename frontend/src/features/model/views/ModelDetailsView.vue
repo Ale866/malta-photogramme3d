@@ -16,12 +16,15 @@ const {
   liveJobDetails,
   trackingError,
   errorMessage,
+  retryError,
   isLoading,
+  isRetrying,
   applyVoteState,
   setError,
   goBack,
   openGeneratedModel,
   openCurrentModelOnIsland,
+  retryCurrentJob,
 } = useModelDetails()
 
 const auth = useAuth()
@@ -178,7 +181,8 @@ const islandButtonTitle = computed(() => {
 
       <template v-else-if="liveJobDetails">
         <model-job-details-page :job="liveJobDetails" :tracking-error="trackingError"
-          :can-open-generated-model="Boolean(liveJobDetails.modelId)" @open-generated-model="openGeneratedModel" />
+          :retry-error="retryError" :is-retrying="isRetrying" :can-open-generated-model="Boolean(liveJobDetails.modelId)"
+          @open-generated-model="openGeneratedModel" @retry-job="retryCurrentJob" />
       </template>
     </div>
   </section>

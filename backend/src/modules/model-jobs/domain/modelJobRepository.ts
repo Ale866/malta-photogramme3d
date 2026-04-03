@@ -1,5 +1,6 @@
 export const MODEL_JOB_STATUS = {
   QUEUED: "queued",
+  QUEUED_TO_RERUN: "queued_to_rerun",
   FEATURE_EXTRACTION: "feature_extraction",
   FEATURE_MATCHING: "feature_matching",
   SPARSE_MAPPING: "sparse_mapping",

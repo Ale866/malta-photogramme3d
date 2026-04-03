@@ -8,6 +8,7 @@ import {
 } from "../../../shared/errors/applicationError";
 import { modelJobRepo } from "../infrastructure/modelJobRepo";
 import { deleteFailedModelJob } from "../application/deleteFailedModelJob";
+import { rerunFailedModelJob } from "../application/rerunFailedModelJob";
 import { FileStorage } from "../../upload/infrastructure/fileStorage";
 
 const modelJobDependencies = {
@@ -15,6 +16,11 @@ const modelJobDependencies = {
 };
 
 const deleteModelJobDependencies = {
+  modelJobs: modelJobRepo,
+  deleteDirectory: FileStorage.deleteDirectory,
+};
+
+const rerunModelJobDependencies = {
   modelJobs: modelJobRepo,
   deleteDirectory: FileStorage.deleteDirectory,
 };
@@ -61,6 +67,24 @@ export async function deleteFailedModelJobController(req: AuthedRequest, res: Re
     return res.status(200).json({
       success: true,
       message: "Failed model job deleted",
+    });
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function rerunFailedModelJobController(req: AuthedRequest, res: Response) {
+  try {
+    if (!req.user) throw unauthorized("Not authenticated");
+
+    await rerunFailedModelJob(rerunModelJobDependencies, {
+      jobId: req.params.jobId,
+      ownerId: req.user.sub,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Model job queued for rerun",
     });
   } catch (error) {
     return sendErrorResponse(res, error);
