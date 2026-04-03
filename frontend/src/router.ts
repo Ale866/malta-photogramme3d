@@ -12,7 +12,7 @@ const ModelDetailsView = () => import('@/features/model/views/ModelDetailsView.v
 const routes = [
   { path: '/', name: "Island", component: IslandView },
   {
-    path: '/model',
+    path: '/models',
     children: [
       {
         path: 'list',

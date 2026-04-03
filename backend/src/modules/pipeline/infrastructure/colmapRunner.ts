@@ -6,6 +6,7 @@ import { config } from "../../../shared/config/env";
 
 const CPU_THREAD_LIMIT = "8";
 const GPU_ENABLED = "1";
+const MIN_FUSED_POINT_COUNT_FOR_MESHING = 2000;
 
 const OUTPUT_DIRECTORIES = {
   sparseRoot: "sparse",
@@ -78,6 +79,30 @@ function requireExistingFile(filePath: string, label: string) {
   }
 
   return normalized;
+}
+
+function readPlyVertexCount(filePath: string, label: string) {
+  const normalized = requireExistingFile(filePath, label);
+  const fileDescriptor = fs.openSync(normalized, "r");
+
+  try {
+    const buffer = Buffer.alloc(16 * 1024);
+    const bytesRead = fs.readSync(fileDescriptor, buffer, 0, buffer.length, 0);
+    const header = buffer.toString("utf8", 0, bytesRead).split(/\r?\n/);
+    const endHeaderIndex = header.findIndex((line) => line.trim() === "end_header");
+    const vertexLine = header
+      .slice(0, endHeaderIndex >= 0 ? endHeaderIndex + 1 : header.length)
+      .find((line) => line.startsWith("element vertex "));
+
+    const vertexCount = Number(vertexLine?.slice("element vertex ".length) ?? "");
+    if (!Number.isFinite(vertexCount)) {
+      throw new Error(`${label} has an invalid vertex count: ${normalized}`);
+    }
+
+    return vertexCount;
+  } finally {
+    fs.closeSync(fileDescriptor);
+  }
 }
 
 function resolveImagePath(inputFolder: string) {
@@ -333,7 +358,7 @@ function buildDenseStereoCommand(outputFolder: string): StageCommand {
       "patch_match_stereo",
       "--workspace_path", outputPaths.denseWorkspace,
       "--workspace_format", "COLMAP",
-      "--PatchMatchStereo.geom_consistency", "true",
+      "--PatchMatchStereo.geom_consistency", "false",
       "--PatchMatchStereo.filter", "true",
     ],
   };
@@ -356,6 +381,9 @@ function buildFusionCommand(outputFolder: string): StageCommand {
       "--workspace_format", "COLMAP",
       "--input_type", "geometric",
       "--output_path", outputPaths.denseFused,
+      "--StereoFusion.min_num_pixels", "3",
+      "--StereoFusion.max_depth_error", "0.02",
+      "--StereoFusion.max_reproj_error", "4",
     ],
   };
 }
@@ -459,6 +487,15 @@ export function runFusion(outputFolder: string, hooks?: RunColmapStageHooks): Pr
 }
 
 export function runMeshing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  const outputPaths = resolveOutputPaths(outputFolder);
+  const fusedPointCount = readPlyVertexCount(outputPaths.denseFused, "COLMAP fused point cloud");
+
+  if (fusedPointCount < MIN_FUSED_POINT_COUNT_FOR_MESHING) {
+    throw new Error(
+      `Too few points were reconstructed (${fusedPointCount}) to build a mesh. The uploaded images did not produce a dense enough point cloud for mesh reconstruction. Try again taking a more complete dataset with more images and/or better coverage of the scene.`
+    );
+  }
+
   return runStage(buildMeshingCommand(outputFolder), hooks).then(() => {
     const outputPaths = resolveOutputPaths(outputFolder);
     requireExistingFile(outputPaths.denseMeshedPoisson, "COLMAP meshed point cloud");
