@@ -334,6 +334,7 @@ function buildDenseStereoCommand(outputFolder: string): StageCommand {
       "--workspace_path", outputPaths.denseWorkspace,
       "--workspace_format", "COLMAP",
       "--PatchMatchStereo.geom_consistency", "true",
+      "--PatchMatchStereo.filter", "true",
     ],
   };
 }
