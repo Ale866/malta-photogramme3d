@@ -9,8 +9,8 @@ import {
   runSimplification,
   runSparseMapping,
   runTexturing,
-  verifyColmapBinary,
-} from "./modules/pipeline/infrastructure/colmapRunner";
+} from "./modules/pipeline/infrastructure/colmap";
+import { verifyColmapBinary } from "./modules/pipeline/infrastructure/colmapRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
 import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
 import { config } from "./shared/config/env";

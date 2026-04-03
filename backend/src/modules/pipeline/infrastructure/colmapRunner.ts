@@ -4,9 +4,9 @@ import { spawn, spawnSync } from "child_process";
 import type { PipelineStage, PipelineProgressEvent, RunColmapStageHooks } from "../application/ports";
 import { config } from "../../../shared/config/env";
 
-const CPU_THREAD_LIMIT = "8";
-const GPU_ENABLED = "1";
-const MIN_FUSED_POINT_COUNT_FOR_MESHING = 2000;
+export const CPU_THREAD_LIMIT = "8";
+export const GPU_ENABLED = "1";
+export const MIN_FUSED_POINT_COUNT_FOR_MESHING = 2000;
 
 const OUTPUT_DIRECTORIES = {
   sparseRoot: "sparse",
@@ -22,14 +22,14 @@ const OUTPUT_DIRECTORIES = {
   denseTextured: path.join("dense", "textured"),
 };
 
-type StageCommand = {
+export type StageCommand = {
   stage: PipelineStage;
   command: string;
   args: string[];
   logLabel: string;
 };
 
-type OutputPaths = {
+export type OutputPaths = {
   root: string;
   database: string;
   sparseRoot: string;
@@ -45,16 +45,16 @@ type OutputPaths = {
   denseTextured: string;
 };
 
-function ensureDirectory(dir: string) {
+export function ensureDirectory(dir: string) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function resetDirectory(dir: string) {
+export function resetDirectory(dir: string) {
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function resolveRequiredPath(targetPath: string, label: string) {
+export function resolveRequiredPath(targetPath: string, label: string) {
   const normalizedInput = typeof targetPath === "string" ? targetPath.trim() : "";
   if (!normalizedInput) {
     throw new Error(`${label} is required`);
@@ -63,7 +63,7 @@ function resolveRequiredPath(targetPath: string, label: string) {
   return path.resolve(normalizedInput);
 }
 
-function requireExistingDirectory(dir: string) {
+export function requireExistingDirectory(dir: string) {
   const normalized = resolveRequiredPath(dir, "Directory path");
   if (!fs.existsSync(normalized) || !fs.statSync(normalized).isDirectory()) {
     throw new Error(`Directory does not exist: ${normalized}`);
@@ -72,7 +72,7 @@ function requireExistingDirectory(dir: string) {
   return normalized;
 }
 
-function requireExistingFile(filePath: string, label: string) {
+export function requireExistingFile(filePath: string, label: string) {
   const normalized = resolveRequiredPath(filePath, label);
   if (!fs.existsSync(normalized) || !fs.statSync(normalized).isFile()) {
     throw new Error(`${label} does not exist: ${normalized}`);
@@ -81,7 +81,7 @@ function requireExistingFile(filePath: string, label: string) {
   return normalized;
 }
 
-function readPlyVertexCount(filePath: string, label: string) {
+export function readPlyVertexCount(filePath: string, label: string) {
   const normalized = requireExistingFile(filePath, label);
   const fileDescriptor = fs.openSync(normalized, "r");
 
@@ -105,11 +105,11 @@ function readPlyVertexCount(filePath: string, label: string) {
   }
 }
 
-function resolveImagePath(inputFolder: string) {
+export function resolveImagePath(inputFolder: string) {
   return requireExistingDirectory(inputFolder);
 }
 
-function resolveOutputPaths(outputFolder: string): OutputPaths {
+export function resolveOutputPaths(outputFolder: string): OutputPaths {
   const root = resolveRequiredPath(outputFolder, "COLMAP output path");
 
   return {
@@ -129,7 +129,7 @@ function resolveOutputPaths(outputFolder: string): OutputPaths {
   };
 }
 
-function ensureDirectoryHasFiles(dir: string, label: string) {
+export function ensureDirectoryHasFiles(dir: string, label: string) {
   const normalized = requireExistingDirectory(dir);
   const entries = fs.readdirSync(normalized);
   if (entries.length === 0) {
@@ -212,7 +212,7 @@ export function verifyColmapBinary(): void {
   }
 }
 
-function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Promise<void> {
+export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Promise<void> {
   return new Promise((resolve, reject) => {
     let lastProgress = 0;
 
@@ -263,255 +263,5 @@ function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Prom
 
       reject(new Error(`COLMAP ${stageCommand.logLabel} failed with exit code ${code}`));
     });
-  });
-}
-
-function buildFeatureExtractionCommand(inputFolder: string, outputFolder: string): StageCommand {
-  const imagePath = resolveImagePath(inputFolder);
-  const outputPaths = resolveOutputPaths(outputFolder);
-  ensureDirectory(outputPaths.root);
-
-  return {
-    stage: "feature_extraction",
-    command: config.COLMAP_BIN,
-    logLabel: "feature_extraction",
-    args: [
-      "feature_extractor",
-      "--database_path", outputPaths.database,
-      "--image_path", imagePath,
-      "--FeatureExtraction.use_gpu", GPU_ENABLED,
-      "--FeatureExtraction.num_threads", CPU_THREAD_LIMIT,
-    ],
-  };
-}
-
-function buildFeatureMatchingCommand(outputFolder: string): StageCommand {
-  const outputPaths = resolveOutputPaths(outputFolder);
-  ensureDirectory(outputPaths.root);
-  requireExistingFile(outputPaths.database, "COLMAP database_path");
-
-  return {
-    stage: "feature_matching",
-    command: config.COLMAP_BIN,
-    logLabel: "feature_matching",
-    args: [
-      "exhaustive_matcher",
-      "--database_path", outputPaths.database,
-      "--FeatureMatching.use_gpu", GPU_ENABLED,
-      "--FeatureMatching.num_threads", CPU_THREAD_LIMIT,
-    ],
-  };
-}
-
-function buildSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
-  const imagePath = resolveImagePath(inputFolder);
-  const outputPaths = resolveOutputPaths(outputFolder);
-  requireExistingFile(outputPaths.database, "COLMAP database_path");
-
-  ensureDirectory(outputPaths.sparseRoot);
-
-  return {
-    stage: "sparse_mapping",
-    command: config.COLMAP_BIN,
-    logLabel: "sparse_mapping",
-    args: [
-      "mapper",
-      "--database_path", outputPaths.database,
-      "--image_path", imagePath,
-      "--output_path", outputPaths.sparseRoot,
-    ],
-  };
-}
-
-function buildDensePreparationCommand(inputFolder: string, outputFolder: string): StageCommand {
-  const imagePath = resolveImagePath(inputFolder);
-  const outputPaths = resolveOutputPaths(outputFolder);
-  requireExistingDirectory(outputPaths.sparseModel);
-
-  resetDirectory(outputPaths.denseWorkspace);
-
-  return {
-    stage: "dense_preparation",
-    command: config.COLMAP_BIN,
-    logLabel: "dense_preparation",
-    args: [
-      "image_undistorter",
-      "--image_path", imagePath,
-      "--input_path", outputPaths.sparseModel,
-      "--output_path", outputPaths.denseWorkspace,
-      "--output_type", "COLMAP",
-    ],
-  };
-}
-
-function buildDenseStereoCommand(outputFolder: string): StageCommand {
-  const outputPaths = resolveOutputPaths(outputFolder);
-  requireExistingDirectory(outputPaths.denseWorkspace);
-  requireExistingDirectory(outputPaths.denseImages);
-  requireExistingDirectory(outputPaths.denseSparse);
-
-  return {
-    stage: "dense_stereo",
-    command: config.COLMAP_BIN,
-    logLabel: "dense_stereo",
-    args: [
-      "patch_match_stereo",
-      "--workspace_path", outputPaths.denseWorkspace,
-      "--workspace_format", "COLMAP",
-      "--PatchMatchStereo.geom_consistency", "false",
-      "--PatchMatchStereo.filter", "true",
-    ],
-  };
-}
-
-function buildFusionCommand(outputFolder: string): StageCommand {
-  const outputPaths = resolveOutputPaths(outputFolder);
-  requireExistingDirectory(outputPaths.denseWorkspace);
-  requireExistingDirectory(outputPaths.denseImages);
-  requireExistingDirectory(outputPaths.denseStereo);
-  ensureDirectoryHasFiles(outputPaths.denseDepthMaps, "COLMAP dense depth maps");
-
-  return {
-    stage: "fusion",
-    command: config.COLMAP_BIN,
-    logLabel: "fusion",
-    args: [
-      "stereo_fusion",
-      "--workspace_path", outputPaths.denseWorkspace,
-      "--workspace_format", "COLMAP",
-      "--input_type", "geometric",
-      "--output_path", outputPaths.denseFused,
-      "--StereoFusion.min_num_pixels", "3",
-      "--StereoFusion.max_depth_error", "0.02",
-      "--StereoFusion.max_reproj_error", "4",
-    ],
-  };
-}
-
-function buildMeshingCommand(outputFolder: string): StageCommand {
-  const outputPaths = resolveOutputPaths(outputFolder);
-  requireExistingDirectory(outputPaths.denseWorkspace);
-  requireExistingFile(outputPaths.denseFused, "COLMAP fused point cloud");
-
-  return {
-    stage: "meshing",
-    command: config.COLMAP_BIN,
-    logLabel: "meshing",
-    args: [
-      "poisson_mesher",
-      "--input_path", outputPaths.denseFused,
-      "--output_path", outputPaths.denseMeshedPoisson,
-    ],
-  };
-}
-
-function buildSimplificationCommand(outputFolder: string): StageCommand {
-  const outputPaths = resolveOutputPaths(outputFolder);
-  requireExistingDirectory(outputPaths.denseWorkspace);
-  requireExistingFile(outputPaths.denseMeshedPoisson, "COLMAP meshed point cloud");
-
-  return {
-    stage: "simplification",
-    command: config.COLMAP_BIN,
-    logLabel: "simplification",
-    args: [
-      "mesh_simplifier",
-      "--input_path", outputPaths.denseMeshedPoisson,
-      "--output_path", outputPaths.denseMeshedPoissonSimplified,
-    ],
-  };
-}
-
-function buildTexturingCommand(outputFolder: string): StageCommand {
-  const outputPaths = resolveOutputPaths(outputFolder);
-  requireExistingDirectory(outputPaths.denseWorkspace);
-  requireExistingDirectory(outputPaths.denseImages);
-  requireExistingDirectory(outputPaths.denseSparse);
-  requireExistingFile(outputPaths.denseMeshedPoissonSimplified, "COLMAP simplified mesh");
-
-  resetDirectory(outputPaths.denseTextured);
-
-  return {
-    stage: "texturing",
-    command: config.COLMAP_BIN,
-    logLabel: "texturing",
-    args: [
-      "mesh_texturer",
-      "--input_path", outputPaths.denseMeshedPoissonSimplified,
-      "--output_path", outputPaths.denseTextured,
-      "--workspace_path", outputPaths.denseWorkspace,
-      "--workspace_format", "COLMAP",
-    ],
-  };
-}
-
-export function runFeatureExtraction(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildFeatureExtractionCommand(inputFolder, outputFolder), hooks);
-}
-
-export function runFeatureMatching(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildFeatureMatchingCommand(outputFolder), hooks);
-}
-
-export function runSparseMapping(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildSparseMappingCommand(inputFolder, outputFolder), hooks).then(() => {
-    const outputPaths = resolveOutputPaths(outputFolder);
-    if (!fs.existsSync(outputPaths.sparseModel)) {
-      throw new Error(`COLMAP sparse mapping did not produce the expected output at ${outputPaths.sparseModel}`);
-    }
-  });
-}
-
-export function runDensePreparation(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildDensePreparationCommand(inputFolder, outputFolder), hooks).then(() => {
-    const outputPaths = resolveOutputPaths(outputFolder);
-    requireExistingDirectory(outputPaths.denseWorkspace);
-    requireExistingDirectory(outputPaths.denseImages);
-    ensureDirectoryHasFiles(outputPaths.denseSparse, "COLMAP dense sparse path");
-  });
-}
-
-export function runDenseStereo(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildDenseStereoCommand(outputFolder), hooks).then(() => {
-    const outputPaths = resolveOutputPaths(outputFolder);
-    requireExistingDirectory(outputPaths.denseStereo);
-    ensureDirectoryHasFiles(outputPaths.denseDepthMaps, "COLMAP dense depth maps");
-  });
-}
-
-export function runFusion(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildFusionCommand(outputFolder), hooks).then(() => {
-    const outputPaths = resolveOutputPaths(outputFolder);
-    requireExistingFile(outputPaths.denseFused, "COLMAP fused point cloud");
-  });
-}
-
-export function runMeshing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  const outputPaths = resolveOutputPaths(outputFolder);
-  const fusedPointCount = readPlyVertexCount(outputPaths.denseFused, "COLMAP fused point cloud");
-
-  if (fusedPointCount < MIN_FUSED_POINT_COUNT_FOR_MESHING) {
-    throw new Error(
-      `Too few points were reconstructed (${fusedPointCount}) to build a mesh. The uploaded images did not produce a dense enough point cloud for mesh reconstruction. Try again taking a more complete dataset with more images and/or better coverage of the scene.`
-    );
-  }
-
-  return runStage(buildMeshingCommand(outputFolder), hooks).then(() => {
-    const outputPaths = resolveOutputPaths(outputFolder);
-    requireExistingFile(outputPaths.denseMeshedPoisson, "COLMAP meshed point cloud");
-  });
-}
-
-export function runSimplification(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildSimplificationCommand(outputFolder), hooks).then(() => {
-    const outputPaths = resolveOutputPaths(outputFolder);
-    requireExistingFile(outputPaths.denseMeshedPoissonSimplified, "COLMAP simplified mesh");
-  });
-}
-
-export function runTexturing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
-  return runStage(buildTexturingCommand(outputFolder), hooks).then(() => {
-    const outputPaths = resolveOutputPaths(outputFolder);
-    ensureDirectoryHasFiles(outputPaths.denseTextured, "COLMAP textured mesh output");
   });
 }
