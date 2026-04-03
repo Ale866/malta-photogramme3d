@@ -41,18 +41,15 @@ export const modelJobRepo: ModelJobRepository = {
     const startedAt = new Date();
     const doc = await ModelJobSchema.findOneAndUpdate(
       { status: { $in: [MODEL_JOB_STATUS.QUEUED, MODEL_JOB_STATUS.QUEUED_TO_RERUN] } },
-      [
-        {
-          $set: {
-            stage: "$status",
-            progress: 0,
-            error: null,
-            modelId: null,
-            startedAt,
-            finishedAt: null,
-          },
+      {
+        $set: {
+          progress: 0,
+          error: null,
+          modelId: null,
+          startedAt,
+          finishedAt: null,
         },
-      ],
+      },
       {
         sort: { createdAt: 1, _id: 1 },
         returnDocument: 'after',
