@@ -54,10 +54,7 @@ export const config = {
   JWT_ACCESS_SECRET: requireEnv('JWT_ACCESS_SECRET'),
   JWT_ACCESS_TTL: requireEnv('JWT_ACCESS_TTL'),
   JWT_REFRESH_TTL: requireEnv('JWT_REFRESH_TTL'),
-  PASSWORD_RESET_TOKEN_TTL_MINUTES: parsePositiveInteger(
-    process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES,
-    60
-  ),
+  PASSWORD_RESET_TOKEN_TTL_MINUTES: parsePositiveInteger(process.env.PASSWORD_RESET_TOKEN_TTL_MINUTES, 60),
   SMTP_HOST: process.env.SMTP_HOST ?? 'smtp.gmail.com',
   SMTP_PORT: parsePositiveInteger(process.env.SMTP_PORT, 465),
   SMTP_SECURE: parseBoolean(process.env.SMTP_SECURE, true),
