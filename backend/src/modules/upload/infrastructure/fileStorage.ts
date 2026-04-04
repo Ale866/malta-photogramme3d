@@ -69,19 +69,22 @@ export class FileStorage {
 
   static appendVideoChunk(
     inputFolder: string,
-    batchIndex: number,
     file: Express.Multer.File,
-    existingVideoPath?: string | null
+    options: {
+      videoIndex: number;
+      chunkIndex: number;
+      originalName: string;
+      existingVideoPath?: string | null;
+    }
   ) {
     const sourceFolder = path.join(inputFolder, "_source");
     FileStorage.ensureDir(sourceFolder);
 
-    const extension = path.extname(file.originalname) || ".mp4";
-    const sanitizedExtension = extension.replace(/[^\w.]+/g, "") || ".mp4";
-    const destination = existingVideoPath ?? path.join(sourceFolder, `source${sanitizedExtension}`);
+    const safeName = path.basename(options.originalName).replace(/[^\w.-]+/g, "_") || `video_${options.videoIndex}.mp4`;
+    const destination = options.existingVideoPath ?? path.join(sourceFolder, `${String(options.videoIndex).padStart(3, "0")}_${safeName}`);
 
     try {
-      if (batchIndex === 0 && fs.existsSync(destination)) {
+      if (options.chunkIndex === 0 && fs.existsSync(destination)) {
         fs.unlinkSync(destination);
       }
 
@@ -103,6 +106,10 @@ export class FileStorage {
       .map((fileName) => path.join(inputFolder, fileName))
       .filter((filePath) => fs.statSync(filePath).isFile())
       .sort();
+  }
+
+  static clearTemporaryVideoSources(inputFolder: string) {
+    FileStorage.deleteDirectory(path.join(inputFolder, "_source"));
   }
 
   private static buildBatchDestination(

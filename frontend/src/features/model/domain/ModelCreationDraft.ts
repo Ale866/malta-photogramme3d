@@ -10,7 +10,7 @@ export type ImageModelCreationDraft = {
 export type VideoModelCreationDraft = {
   title: string
   type: 'video'
-  videoFile: File
+  videoFiles: File[]
   coordinates: DraftCoordinates
 }
 

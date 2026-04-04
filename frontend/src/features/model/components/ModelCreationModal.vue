@@ -108,7 +108,7 @@ const handleSubmit = async (draft: ModelCreationDraft) => {
   isSubmitting.value = true
   errorMessage.value = null
   uploadProgress.value = {
-    totalFiles: draft.type === 'video' ? 1 : draft.files.length,
+    totalFiles: draft.type === 'video' ? draft.videoFiles.length : draft.files.length,
     uploadedFiles: 0,
     activeBatches: 0,
     progressPercent: 0,

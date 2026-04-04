@@ -6,6 +6,14 @@ type UploadCoordinates = {
 
 type UploadSourceType = "images" | "video";
 
+type UploadVideoDraft = {
+  index: number;
+  originalName: string;
+  totalChunks: number;
+  uploadedChunks: number;
+  videoPath: string | null;
+};
+
 export type UploadDraft = {
   uploadId: string;
   ownerId: string;
@@ -15,8 +23,7 @@ export type UploadDraft = {
   type: UploadSourceType;
   totalFiles: number;
   coordinates: UploadCoordinates;
-  videoPath: string | null;
-  uploadedChunks: number;
+  videos: UploadVideoDraft[];
 };
 
 const drafts = new Map<string, UploadDraft>();

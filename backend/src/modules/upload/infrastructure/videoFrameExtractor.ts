@@ -5,15 +5,16 @@ import { badRequest } from "../../../shared/errors/applicationError";
 import { config } from "../../../shared/config/env";
 import { FileStorage } from "./fileStorage";
 
-const VIDEO_FRAME_PREFIX = "frame_";
-const VIDEO_FRAME_PATTERN = `${VIDEO_FRAME_PREFIX}%06d.png`;
+const DEFAULT_VIDEO_FRAME_PREFIX = "frame_";
 const VIDEO_FPS = "4";
 
 export const videoFrameExtractor = {
-  async extractFrames(videoPath: string, inputFolder: string) {
-    clearExtractedFrames(inputFolder);
+  async extractFrames(videoPath: string, inputFolder: string, framePrefix: string, clearExisting = false) {
+    if (clearExisting) {
+      clearExtractedFrames(inputFolder);
+    }
 
-    const outputPattern = path.join(inputFolder, VIDEO_FRAME_PATTERN);
+    const outputPattern = path.join(inputFolder, `${framePrefix}%06d.png`);
     const stderrChunks: string[] = [];
 
     await new Promise<void>((resolve, reject) => {
@@ -53,7 +54,7 @@ export const videoFrameExtractor = {
     });
 
     const extractedFrames = FileStorage.listFiles(inputFolder)
-      .filter((filePath) => path.basename(filePath).startsWith(VIDEO_FRAME_PREFIX));
+      .filter((filePath) => path.basename(filePath).startsWith(framePrefix));
 
     if (extractedFrames.length === 0) {
       throw badRequest(
@@ -70,9 +71,14 @@ function clearExtractedFrames(inputFolder: string) {
   if (!fs.existsSync(inputFolder)) return;
 
   for (const entry of fs.readdirSync(inputFolder)) {
-    if (!entry.startsWith(VIDEO_FRAME_PREFIX)) continue;
+    if (!isExtractedFrame(entry)) continue;
     const targetPath = path.join(inputFolder, entry);
     if (!fs.statSync(targetPath).isFile()) continue;
     fs.unlinkSync(targetPath);
   }
+}
+
+function isExtractedFrame(fileName: string) {
+  if (fileName.startsWith(DEFAULT_VIDEO_FRAME_PREFIX)) return true;
+  return /^video_\d+_frame_\d+\.png$/i.test(fileName);
 }

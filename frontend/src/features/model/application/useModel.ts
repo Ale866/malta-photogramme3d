@@ -17,7 +17,7 @@ export function use3dModel() {
       title: input.title,
       type: input.type,
       ...(input.type === 'video'
-        ? { videoFile: input.videoFile }
+        ? { videoFiles: input.videoFiles }
         : { files: input.files }),
       coordinates: input.coordinates,
     }, accessToken, hooks);

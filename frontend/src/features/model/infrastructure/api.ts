@@ -41,7 +41,15 @@ type UploadInput = {
   type: 'images' | 'video';
   coordinates: { x: number, y: number, z: number };
   files?: File[];
-  videoFile?: File;
+  videoFiles?: File[];
+};
+
+type VideoUploadChunk = {
+  file: File;
+  videoIndex: number;
+  chunkIndex: number;
+  totalChunks: number;
+  originalName: string;
 };
 
 type ModelDto = {
@@ -166,14 +174,16 @@ function toModelJobDetails(dto: ModelJobDetailsDto): ModelJobDetails {
 export const ModelApi = {
   async upload(input: UploadInput, accessToken: string, hooks?: UploadHooks): Promise<UploadResponse> {
     try {
-      const uploadFiles = input.type === 'video'
-        ? splitFileIntoChunks(input.videoFile, VIDEO_CHUNK_SIZE_BYTES)
-        : (input.files ?? []);
+      const imageFiles = input.files ?? [];
+      const videoChunks = splitVideosIntoChunks(input.videoFiles ?? [], VIDEO_CHUNK_SIZE_BYTES);
+      const uploadItems = input.type === 'video'
+        ? videoChunks
+        : imageFiles;
 
       const initRes = await http.post<UploadInitResponse>('/upload/init', {
         title: input.title,
         coordinates: input.coordinates,
-        totalFiles: uploadFiles.length,
+        totalFiles: uploadItems.length,
         type: input.type,
       }, {
         headers: {
@@ -182,9 +192,9 @@ export const ModelApi = {
       });
 
       const uploadId = initRes.data.uploadId;
-      const batches = input.type === 'video'
-        ? uploadFiles.map((file) => [file])
-        : splitIntoBatches(uploadFiles, UPLOAD_BATCH_SIZE);
+      const batches: Array<Array<File | VideoUploadChunk>> = input.type === 'video'
+        ? videoChunks.map((chunk) => [chunk])
+        : splitIntoBatches(imageFiles, UPLOAD_BATCH_SIZE);
       const uploadConcurrency = input.type === 'video' ? 1 : MAX_CONCURRENT_UPLOADS;
       const batchProgress = new Map<number, number>();
       let uploadedFiles = 0;
@@ -195,12 +205,12 @@ export const ModelApi = {
           return sum + batch.length * (batchProgress.get(index) ?? 0);
         }, 0);
 
-        const progressPercent = uploadFiles.length === 0
+        const progressPercent = uploadItems.length === 0
           ? 0
-          : Math.min(100, Math.round(((uploadedFiles + partialFiles) / uploadFiles.length) * 100));
+          : Math.min(100, Math.round(((uploadedFiles + partialFiles) / uploadItems.length) * 100));
 
         hooks?.onProgress?.({
-          totalFiles: uploadFiles.length,
+          totalFiles: uploadItems.length,
           uploadedFiles,
           activeBatches,
           progressPercent,
@@ -222,7 +232,20 @@ export const ModelApi = {
           try {
             const formData = new FormData();
             formData.append('batchIndex', String(batchIndex));
-            files.forEach((file) => formData.append('files', file, file.name));
+            if (input.type === 'video') {
+              const chunk = files[0] as VideoUploadChunk | undefined;
+              if (!chunk) {
+                throw new Error('Video chunk is missing');
+              }
+
+              formData.append('videoIndex', String(chunk.videoIndex));
+              formData.append('chunkIndex', String(chunk.chunkIndex));
+              formData.append('totalChunks', String(chunk.totalChunks));
+              formData.append('originalName', chunk.originalName);
+              formData.append('files', chunk.file, chunk.file.name);
+            } else {
+              (files as File[]).forEach((file) => formData.append('files', file, file.name));
+            }
 
             const res = await http.post<UploadBatchResponse>(`/upload/${uploadId}/batches`, formData, {
               headers: {
@@ -258,7 +281,7 @@ export const ModelApi = {
         },
       });
 
-      uploadedFiles = uploadFiles.length;
+      uploadedFiles = uploadItems.length;
       emitProgress();
 
       return res.data;
@@ -455,16 +478,24 @@ function splitIntoBatches(files: File[], size: number): File[][] {
   return batches;
 }
 
-function splitFileIntoChunks(file: File | undefined, chunkSize: number): File[] {
-  if (!file) return [];
+function splitVideosIntoChunks(videoFiles: File[], chunkSize: number): VideoUploadChunk[] {
+  const chunks: VideoUploadChunk[] = [];
 
-  const chunks: File[] = [];
-
-  for (let start = 0; start < file.size; start += chunkSize) {
-    const end = Math.min(start + chunkSize, file.size);
-    const chunk = file.slice(start, end, file.type || 'application/octet-stream');
-    chunks.push(new File([chunk], file.name, { type: file.type || 'application/octet-stream' }));
-  }
+  videoFiles.forEach((file, videoIndex) => {
+    const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
+      const start = chunkIndex * chunkSize;
+      const end = Math.min(start + chunkSize, file.size);
+      const chunk = file.slice(start, end, file.type || 'application/octet-stream');
+      chunks.push({
+        file: new File([chunk], file.name, { type: file.type || 'application/octet-stream' }),
+        videoIndex,
+        chunkIndex,
+        totalChunks,
+        originalName: file.name,
+      });
+    }
+  });
 
   return chunks;
 }

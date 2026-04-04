@@ -1,13 +1,7 @@
-import {
-  createQueuedModelJob,
-} from "../../model-jobs/application/jobLifecycle";
+import { createQueuedModelJob } from "../../model-jobs/application/jobLifecycle";
 import type { ModelJobServices } from "../../model-jobs/application/ports";
 import type { UploadServices } from "./ports";
-import {
-  badRequest,
-  notFound,
-  unauthorized,
-} from "../../../shared/errors/applicationError";
+import { badRequest, notFound, unauthorized } from "../../../shared/errors/applicationError";
 import { config } from "../../../shared/config/env";
 
 type CoordinatesInput = { x: number, y: number, z: number };
@@ -26,6 +20,10 @@ type AppendUploadBatchInput = {
   uploadId: unknown;
   batchIndex: unknown;
   files?: Express.Multer.File[];
+  videoIndex?: unknown;
+  chunkIndex?: unknown;
+  totalChunks?: unknown;
+  originalName?: unknown;
 };
 
 type FinalizeUploadInput = {
@@ -56,8 +54,7 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     type,
     totalFiles,
     coordinates,
-    videoPath: null,
-    uploadedChunks: 0,
+    videos: [],
   });
 
   return {
@@ -77,29 +74,40 @@ export async function appendUploadBatch(services: UploadServices, input: AppendU
   if (draft.type === "video") {
     validateVideoFiles(files);
     if (files.length === 0) throw badRequest("No video uploaded", "video_required");
-    if (batchIndex < draft.uploadedChunks) {
+    const videoChunk = requireVideoChunkInput(input);
+    const currentVideo = findCurrentVideoDraft(draft, videoChunk);
+
+    if (videoChunk.chunkIndex < currentVideo.uploadedChunks) {
       return {
-        uploadedFiles: draft.uploadedChunks,
+        uploadedFiles: countUploadedVideoChunks(draft.videos),
         totalFiles: draft.totalFiles,
       };
     }
-    if (batchIndex !== draft.uploadedChunks) {
+    if (videoChunk.chunkIndex !== currentVideo.uploadedChunks) {
       throw badRequest("Video chunks must be uploaded in order", "invalid_video_batch");
     }
 
     const videoPath = services.fileStorage.appendVideoChunk(
       draft.inputFolder,
-      batchIndex,
       files[0],
-      draft.videoPath
+      {
+        videoIndex: videoChunk.videoIndex,
+        chunkIndex: videoChunk.chunkIndex,
+        originalName: videoChunk.originalName,
+        existingVideoPath: currentVideo.videoPath,
+      }
     );
-    const updatedDraft = services.uploadDrafts.update(uploadId, {
+    const updatedVideo = {
+      ...currentVideo,
       videoPath,
-      uploadedChunks: draft.uploadedChunks + 1,
+      uploadedChunks: currentVideo.uploadedChunks + 1,
+    };
+    const updatedDraft = services.uploadDrafts.update(uploadId, {
+      videos: upsertVideoDraft(draft.videos, updatedVideo),
     });
 
     return {
-      uploadedFiles: updatedDraft?.uploadedChunks ?? draft.uploadedChunks + 1,
+      uploadedFiles: countUploadedVideoChunks(updatedDraft?.videos ?? upsertVideoDraft(draft.videos, updatedVideo)),
       totalFiles: draft.totalFiles,
     };
   }
@@ -157,8 +165,8 @@ function validateImageFiles(files: Express.Multer.File[]) {
 }
 
 function validateVideoFiles(files: Express.Multer.File[]) {
-  if (files.length > 1) {
-    throw badRequest("Only one video can be uploaded at a time", "multiple_videos_not_supported");
+  if (files.length !== 1) {
+    throw badRequest("Each video chunk batch must contain exactly one file", "video_chunk_required");
   }
 
   for (const file of files) {
@@ -240,16 +248,85 @@ function requireOwnedUploadDraft(services: UploadServices, uploadId: string, own
 }
 
 async function finalizeVideoUpload(services: UploadServices, draft: ReturnType<typeof requireOwnedUploadDraft>) {
-  if (!draft.videoPath) {
+  if (draft.videos.length === 0) {
     throw badRequest("Upload is incomplete", "upload_incomplete");
   }
-  if (draft.uploadedChunks !== draft.totalFiles) {
+  if (countUploadedVideoChunks(draft.videos) !== draft.totalFiles) {
     throw badRequest("Upload is incomplete", "upload_incomplete");
   }
 
-  return services.videoFrames.extractFrames(draft.videoPath, draft.inputFolder);
+  const sortedVideos = [...draft.videos].sort((left, right) => left.index - right.index);
+  const allFrames: string[] = [];
+
+  for (const [position, video] of sortedVideos.entries()) {
+    if (!video.videoPath || video.uploadedChunks !== video.totalChunks) {
+      throw badRequest("Upload is incomplete", "upload_incomplete");
+    }
+
+    const frames = await services.videoFrames.extractFrames(
+      video.videoPath,
+      draft.inputFolder,
+      `video_${video.index}_frame_`,
+      position === 0
+    );
+    allFrames.push(...frames);
+  }
+
+  services.fileStorage.clearTemporaryVideoSources(draft.inputFolder);
+  return allFrames.sort();
 }
 
 function createUploadId() {
   return `${Date.now()}_${Math.round(Math.random() * 1e9)}`;
+}
+
+function requireVideoChunkInput(input: AppendUploadBatchInput) {
+  const videoIndex = requireBatchIndex(input.videoIndex);
+  const chunkIndex = requireBatchIndex(input.chunkIndex);
+  const totalChunks = requirePositiveInteger(input.totalChunks, "video_total_chunks_required");
+  const originalName = typeof input.originalName === "string" ? input.originalName.trim() : "";
+
+  if (!originalName) {
+    throw badRequest("Video file name is required", "video_name_required");
+  }
+
+  return { videoIndex, chunkIndex, totalChunks, originalName };
+}
+
+function findCurrentVideoDraft(
+  draft: ReturnType<typeof requireOwnedUploadDraft>,
+  videoChunk: ReturnType<typeof requireVideoChunkInput>
+) {
+  const existingVideo = draft.videos.find((video) => video.index === videoChunk.videoIndex);
+  if (!existingVideo) {
+    if (videoChunk.chunkIndex !== 0) {
+      throw badRequest("Video chunks must be uploaded in order", "invalid_video_batch");
+    }
+
+    return {
+      index: videoChunk.videoIndex,
+      originalName: videoChunk.originalName,
+      totalChunks: videoChunk.totalChunks,
+      uploadedChunks: 0,
+      videoPath: null,
+    };
+  }
+
+  if (existingVideo.originalName !== videoChunk.originalName || existingVideo.totalChunks !== videoChunk.totalChunks) {
+    throw badRequest("Video chunk metadata does not match the current upload", "invalid_video_metadata");
+  }
+
+  return existingVideo;
+}
+
+function upsertVideoDraft(
+  videos: ReturnType<typeof requireOwnedUploadDraft>["videos"],
+  updatedVideo: ReturnType<typeof findCurrentVideoDraft>
+) {
+  const remainingVideos = videos.filter((video) => video.index !== updatedVideo.index);
+  return [...remainingVideos, updatedVideo].sort((left, right) => left.index - right.index);
+}
+
+function countUploadedVideoChunks(videos: ReturnType<typeof requireOwnedUploadDraft>["videos"]) {
+  return videos.reduce((sum, video) => sum + video.uploadedChunks, 0);
 }

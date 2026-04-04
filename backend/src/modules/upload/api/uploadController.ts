@@ -51,13 +51,17 @@ export async function uploadInitController(req: AuthedRequest, res: Response) {
 export async function uploadBatchController(req: AuthedRequest, res: Response) {
   try {
     const files = req.files as Express.Multer.File[];
-    const { batchIndex } = req.body ?? {};
+    const { batchIndex, videoIndex, chunkIndex, totalChunks, originalName } = req.body ?? {};
 
     const result = await appendUploadBatch(uploadDependencies, {
       ownerId: req.user?.sub,
       uploadId: req.params.uploadId,
       batchIndex,
       files,
+      videoIndex,
+      chunkIndex,
+      totalChunks,
+      originalName,
     });
 
     return res.status(202).json({

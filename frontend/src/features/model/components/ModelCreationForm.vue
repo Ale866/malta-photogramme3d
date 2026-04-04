@@ -16,9 +16,7 @@
         {{ isSubmitting ? uploadStatusTitle : 'Upload ready to retry' }}
       </p>
       <p class="model-form-upload-status-copy">
-        {{ uploadProgress.type === 'video'
-          ? `${uploadProgress.progressPercent}% of the video uploaded`
-          : `${uploadProgress.uploadedFiles} / ${uploadProgress.totalFiles} ${uploadProgress.totalFiles === 1 ? 'image uploaded' : 'images uploaded'}` }}
+        {{ uploadStatusCopy }}
       </p>
       <p v-if="isSubmitting" class="model-form-upload-status-warning">
         Upload in progress. Please do not close or refresh this page until everything is uploaded. If you close or
@@ -30,7 +28,6 @@
       <div class="model-form-upload-progress" aria-hidden="true">
         <span :style="{ width: `${uploadProgress.progressPercent}%` }" />
       </div>
-      <p class="model-form-upload-status-meta">{{ uploadProgress.progressPercent }}%</p>
     </div>
 
     <div v-if="submittedJobId" class="model-form-inline-success">
@@ -76,7 +73,7 @@
         <p class="model-form-upload-title">{{ sourceType === 'video' ? 'Add reconstruction video' : 'Add reconstruction images' }}</p>
         <p class="model-form-upload-hint">
           {{ sourceType === 'video'
-            ? 'Drag and drop one video here, or click to browse.'
+            ? 'Drag and drop videos here, or click to browse files.'
             : 'Drag and drop images here, or click to browse files.' }}
         </p>
         <p v-if="selectionCount > 0" class="model-form-upload-count">
@@ -86,7 +83,7 @@
             : selectionCount === 1 ? 'image selected' : 'images selected' }}
         </p>
       </div>
-      <input ref="fileInputRef" class="model-form-upload-input" type="file" :multiple="sourceType === 'images'" :accept="fileAccept"
+      <input ref="fileInputRef" class="model-form-upload-input" type="file" multiple :accept="fileAccept"
         :disabled="isDisabled" @change="handleFileSelect" />
     </div>
 
@@ -138,13 +135,27 @@
       </div>
     </div>
 
-    <div v-if="sourceType === 'video' && videoFile" class="model-form-video-summary">
-      <p class="model-form-video-summary-label">Selected video</p>
-      <p class="model-form-video-summary-name">{{ videoFile.name }}</p>
-      <p class="model-form-video-summary-meta">{{ formatBytes(videoFile.size) }}</p>
-      <button type="button" class="btn btn-secondary model-form-video-summary-action" :disabled="isDisabled" @click="clearVideo">
-        Remove video
-      </button>
+    <div v-if="sourceType === 'video' && videoFiles.length > 0" class="model-form-video-grid">
+      <div v-for="(file, index) in videoFiles" :key="`${file.name}-${file.size}-${file.lastModified}`" class="model-form-video-card">
+        <div class="model-form-video-card-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+            <path d="m10 9 5 3-5 3Z" />
+          </svg>
+        </div>
+        <div class="model-form-video-card-copy">
+          <p class="model-form-video-card-name">{{ file.name }}</p>
+          <p class="model-form-video-card-meta">{{ formatBytes(file.size) }}</p>
+        </div>
+        <button type="button" class="model-form-delete model-form-delete--inline" aria-label="Remove video" :disabled="isDisabled"
+          @click="removeVideo(index)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <button class="btn btn-primary btn-block" type="submit" :disabled="isDisabled">{{ submitLabel }}</button>
@@ -189,14 +200,23 @@ const emit = defineEmits<{
 const title = ref('')
 const sourceType = ref<'images' | 'video'>('images')
 const files = ref<UploadedFile[]>([])
-const videoFile = ref<File | null>(null)
+const videoFiles = ref<File[]>([])
 const currentPage = ref(0)
 const viewportWidth = ref(1024)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const isDisabled = computed(() => isSubmitting.value || isLocked.value)
 const fileAccept = computed(() => sourceType.value === 'video' ? 'video/*' : 'image/*')
-const selectionCount = computed(() => sourceType.value === 'video' ? (videoFile.value ? 1 : 0) : files.value.length)
-const uploadStatusTitle = computed(() => uploadProgress.value?.type === 'video' ? 'Uploading video' : 'Uploading images')
+const selectionCount = computed(() => sourceType.value === 'video' ? videoFiles.value.length : files.value.length)
+const uploadStatusTitle = computed(() => uploadProgress.value?.type === 'video' ? 'Uploading videos' : 'Uploading images')
+const uploadStatusCopy = computed(() => {
+  const currentUpload = uploadProgress.value
+  if (!currentUpload) return ''
+  if (currentUpload.type === 'video') {
+    return 'We are uploading your videos now.'
+  }
+
+  return `${currentUpload.uploadedFiles} / ${currentUpload.totalFiles} ${currentUpload.totalFiles === 1 ? 'image uploaded' : 'images uploaded'}`
+})
 
 const columnsPerSlide = computed(() => {
   if (viewportWidth.value <= 420) return 2
@@ -263,17 +283,21 @@ const setSourceType = (nextType: 'images' | 'video') => {
   if (isDisabled.value || sourceType.value === nextType) return
   sourceType.value = nextType
   files.value = []
-  videoFile.value = null
+  videoFiles.value = []
   currentPage.value = 0
 }
 
-const setVideoFile = (file: File | null) => {
-  if (!file) {
-    videoFile.value = null
-    return
-  }
-  if (!file.type.startsWith('video/')) return
-  videoFile.value = file
+const addVideoFiles = (selectedFiles: File[]) => {
+  selectedFiles.forEach((file) => {
+    if (!file.type.startsWith('video/')) return
+    const alreadyAdded = videoFiles.value.some((currentFile) =>
+      currentFile.name === file.name &&
+      currentFile.size === file.size &&
+      currentFile.lastModified === file.lastModified
+    )
+    if (alreadyAdded) return
+    videoFiles.value.push(file)
+  })
 }
 
 const openFilePicker = () => {
@@ -287,7 +311,7 @@ const handleFileSelect = (event: Event) => {
   if (!input.files) return
 
   if (sourceType.value === 'video') {
-    setVideoFile(input.files[0] ?? null)
+    addVideoFiles(Array.from(input.files))
   } else {
     addFiles(Array.from(input.files))
   }
@@ -299,7 +323,7 @@ const handleDrop = (event: DragEvent) => {
   if (isDisabled.value) return
   if (!event.dataTransfer?.files) return
   if (sourceType.value === 'video') {
-    setVideoFile(Array.from(event.dataTransfer.files).find((file) => file.type.startsWith('video/')) ?? null)
+    addVideoFiles(Array.from(event.dataTransfer.files))
   } else {
     addFiles(Array.from(event.dataTransfer.files))
   }
@@ -318,9 +342,9 @@ const removeFile = (index: number) => {
   }
 }
 
-const clearVideo = () => {
+const removeVideo = (index: number) => {
   if (isDisabled.value) return
-  videoFile.value = null
+  videoFiles.value.splice(index, 1)
 }
 
 const showPrevious = () => {
@@ -343,12 +367,12 @@ const submitForm = () => {
   if (!sanitizedTitle) return
 
   if (sourceType.value === 'video') {
-    if (!videoFile.value) return
+    if (videoFiles.value.length === 0) return
 
     emit('submit', {
       title: sanitizedTitle,
       type: 'video',
-      videoFile: videoFile.value,
+      videoFiles: [...videoFiles.value],
       coordinates: props.coordinates ?? null,
     })
     return

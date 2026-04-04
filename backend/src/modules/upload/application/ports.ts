@@ -8,6 +8,14 @@ type UploadCoordinates = {
 
 type UploadSourceType = "images" | "video";
 
+type UploadVideoDraft = {
+  index: number;
+  originalName: string;
+  totalChunks: number;
+  uploadedChunks: number;
+  videoPath: string | null;
+};
+
 type UploadDraft = {
   uploadId: string;
   ownerId: string;
@@ -17,8 +25,7 @@ type UploadDraft = {
   type: UploadSourceType;
   totalFiles: number;
   coordinates: UploadCoordinates;
-  videoPath: string | null;
-  uploadedChunks: number;
+  videos: UploadVideoDraft[];
 };
 
 export type UploadServices = {
@@ -45,13 +52,24 @@ export type UploadServices = {
     ) => Promise<string[]>;
     appendVideoChunk: (
       inputFolder: string,
-      batchIndex: number,
       file: Express.Multer.File,
-      existingVideoPath?: string | null
+      options: {
+        videoIndex: number;
+        chunkIndex: number;
+        originalName: string;
+        existingVideoPath?: string | null;
+      }
     ) => string;
     listFiles: (inputFolder: string) => string[];
+    deleteDirectory: (dirPath: string) => void;
+    clearTemporaryVideoSources: (inputFolder: string) => void;
   };
   videoFrames: {
-    extractFrames: (videoPath: string, inputFolder: string) => Promise<string[]>;
+    extractFrames: (
+      videoPath: string,
+      inputFolder: string,
+      framePrefix: string,
+      clearExisting?: boolean
+    ) => Promise<string[]>;
   };
 };
