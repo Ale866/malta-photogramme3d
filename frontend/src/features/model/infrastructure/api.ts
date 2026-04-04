@@ -102,6 +102,7 @@ type ModelVoteStateDto = {
 const UPLOAD_BATCH_SIZE = 5;
 const MAX_CONCURRENT_UPLOADS = 3;
 const MAX_BATCH_ATTEMPTS = 2;
+const VIDEO_CHUNK_SIZE_BYTES = 5 * 1024 * 1024;
 
 function toModelSummary(dto: ModelDto): ModelSummary {
   return {
@@ -166,7 +167,7 @@ export const ModelApi = {
   async upload(input: UploadInput, accessToken: string, hooks?: UploadHooks): Promise<UploadResponse> {
     try {
       const uploadFiles = input.type === 'video'
-        ? (input.videoFile ? [input.videoFile] : [])
+        ? splitFileIntoChunks(input.videoFile, VIDEO_CHUNK_SIZE_BYTES)
         : (input.files ?? []);
 
       const initRes = await http.post<UploadInitResponse>('/upload/init', {
@@ -182,8 +183,9 @@ export const ModelApi = {
 
       const uploadId = initRes.data.uploadId;
       const batches = input.type === 'video'
-        ? [uploadFiles]
+        ? uploadFiles.map((file) => [file])
         : splitIntoBatches(uploadFiles, UPLOAD_BATCH_SIZE);
+      const uploadConcurrency = input.type === 'video' ? 1 : MAX_CONCURRENT_UPLOADS;
       const batchProgress = new Map<number, number>();
       let uploadedFiles = 0;
       let activeBatches = 0;
@@ -208,7 +210,7 @@ export const ModelApi = {
 
       emitProgress();
 
-      await runWithConcurrency(batches, MAX_CONCURRENT_UPLOADS, async (files, batchIndex) => {
+      await runWithConcurrency(batches, uploadConcurrency, async (files, batchIndex) => {
         let attempt = 0;
 
         while (attempt < MAX_BATCH_ATTEMPTS) {
@@ -220,7 +222,7 @@ export const ModelApi = {
           try {
             const formData = new FormData();
             formData.append('batchIndex', String(batchIndex));
-            files.forEach((file) => formData.append('files', file));
+            files.forEach((file) => formData.append('files', file, file.name));
 
             const res = await http.post<UploadBatchResponse>(`/upload/${uploadId}/batches`, formData, {
               headers: {
@@ -451,6 +453,20 @@ function splitIntoBatches(files: File[], size: number): File[][] {
   }
 
   return batches;
+}
+
+function splitFileIntoChunks(file: File | undefined, chunkSize: number): File[] {
+  if (!file) return [];
+
+  const chunks: File[] = [];
+
+  for (let start = 0; start < file.size; start += chunkSize) {
+    const end = Math.min(start + chunkSize, file.size);
+    const chunk = file.slice(start, end, file.type || 'application/octet-stream');
+    chunks.push(new File([chunk], file.name, { type: file.type || 'application/octet-stream' }));
+  }
+
+  return chunks;
 }
 
 async function runWithConcurrency<T>(

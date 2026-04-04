@@ -18,6 +18,7 @@ type UploadDraft = {
   totalFiles: number;
   coordinates: UploadCoordinates;
   videoPath: string | null;
+  uploadedChunks: number;
 };
 
 export type UploadServices = {
@@ -42,7 +43,12 @@ export type UploadServices = {
       batchIndex: number,
       files: Express.Multer.File[]
     ) => Promise<string[]>;
-    saveVideoFile: (inputFolder: string, file: Express.Multer.File) => string;
+    appendVideoChunk: (
+      inputFolder: string,
+      batchIndex: number,
+      file: Express.Multer.File,
+      existingVideoPath?: string | null
+    ) => string;
     listFiles: (inputFolder: string) => string[];
   };
   videoFrames: {

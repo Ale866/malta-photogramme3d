@@ -57,6 +57,7 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     totalFiles,
     coordinates,
     videoPath: null,
+    uploadedChunks: 0,
   });
 
   return {
@@ -76,13 +77,29 @@ export async function appendUploadBatch(services: UploadServices, input: AppendU
   if (draft.type === "video") {
     validateVideoFiles(files);
     if (files.length === 0) throw badRequest("No video uploaded", "video_required");
-    if (batchIndex !== 0) throw badRequest("Video upload must use the first batch", "invalid_video_batch");
+    if (batchIndex < draft.uploadedChunks) {
+      return {
+        uploadedFiles: draft.uploadedChunks,
+        totalFiles: draft.totalFiles,
+      };
+    }
+    if (batchIndex !== draft.uploadedChunks) {
+      throw badRequest("Video chunks must be uploaded in order", "invalid_video_batch");
+    }
 
-    const videoPath = services.fileStorage.saveVideoFile(draft.inputFolder, files[0]);
-    services.uploadDrafts.update(uploadId, { videoPath });
+    const videoPath = services.fileStorage.appendVideoChunk(
+      draft.inputFolder,
+      batchIndex,
+      files[0],
+      draft.videoPath
+    );
+    const updatedDraft = services.uploadDrafts.update(uploadId, {
+      videoPath,
+      uploadedChunks: draft.uploadedChunks + 1,
+    });
 
     return {
-      uploadedFiles: 1,
+      uploadedFiles: updatedDraft?.uploadedChunks ?? draft.uploadedChunks + 1,
       totalFiles: draft.totalFiles,
     };
   }
@@ -224,6 +241,9 @@ function requireOwnedUploadDraft(services: UploadServices, uploadId: string, own
 
 async function finalizeVideoUpload(services: UploadServices, draft: ReturnType<typeof requireOwnedUploadDraft>) {
   if (!draft.videoPath) {
+    throw badRequest("Upload is incomplete", "upload_incomplete");
+  }
+  if (draft.uploadedChunks !== draft.totalFiles) {
     throw badRequest("Upload is incomplete", "upload_incomplete");
   }
 

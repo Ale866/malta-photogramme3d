@@ -16,10 +16,9 @@
         {{ isSubmitting ? uploadStatusTitle : 'Upload ready to retry' }}
       </p>
       <p class="model-form-upload-status-copy">
-        {{ uploadProgress.uploadedFiles }} / {{ uploadProgress.totalFiles }}
         {{ uploadProgress.type === 'video'
-          ? uploadProgress.uploadedFiles === 1 ? 'video uploaded' : 'videos uploaded'
-          : uploadProgress.totalFiles === 1 ? 'image uploaded' : 'images uploaded' }}
+          ? `${uploadProgress.progressPercent}% of the video uploaded`
+          : `${uploadProgress.uploadedFiles} / ${uploadProgress.totalFiles} ${uploadProgress.totalFiles === 1 ? 'image uploaded' : 'images uploaded'}` }}
       </p>
       <p v-if="isSubmitting" class="model-form-upload-status-warning">
         Upload in progress. Please do not close or refresh this page until everything is uploaded. If you close or

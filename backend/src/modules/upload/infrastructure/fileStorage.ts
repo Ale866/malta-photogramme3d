@@ -67,14 +67,32 @@ export class FileStorage {
     }
   }
 
-  static saveVideoFile(inputFolder: string, file: Express.Multer.File) {
+  static appendVideoChunk(
+    inputFolder: string,
+    batchIndex: number,
+    file: Express.Multer.File,
+    existingVideoPath?: string | null
+  ) {
     const sourceFolder = path.join(inputFolder, "_source");
     FileStorage.ensureDir(sourceFolder);
 
     const extension = path.extname(file.originalname) || ".mp4";
-    const destination = path.join(sourceFolder, `source${extension.replace(/[^\w.]+/g, "") || ".mp4"}`);
-    if (fs.existsSync(destination)) fs.unlinkSync(destination);
-    FileStorage.moveFile(file.path, destination);
+    const sanitizedExtension = extension.replace(/[^\w.]+/g, "") || ".mp4";
+    const destination = existingVideoPath ?? path.join(sourceFolder, `source${sanitizedExtension}`);
+
+    try {
+      if (batchIndex === 0 && fs.existsSync(destination)) {
+        fs.unlinkSync(destination);
+      }
+
+      const chunkBuffer = fs.readFileSync(file.path);
+      fs.appendFileSync(destination, chunkBuffer);
+    } finally {
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+    }
+
     return destination;
   }
 

@@ -16,6 +16,7 @@ export type UploadDraft = {
   totalFiles: number;
   coordinates: UploadCoordinates;
   videoPath: string | null;
+  uploadedChunks: number;
 };
 
 const drafts = new Map<string, UploadDraft>();
