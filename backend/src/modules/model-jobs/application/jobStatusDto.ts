@@ -7,6 +7,7 @@ export type ModelJobStatusDto = {
   progress: number;
   error?: string;
   modelId?: string;
+  hasBeenRerun?: boolean;
   startedAt?: Date;
   finishedAt?: Date;
 };
@@ -19,6 +20,7 @@ export function toModelJobStatusDto(job: ModelJob): ModelJobStatusDto {
     progress: job.progress,
     ...(job.error ? { error: job.error } : {}),
     ...(job.modelId ? { modelId: job.modelId } : {}),
+    ...(job.hasBeenRerun ? { hasBeenRerun: true } : {}),
     ...(job.startedAt ? { startedAt: job.startedAt } : {}),
     ...(job.finishedAt ? { finishedAt: job.finishedAt } : {}),
   };

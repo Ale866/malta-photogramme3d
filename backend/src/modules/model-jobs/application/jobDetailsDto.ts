@@ -8,6 +8,7 @@ export type ModelJobDetailsDto = {
   progress: number;
   error: string | null;
   modelId: string | null;
+  hasBeenRerun: boolean;
   coordinates: { x: number; y: number; z: number } | null;
   imageCount: number;
   createdAt: Date;
@@ -25,6 +26,7 @@ export function toModelJobDetailsDto(job: ModelJob): ModelJobDetailsDto {
     progress: job.progress,
     error: job.error,
     modelId: job.modelId,
+    hasBeenRerun: job.hasBeenRerun,
     coordinates: job.coordinates,
     imageCount: job.imagePaths.length,
     createdAt: job.createdAt,

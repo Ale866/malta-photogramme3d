@@ -34,6 +34,7 @@ export function toModelJobDomain(doc: any): ModelJob {
     progress: clampProgress(doc.progress ?? 0),
     error: doc.error ?? null,
     modelId: doc.modelId ?? null,
+    hasBeenRerun: Boolean(doc.hasBeenRerun),
     startedAt: doc.startedAt ?? null,
     finishedAt: doc.finishedAt ?? null,
     createdAt: doc.createdAt,

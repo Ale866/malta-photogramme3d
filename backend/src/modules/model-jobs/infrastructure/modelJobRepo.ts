@@ -23,6 +23,7 @@ export const modelJobRepo: ModelJobRepository = {
       progress: clampProgress(input.progress ?? 0),
       error: input.error ?? null,
       modelId: input.modelId ?? null,
+      hasBeenRerun: Boolean(input.hasBeenRerun),
       startedAt: input.startedAt ?? null,
       finishedAt: input.finishedAt ?? null,
     });
@@ -68,6 +69,7 @@ export const modelJobRepo: ModelJobRepository = {
     if (typeof patch.progress === 'number') update.progress = clampProgress(patch.progress);
     if (typeof patch.error === 'string' || patch.error === null) update.error = patch.error;
     if (typeof patch.modelId === 'string' || patch.modelId === null) update.modelId = patch.modelId;
+    if (typeof patch.hasBeenRerun === 'boolean') update.hasBeenRerun = patch.hasBeenRerun;
     if (patch.startedAt instanceof Date || patch.startedAt === null) update.startedAt = patch.startedAt;
     if (patch.finishedAt instanceof Date || patch.finishedAt === null) update.finishedAt = patch.finishedAt;
     if (typeof patch.outputFolder === 'string') update.outputFolder = patch.outputFolder;

@@ -28,7 +28,6 @@ function buildTexturingCommand(outputFolder: string): StageCommand {
       "--input_path", outputPaths.denseMeshedPoissonSimplified,
       "--output_path", outputPaths.denseTextured,
       "--workspace_path", outputPaths.denseWorkspace,
-      "--workspace_format", "COLMAP",
     ],
   };
 }

@@ -53,6 +53,21 @@ function clampProgress(progress: number) {
 const progressValue = computed(() => clampProgress(props.job.progress))
 const stageLabel = computed(() => formatLabel(props.job.stage))
 const { placeLabel } = usePlaceLabel(() => props.job.coordinates!)
+const isFailedState = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED)
+const isRetryQueuedState = computed(() => props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN)
+const stateToneClass = computed(() => {
+  if (isFailedState.value) return 'model-job-main-card--failed'
+  if (isRetryQueuedState.value) return 'model-job-main-card--retrying'
+  return ''
+})
+const statusBadge = computed(() => {
+  if (isFailedState.value && props.job.hasBeenRerun) return 'Retry used'
+  if (isFailedState.value) return 'Needs attention'
+  if (isRetryQueuedState.value) return 'Second attempt queued'
+  if (props.job.status === MODEL_JOB_STATUS.COMPLETED) return 'Completed'
+  if (props.job.status === MODEL_JOB_STATUS.QUEUED) return 'Queued'
+  return 'In progress'
+})
 
 const summary = computed(() => {
   if (props.job.status === MODEL_JOB_STATUS.QUEUED) {
@@ -64,7 +79,11 @@ const summary = computed(() => {
   }
 
   if (props.job.status === MODEL_JOB_STATUS.FAILED) {
-    return 'We could not build a complete result from these pictures. You can try one more time with less strict settings, but that is only a fallback. The best way to improve the result is to have a more complete and clearer dataset.'
+    if (props.job.hasBeenRerun) {
+      return 'We could not build a complete result from these pictures, even after the second attempt. At this point, the best next step is to take more pictures or clearer ones with better coverage of the object.'
+    }
+
+    return 'We could not build a complete result from these pictures. You can try one more time with gentler settings, but that is only a fallback. The best way to improve the result is to have a more complete and clearer dataset.'
   }
 
   if (props.job.status === MODEL_JOB_STATUS.COMPLETED) {
@@ -82,10 +101,9 @@ const progressNote = computed(() => {
   return null
 })
 
-const canRetry = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED)
+const canRetry = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED && !props.job.hasBeenRerun)
 
 const details = computed(() => [
-  { key: 'images', label: 'Images', value: String(props.job.imageCount) },
   { key: 'location', label: 'Location', value: placeLabel.value },
   { key: 'created', label: 'Created', value: formatDate(props.job.createdAt) },
 ])
@@ -93,40 +111,81 @@ const details = computed(() => [
 
 <template>
   <div class="model-job-details-layout">
-    <section class="model-job-progress-card">
-      <p class="model-job-eyebrow">Reconstruction Job</p>
+    <section class="model-job-main-card" :class="stateToneClass">
+      <div class="model-job-header">
+        <div class="model-job-header-copy">
+          <p class="model-job-eyebrow">Reconstruction Job</p>
+          <h1 class="model-job-title">{{ job.title }}</h1>
+        </div>
 
-      <h1 class="model-job-title">{{ job.title }}</h1>
+        <p class="model-job-status-badge">{{ statusBadge }}</p>
+      </div>
 
       <p class="model-job-summary">{{ summary }}</p>
 
-      <div class="model-job-stage-row">
-        <div>
-          <p class="model-job-stage-label">Current stage</p>
-          <p class="model-job-stage-value">{{ stageLabel }}</p>
+      <div v-if="retryError || job.error || trackingError || canRetry" class="model-job-feedback-stack">
+        <div v-if="retryError || job.error || trackingError" class="model-job-error-banner">
+          <p class="model-job-error-title">Latest issue</p>
+          <p v-if="retryError" class="text-error model-job-error">{{ retryError }}</p>
+          <p v-else-if="job.error" class="text-error model-job-error">{{ job.error }}</p>
+          <p v-else-if="trackingError" class="text-error model-job-error">{{ trackingError }}</p>
         </div>
-        <p class="model-job-progress-value">{{ progressValue }}%</p>
+
+        <div v-if="canRetry" class="model-job-retry-callout">
+          <div class="model-job-retry-copy-block">
+            <p class="model-job-retry-eyebrow">One fallback attempt</p>
+            <p class="model-job-retry-title">Try again with the same photos</p>
+            <p class="model-job-retry-copy">
+              We can make one more attempt using gentler settings on the same photos. This may help recover more of the shape, but the final model may be less clean or less accurate. Taking more photos, or taking clearer ones with better coverage of the object, is still the best option.
+            </p>
+          </div>
+
+          <div class="model-job-retry-actions">
+            <button class="btn model-job-retry-button" type="button" :disabled="isRetrying" @click="retryJob">
+              {{ isRetrying ? 'Starting second attempt...' : 'Try again anyway' }}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="model-job-progress-bar" aria-hidden="true">
-        <span :style="{ width: `${progressValue}%` }"></span>
-      </div>
+      <section class="model-job-status-card">
+        <div class="model-job-status-head">
+          <div class="model-job-status-copy-block">
+            <p class="model-job-status-card-title">Current stage</p>
+            <div class="model-job-status-stage-row">
+              <p class="model-job-stage-value">{{ stageLabel }}</p>
+              <p class="model-job-inline-stat">
+                <span class="model-job-inline-stat-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 7h16" />
+                    <path d="M6 7V5.5A1.5 1.5 0 0 1 7.5 4h9A1.5 1.5 0 0 1 18 5.5V7" />
+                    <rect x="4" y="7" width="16" height="12" rx="2" />
+                    <path d="M10 12h4" />
+                  </svg>
+                </span>
+                <span>{{ job.imageCount }} images</span>
+              </p>
+            </div>
+          </div>
 
-      <p v-if="progressNote" class="model-job-progress-note">{{ progressNote }}</p>
+          <p class="model-job-progress-value">{{ progressValue }}%</p>
+        </div>
 
-      <p v-if="retryError" class="text-error model-job-error">{{ retryError }}</p>
-      <p v-else-if="job.error" class="text-error model-job-error">{{ job.error }}</p>
-      <p v-else-if="trackingError" class="text-error model-job-error">{{ trackingError }}</p>
+        <div class="model-job-progress-rail">
+          <div class="model-job-progress-bar" aria-hidden="true">
+            <span :style="{ width: `${progressValue}%` }"></span>
+          </div>
 
-      <div v-if="canRetry" class="model-job-retry-callout">
-        <p class="model-job-retry-title">Try again with the same photos</p>
-        <p class="model-job-retry-copy">
-          We can make one more attempt using gentler settings on the same photos. This may help recover more of the shape, but the final model may be less clean or less accurate. Taking more photos, or taking clearer ones with better coverage of the object, is still the best option.
-        </p>
-        <button class="btn model-job-retry-button" type="button" :disabled="isRetrying" @click="retryJob">
-          {{ isRetrying ? 'Starting second attempt...' : 'Try again anyway' }}
-        </button>
-      </div>
+          <div class="model-job-status-footer" :class="{ 'model-job-status-footer--action': canOpenGeneratedModel }">
+            <p v-if="progressNote" class="model-job-progress-note">{{ progressNote }}</p>
+
+            <button v-if="canOpenGeneratedModel" class="btn btn-primary model-job-action-button" type="button"
+              @click="openGeneratedModel">
+              Open generated model
+            </button>
+          </div>
+        </div>
+      </section>
 
       <dl class="model-job-details-grid">
         <div v-for="detail in details" :key="detail.key" class="model-job-detail-card">
@@ -154,13 +213,6 @@ const details = computed(() => [
           <dd>{{ detail.value }}</dd>
         </div>
       </dl>
-
-      <div class="model-job-actions">
-        <button class="btn btn-primary model-job-action-button" type="button" :disabled="!canOpenGeneratedModel"
-          @click="openGeneratedModel">
-          Open generated model
-        </button>
-      </div>
     </section>
   </div>
 </template>

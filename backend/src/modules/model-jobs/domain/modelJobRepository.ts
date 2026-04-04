@@ -35,6 +35,7 @@ export interface ModelJob {
   progress: number;
   error: string | null;
   modelId: string | null;
+  hasBeenRerun: boolean;
   startedAt: Date | null;
   finishedAt: Date | null;
   createdAt: Date;
@@ -53,6 +54,7 @@ export type CreateModelJobInput = {
   progress?: number;
   error?: string | null;
   modelId?: string | null;
+  hasBeenRerun?: boolean;
   startedAt?: Date | null;
   finishedAt?: Date | null;
 };
@@ -63,6 +65,7 @@ export type UpdateModelJobStateInput = {
   progress?: number;
   error?: string | null;
   modelId?: string | null;
+  hasBeenRerun?: boolean;
   startedAt?: Date | null;
   finishedAt?: Date | null;
   outputFolder?: string;

@@ -72,6 +72,11 @@ const modelJobSchema = new Schema(
       default: null,
       index: true,
     },
+    hasBeenRerun: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
     startedAt: {
       type: Date,
       required: false,

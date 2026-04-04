@@ -23,6 +23,7 @@ export type ModelJobSnapshot = {
   progress: number;
   error?: string;
   modelId?: string;
+  hasBeenRerun?: boolean;
   startedAt?: string;
   finishedAt?: string;
 };

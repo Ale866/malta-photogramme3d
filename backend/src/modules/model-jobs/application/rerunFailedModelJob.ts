@@ -18,6 +18,9 @@ export async function rerunFailedModelJob(
   if (job.status !== MODEL_JOB_STATUS.FAILED) {
     throw forbidden("Only failed jobs can be rerun", "model_job_rerun_forbidden");
   }
+  if (job.hasBeenRerun) {
+    throw forbidden("This reconstruction can only be retried once", "model_job_rerun_limit_reached");
+  }
 
   dependencies.deleteDirectory(job.outputFolder);
 
@@ -27,6 +30,7 @@ export async function rerunFailedModelJob(
     progress: 0,
     error: null,
     modelId: null,
+    hasBeenRerun: true,
     startedAt: null,
     finishedAt: null,
   });

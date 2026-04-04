@@ -1529,10 +1529,10 @@
   gap: var(--space-3);
 }
 
-.model-job-progress-card {
+.model-job-main-card {
   padding: clamp(1.15rem, 2vw, 1.5rem);
   border: 1px solid rgb(155 174 212 / 0.14);
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background:
     radial-gradient(
       circle at top right,
@@ -1544,7 +1544,38 @@
   display: grid;
   align-content: start;
   gap: var(--space-4);
-  min-height: 34rem;
+}
+
+.model-job-main-card--failed {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgb(190 98 72 / 0.12),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgb(15 18 26 / 0.98), rgb(10 13 20 / 0.98));
+}
+
+.model-job-main-card--retrying {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgb(191 140 58 / 0.14),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgb(16 19 28 / 0.98), rgb(10 13 20 / 0.98));
+}
+
+.model-job-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.model-job-header-copy {
+  display: grid;
+  gap: 0.7rem;
 }
 
 .model-job-eyebrow,
@@ -1570,6 +1601,21 @@
   margin: 0;
   color: var(--text-secondary);
   line-height: 1.7;
+  max-width: 48rem;
+}
+
+.model-job-status-badge {
+  margin: 0;
+  padding: 0.58rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgb(154 187 232 / 0.16);
+  background: rgb(255 255 255 / 0.04);
+  color: #d7e8ff;
+  font-size: 0.74rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .model-job-stage-value,
@@ -1577,31 +1623,23 @@
   margin: 0;
 }
 
-.model-job-stage-row {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
 .model-job-progress-value {
-  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-size: clamp(1.7rem, 2.4vw, 2.1rem);
   font-weight: var(--font-weight-bold);
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
 .model-job-stage-value {
-  margin-top: 0.4rem;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
 }
 
 .model-job-progress-bar {
-  height: 1rem;
+  height: 0.9rem;
   border-radius: 999px;
   overflow: hidden;
-  background: rgb(255 255 255 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  background: rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.035);
 }
 
 .model-job-progress-bar span {
@@ -1615,27 +1653,73 @@
 .model-job-progress-note {
   margin: 0;
   color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.model-job-feedback-stack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.model-job-error-banner {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgb(223 103 103 / 0.14);
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  background: linear-gradient(180deg, rgb(68 23 23 / 0.18), rgb(45 16 16 / 0.12));
+}
+
+.model-job-error-title {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffb4b4;
 }
 
 .model-job-error {
   margin: 0;
-  max-width: 42rem;
+  max-width: none;
+  line-height: 1.45;
+  color: #ff9d9d;
 }
 
 .model-job-retry-callout {
   display: grid;
-  gap: 0.8rem;
-  max-width: 42rem;
-  padding: 1rem 1.05rem;
-  border-radius: 18px;
-  border: 1px solid rgb(255 196 115 / 0.18);
-  background: linear-gradient(180deg, rgb(54 35 12 / 0.42), rgb(34 23 10 / 0.5));
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  padding: 0.95rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgb(255 196 115 / 0.16);
+  background:
+    radial-gradient(circle at top right, rgb(255 189 96 / 0.08), transparent 36%),
+    linear-gradient(180deg, rgb(48 31 13 / 0.5), rgb(29 20 11 / 0.54));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.model-job-retry-copy-block {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.model-job-retry-eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f8c98e;
 }
 
 .model-job-retry-title {
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: var(--font-weight-semibold);
+  font-size: 1.08rem;
+  font-weight: var(--font-weight-bold);
   color: #ffd9a6;
 }
 
@@ -1645,11 +1729,17 @@
   line-height: 1.65;
 }
 
+.model-job-retry-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 .model-job-retry-button {
-  justify-self: start;
   border-color: rgb(255 198 118 / 0.3);
   background: linear-gradient(180deg, rgb(110 70 20 / 0.96), rgb(82 51 15 / 0.98));
   color: #fff2df;
+  box-shadow: 0 10px 22px rgb(52 31 8 / 0.26);
 }
 
 .model-job-retry-button:hover,
@@ -1657,29 +1747,90 @@
   background: linear-gradient(180deg, rgb(126 81 24 / 0.98), rgb(97 60 18 / 0.98));
 }
 
-.model-job-actions {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: auto;
+.model-job-status-card {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgb(155 174 212 / 0.12);
+  background:
+    linear-gradient(180deg, rgb(16 22 32 / 0.94), rgb(11 16 24 / 0.96));
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.18);
 }
 
-.model-job-action-button {
-  padding: 0.7rem 1rem;
-  font-size: 0.92rem;
+.model-job-status-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.model-job-status-copy-block {
+  display: grid;
+  gap: 0.22rem;
+  align-content: start;
+}
+
+.model-job-status-card-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9ec8ff;
+}
+
+.model-job-progress-rail {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.model-job-status-stage-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.model-job-inline-stat {
+  margin: 0;
+  padding: 0.28rem 0.5rem;
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.06);
+  color: #bad3f2;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.model-job-inline-stat-icon {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8ebdf4;
+}
+
+.model-job-inline-stat-icon svg {
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .model-job-details-grid {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: minmax(260px, 1.2fr) minmax(220px, 0.9fr);
+  gap: 0.7rem;
 }
 
 .model-job-detail-card {
   display: grid;
   gap: 0.4rem;
-  padding: 0.9rem 0.95rem;
-  border-radius: 18px;
+  padding: 0.78rem 0.84rem;
+  border-radius: var(--radius-lg);
   border: 1px solid rgb(255 255 255 / 0.06);
   background: rgb(255 255 255 / 0.03);
 }
@@ -1687,7 +1838,7 @@
 .model-job-detail-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.48rem;
 }
 
 .model-job-detail-card dt {
@@ -1700,8 +1851,8 @@
 }
 
 .model-job-detail-icon {
-  width: 1.8rem;
-  height: 1.8rem;
+  width: 1.55rem;
+  height: 1.55rem;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -1713,8 +1864,27 @@
 }
 
 .model-job-detail-icon svg {
-  width: 0.92rem;
-  height: 0.92rem;
+  width: 0.82rem;
+  height: 0.82rem;
+}
+
+.model-job-status-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.9rem;
+  min-height: 1.25rem;
+}
+
+.model-job-status-footer--action {
+  justify-content: space-between;
+}
+
+.model-job-action-button {
+  min-width: 11.75rem;
+  padding: 0.62rem 0.88rem;
+  font-size: 0.88rem;
+  border-radius: var(--radius-lg);
 }
 
 @media (max-width: 700px) {
@@ -1924,26 +2094,49 @@
   }
 
   .model-viewer-panel,
-  .model-job-progress-card,
+  .model-job-main-card,
   .model-summary-panel,
   .model-details-state-card {
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
   }
 
   .model-viewer-stage {
     min-height: 22rem;
   }
 
-  .model-job-progress-card {
-    min-height: auto;
-  }
-
-  .model-job-stage-row {
-    display: grid;
-  }
-
+  .model-job-feedback-stack,
   .model-job-details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .model-job-header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .model-job-status-badge {
+    white-space: normal;
+  }
+
+  .model-job-status-head,
+  .model-job-status-footer,
+  .model-job-status-footer--action {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .model-job-retry-actions {
+    width: 100%;
+  }
+
+  .model-job-retry-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .model-job-action-button {
+    width: 100%;
+    min-width: 0;
   }
 
   .model-form-coordinates {
@@ -1956,12 +2149,8 @@
     grid-template-columns: 1fr;
   }
 
-  .model-job-progress-card {
-    min-height: 30rem;
-  }
-
   .model-job-details-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(240px, 1.15fr) minmax(210px, 0.9fr);
   }
 
   .model-viewer-stage {

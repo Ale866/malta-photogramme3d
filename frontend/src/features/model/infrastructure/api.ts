@@ -141,6 +141,7 @@ function toModelJobDetails(dto: ModelJobDetailsDto): ModelJobDetails {
     progress: dto.progress,
     error: dto.error ?? undefined,
     modelId: dto.modelId ?? undefined,
+    hasBeenRerun: dto.hasBeenRerun ?? false,
     coordinates: dto.coordinates,
     imageCount: dto.imageCount,
     createdAt: dto.createdAt,
