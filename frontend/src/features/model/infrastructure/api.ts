@@ -3,7 +3,6 @@ import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 import type { ModelLibrary, NonCompletedModelJobSummary } from '@/features/model/domain/ModelLibrary';
 import type { ModelSummary, ModelVoteState } from '@/features/model/domain/ModelSummary';
-import type { ModelCreationDraft } from '../domain/ModelCreationDraft';
 
 export type UploadResponse = {
   success: boolean;
@@ -16,6 +15,7 @@ export type UploadProgressSnapshot = {
   uploadedFiles: number;
   activeBatches: number;
   progressPercent: number;
+  type: 'images' | 'video';
 };
 
 type UploadInitResponse = {
@@ -34,6 +34,14 @@ type UploadBatchResponse = {
 
 type UploadHooks = {
   onProgress?: (snapshot: UploadProgressSnapshot) => void;
+};
+
+type UploadInput = {
+  title: string;
+  type: 'images' | 'video';
+  coordinates: { x: number, y: number, z: number };
+  files?: File[];
+  videoFile?: File;
 };
 
 type ModelDto = {
@@ -155,12 +163,17 @@ function toModelJobDetails(dto: ModelJobDetailsDto): ModelJobDetails {
 }
 
 export const ModelApi = {
-  async upload(input: ModelCreationDraft, accessToken: string, hooks?: UploadHooks): Promise<UploadResponse> {
+  async upload(input: UploadInput, accessToken: string, hooks?: UploadHooks): Promise<UploadResponse> {
     try {
+      const uploadFiles = input.type === 'video'
+        ? (input.videoFile ? [input.videoFile] : [])
+        : (input.files ?? []);
+
       const initRes = await http.post<UploadInitResponse>('/upload/init', {
         title: input.title,
         coordinates: input.coordinates,
-        totalFiles: input.files.length,
+        totalFiles: uploadFiles.length,
+        type: input.type,
       }, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -168,7 +181,9 @@ export const ModelApi = {
       });
 
       const uploadId = initRes.data.uploadId;
-      const batches = splitIntoBatches(input.files, UPLOAD_BATCH_SIZE);
+      const batches = input.type === 'video'
+        ? [uploadFiles]
+        : splitIntoBatches(uploadFiles, UPLOAD_BATCH_SIZE);
       const batchProgress = new Map<number, number>();
       let uploadedFiles = 0;
       let activeBatches = 0;
@@ -178,15 +193,16 @@ export const ModelApi = {
           return sum + batch.length * (batchProgress.get(index) ?? 0);
         }, 0);
 
-        const progressPercent = input.files.length === 0
+        const progressPercent = uploadFiles.length === 0
           ? 0
-          : Math.min(100, Math.round(((uploadedFiles + partialFiles) / input.files.length) * 100));
+          : Math.min(100, Math.round(((uploadedFiles + partialFiles) / uploadFiles.length) * 100));
 
         hooks?.onProgress?.({
-          totalFiles: input.files.length,
+          totalFiles: uploadFiles.length,
           uploadedFiles,
           activeBatches,
           progressPercent,
+          type: input.type,
         });
       };
 
@@ -240,7 +256,7 @@ export const ModelApi = {
         },
       });
 
-      uploadedFiles = input.files.length;
+      uploadedFiles = uploadFiles.length;
       emitProgress();
 
       return res.data;

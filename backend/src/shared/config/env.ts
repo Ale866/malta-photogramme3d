@@ -38,6 +38,12 @@ function resolveColmapExecutable(value: string | undefined) {
   return configured;
 }
 
+function resolveFfmpegExecutable(value: string | undefined) {
+  const configured = value?.trim();
+  if (!configured) return "ffmpeg";
+  return configured;
+}
+
 export const config = {
   BACKEND_ROOT,
   PORT: Number(process.env.PORT ?? 3000),
@@ -48,6 +54,7 @@ export const config = {
   OUTPUT_DIR: resolveConfiguredPath("OUTPUT_DIR", process.env.OUTPUT_DIR ?? 'output'),
   UPLOAD_TMP: resolveConfiguredPath("UPLOAD_TMP", process.env.UPLOAD_TMP ?? path.join('uploads', 'tmp')),
   COLMAP_BIN: resolveColmapExecutable(process.env.COLMAP_BIN),
+  FFMPEG_BIN: resolveFfmpegExecutable(process.env.FFMPEG_BIN),
 
   MONGODB_URI: requireEnv('MONGODB_URI'),
 

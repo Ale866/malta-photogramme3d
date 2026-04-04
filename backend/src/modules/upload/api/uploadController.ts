@@ -1,18 +1,17 @@
 import { Response } from "express";
 import type { AuthedRequest } from "../../../shared/authenticate";
 import { appendUploadBatch, finalizeUpload, startUpload } from "../application/upload";
-import {
-  badRequest,
-  sendErrorResponse,
-} from "../../../shared/errors/applicationError";
+import { badRequest, sendErrorResponse } from "../../../shared/errors/applicationError";
 import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
 import { FileStorage } from "../infrastructure/fileStorage";
 import { uploadDraftStore } from "../infrastructure/uploadDraftStore";
+import { videoFrameExtractor } from "../infrastructure/videoFrameExtractor";
 
 const uploadDependencies = {
   modelJobs: modelJobRepo,
   uploadDrafts: uploadDraftStore,
   fileStorage: FileStorage,
+  videoFrames: videoFrameExtractor,
 };
 
 function parseCoordinates(input: unknown) {
@@ -27,13 +26,14 @@ function parseCoordinates(input: unknown) {
 
 export async function uploadInitController(req: AuthedRequest, res: Response) {
   try {
-    const { title, coordinates, totalFiles } = req.body ?? {};
+    const { title, coordinates, totalFiles, type } = req.body ?? {};
     const parsedCoordinates = parseCoordinates(coordinates);
 
     const result = await startUpload(uploadDependencies, {
       ownerId: req.user?.sub,
       title,
       totalFiles,
+      type,
       coordinates: parsedCoordinates,
     });
 

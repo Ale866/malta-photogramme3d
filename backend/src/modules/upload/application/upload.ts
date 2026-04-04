@@ -11,11 +11,13 @@ import {
 import { config } from "../../../shared/config/env";
 
 type CoordinatesInput = { x: number, y: number, z: number };
+type UploadSourceType = "images" | "video";
 
 type StartUploadInput = {
   ownerId?: string;
   title: unknown;
   totalFiles: unknown;
+  type: unknown;
   coordinates: CoordinatesInput;
 };
 
@@ -35,6 +37,7 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
   const ownerId = requireOwnerId(input.ownerId);
   const title = requireTitle(input.title);
   const totalFiles = requirePositiveInteger(input.totalFiles, "total_files_required");
+  const type = requireSourceType(input.type);
   const coordinates = requireCoordinates(input.coordinates);
   const uploadId = createUploadId();
 
@@ -50,8 +53,10 @@ export async function startUpload(services: UploadServices, input: StartUploadIn
     title,
     inputFolder: prepared.inputFolder,
     outputFolder: prepared.outputFolder,
+    type,
     totalFiles,
     coordinates,
+    videoPath: null,
   });
 
   return {
@@ -66,10 +71,25 @@ export async function appendUploadBatch(services: UploadServices, input: AppendU
   const batchIndex = requireBatchIndex(input.batchIndex);
   const files = input.files ?? [];
 
+  const draft = requireOwnedUploadDraft(services, uploadId, ownerId);
+
+  if (draft.type === "video") {
+    validateVideoFiles(files);
+    if (files.length === 0) throw badRequest("No video uploaded", "video_required");
+    if (batchIndex !== 0) throw badRequest("Video upload must use the first batch", "invalid_video_batch");
+
+    const videoPath = services.fileStorage.saveVideoFile(draft.inputFolder, files[0]);
+    services.uploadDrafts.update(uploadId, { videoPath });
+
+    return {
+      uploadedFiles: 1,
+      totalFiles: draft.totalFiles,
+    };
+  }
+
   validateImageFiles(files);
   if (files.length === 0) throw badRequest("No images uploaded", "images_required");
 
-  const draft = requireOwnedUploadDraft(services, uploadId, ownerId);
   await services.fileStorage.appendBatchFiles(draft.inputFolder, batchIndex, files);
   const imagePaths = services.fileStorage.listFiles(draft.inputFolder);
   return {
@@ -82,14 +102,20 @@ export async function finalizeUpload(services: UploadServices, input: FinalizeUp
   const ownerId = requireOwnerId(input.ownerId);
   const uploadId = requireUploadId(input.uploadId);
   const draft = requireOwnedUploadDraft(services, uploadId, ownerId);
-  const imagePaths = services.fileStorage.listFiles(draft.inputFolder);
 
-  if (imagePaths.length !== draft.totalFiles) {
+  const imagePaths = draft.type === "video"
+    ? await finalizeVideoUpload(services, draft)
+    : services.fileStorage.listFiles(draft.inputFolder);
+
+  if (draft.type !== "video" && imagePaths.length !== draft.totalFiles) {
     throw badRequest("Upload is incomplete", "upload_incomplete");
   }
 
   if (imagePaths.length === 0) {
-    throw badRequest("No images uploaded", "images_required");
+    throw badRequest(
+      draft.type === "video" ? "No frames were extracted from the uploaded video" : "No images uploaded",
+      draft.type === "video" ? "video_frames_required" : "images_required"
+    );
   }
 
   const modelJobServices: ModelJobServices = { modelJobs: services.modelJobs };
@@ -113,6 +139,17 @@ function validateImageFiles(files: Express.Multer.File[]) {
   }
 }
 
+function validateVideoFiles(files: Express.Multer.File[]) {
+  if (files.length > 1) {
+    throw badRequest("Only one video can be uploaded at a time", "multiple_videos_not_supported");
+  }
+
+  for (const file of files) {
+    if (typeof file.mimetype === "string" && file.mimetype.startsWith("video/")) continue;
+    throw badRequest("Only video uploads are supported", "invalid_upload_type");
+  }
+}
+
 function requireOwnerId(ownerId?: string) {
   if (!ownerId) throw unauthorized("Not authenticated");
   return ownerId;
@@ -131,6 +168,10 @@ function requirePositiveInteger(value: unknown, code: string) {
   }
 
   return parsed;
+}
+
+function requireSourceType(value: unknown): UploadSourceType {
+  return value === "video" ? "video" : "images";
 }
 
 function requireUploadId(uploadId: unknown) {
@@ -179,6 +220,14 @@ function requireOwnedUploadDraft(services: UploadServices, uploadId: string, own
   }
 
   return draft;
+}
+
+async function finalizeVideoUpload(services: UploadServices, draft: ReturnType<typeof requireOwnedUploadDraft>) {
+  if (!draft.videoPath) {
+    throw badRequest("Upload is incomplete", "upload_incomplete");
+  }
+
+  return services.videoFrames.extractFrames(draft.videoPath, draft.inputFolder);
 }
 
 function createUploadId() {

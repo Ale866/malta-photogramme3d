@@ -1,6 +1,17 @@
+type DraftCoordinates = { x: number, y: number, z: number }
 
-export type ModelCreationDraft = {
+export type ImageModelCreationDraft = {
   title: string
+  type: 'images'
   files: File[]
-  coordinates: { x: number, y: number, z: number }
+  coordinates: DraftCoordinates
 }
+
+export type VideoModelCreationDraft = {
+  title: string
+  type: 'video'
+  videoFile: File
+  coordinates: DraftCoordinates
+}
+
+export type ModelCreationDraft = ImageModelCreationDraft | VideoModelCreationDraft

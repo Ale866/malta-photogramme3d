@@ -15,7 +15,10 @@ export function use3dModel() {
     const accessToken = await requireAccessToken();
     const result = await ModelApi.upload({
       title: input.title,
-      files: input.files,
+      type: input.type,
+      ...(input.type === 'video'
+        ? { videoFile: input.videoFile }
+        : { files: input.files }),
       coordinates: input.coordinates,
     }, accessToken, hooks);
     return result;

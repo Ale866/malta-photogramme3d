@@ -22,7 +22,7 @@
           :is-locked="Boolean(submittedJobId)"
           :submitted-job-id="submittedJobId"
           :upload-progress="uploadProgress"
-          :submit-label="submittedJobId ? 'Model submitted' : isSubmitting ? 'Uploading images...' : 'Upload model'"
+          :submit-label="submittedJobId ? 'Model submitted' : isSubmitting ? 'Uploading...' : 'Upload model'"
           @submit="handleSubmit"
           @open-job-details="openJobDetails"
         />
@@ -108,10 +108,11 @@ const handleSubmit = async (draft: ModelCreationDraft) => {
   isSubmitting.value = true
   errorMessage.value = null
   uploadProgress.value = {
-    totalFiles: draft.files.length,
+    totalFiles: draft.type === 'video' ? 1 : draft.files.length,
     uploadedFiles: 0,
     activeBatches: 0,
     progressPercent: 0,
+    type: draft.type,
   }
 
   try {

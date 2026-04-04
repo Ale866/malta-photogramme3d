@@ -67,6 +67,17 @@ export class FileStorage {
     }
   }
 
+  static saveVideoFile(inputFolder: string, file: Express.Multer.File) {
+    const sourceFolder = path.join(inputFolder, "_source");
+    FileStorage.ensureDir(sourceFolder);
+
+    const extension = path.extname(file.originalname) || ".mp4";
+    const destination = path.join(sourceFolder, `source${extension.replace(/[^\w.]+/g, "") || ".mp4"}`);
+    if (fs.existsSync(destination)) fs.unlinkSync(destination);
+    FileStorage.moveFile(file.path, destination);
+    return destination;
+  }
+
   static listFiles(inputFolder: string) {
     if (!fs.existsSync(inputFolder)) return [];
 

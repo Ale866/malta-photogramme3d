@@ -135,14 +135,16 @@ export class ModelPreviewScene {
   }
 
   private animate = () => {
-    if (!this.renderer || !this.scene || !this.camera || !this.previewObject) return
+    if (!this.renderer || !this.scene || !this.camera) return
 
-    if (this.interactive) {
-      this.previewObject.rotation.x = this.dragState.rotationX
-      this.previewObject.rotation.y = this.dragState.rotationY
-    } else {
-      this.previewObject.rotation.x = 0.42
-      this.previewObject.rotation.y += 0.01
+    if (this.previewObject) {
+      if (this.interactive) {
+        this.previewObject.rotation.x = this.dragState.rotationX
+        this.previewObject.rotation.y = this.dragState.rotationY
+      } else {
+        this.previewObject.rotation.x = 0.42
+        this.previewObject.rotation.y += 0.01
+      }
     }
 
     this.renderer.render(this.scene, this.camera)
