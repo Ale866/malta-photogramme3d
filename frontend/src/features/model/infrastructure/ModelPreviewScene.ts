@@ -1,7 +1,10 @@
 import * as T from 'three'
+import { disposeObject3D, loadTexturedPlyModel } from '@/features/model/infrastructure/texturedPlyModel'
 
 type ModelPreviewSceneOptions = {
   interactive?: boolean
+  meshUrl?: string | null
+  textureUrl?: string | null
 }
 
 type DragState = {
@@ -17,10 +20,13 @@ export class ModelPreviewScene {
   private renderer: T.WebGLRenderer | null = null
   private scene: T.Scene | null = null
   private camera: T.PerspectiveCamera | null = null
-  private previewMesh: T.Mesh<T.BoxGeometry, T.MeshStandardMaterial> | null = null
+  private previewObject: T.Object3D | null = null
   private resizeObserver: ResizeObserver | null = null
   private frameId: number | null = null
   private readonly interactive: boolean
+  private readonly meshUrl: string | null
+  private readonly textureUrl: string | null
+  private loadToken = 0
   private dragState: DragState = {
     pointerId: null,
     lastX: 0,
@@ -31,6 +37,8 @@ export class ModelPreviewScene {
 
   constructor(options: ModelPreviewSceneOptions = {}) {
     this.interactive = options.interactive ?? true
+    this.meshUrl = options.meshUrl ?? null
+    this.textureUrl = options.textureUrl ?? null
   }
 
   mount(sceneElement: HTMLElement) {
@@ -63,25 +71,11 @@ export class ModelPreviewScene {
     const fillLight = new T.DirectionalLight(0xffffff, 0.28)
     fillLight.position.set(-2.2, 1.8, 2.2)
 
-    const geometry = new T.BoxGeometry(1.18, 1.18, 1.18)
-    const material = new T.MeshStandardMaterial({
-      color: '#1f7a8c',
-      emissive: '#1f7a8c',
-      emissiveIntensity: 0.08,
-      roughness: 0.72,
-      metalness: 0,
-    })
-
-    const previewMesh = new T.Mesh(geometry, material)
-    previewMesh.position.set(0, 0, 0)
-    previewMesh.rotation.set(this.dragState.rotationX, this.dragState.rotationY, 0.08)
-
-    scene.add(ambientLight, keyLight, fillLight, previewMesh)
+    scene.add(ambientLight, keyLight, fillLight)
 
     this.scene = scene
     this.camera = camera
     this.renderer = renderer
-    this.previewMesh = previewMesh
 
     this.syncSize()
 
@@ -98,6 +92,7 @@ export class ModelPreviewScene {
       sceneElement.addEventListener('pointercancel', this.handlePointerUp)
     }
 
+    void this.loadPreviewObject()
     this.animate()
   }
 
@@ -118,10 +113,12 @@ export class ModelPreviewScene {
     this.resizeObserver?.disconnect()
     this.resizeObserver = null
 
-    if (this.previewMesh) {
-      this.previewMesh.geometry.dispose()
-      this.previewMesh.material.dispose()
-      this.previewMesh = null
+    this.loadToken += 1
+
+    if (this.previewObject) {
+      disposeObject3D(this.previewObject)
+      this.scene?.remove(this.previewObject)
+      this.previewObject = null
     }
 
     this.scene = null
@@ -138,14 +135,14 @@ export class ModelPreviewScene {
   }
 
   private animate = () => {
-    if (!this.renderer || !this.scene || !this.camera || !this.previewMesh) return
+    if (!this.renderer || !this.scene || !this.camera || !this.previewObject) return
 
     if (this.interactive) {
-      this.previewMesh.rotation.x = this.dragState.rotationX
-      this.previewMesh.rotation.y = this.dragState.rotationY
+      this.previewObject.rotation.x = this.dragState.rotationX
+      this.previewObject.rotation.y = this.dragState.rotationY
     } else {
-      this.previewMesh.rotation.x = 0.42
-      this.previewMesh.rotation.y += 0.01
+      this.previewObject.rotation.x = 0.42
+      this.previewObject.rotation.y += 0.01
     }
 
     this.renderer.render(this.scene, this.camera)
@@ -192,5 +189,44 @@ export class ModelPreviewScene {
     }
 
     this.dragState.pointerId = null
+  }
+
+  private async loadPreviewObject() {
+    if (!this.scene || !this.camera || !this.meshUrl) return
+
+    const currentToken = ++this.loadToken
+
+    try {
+      const previewObject = await loadTexturedPlyModel({
+        meshUrl: this.meshUrl,
+        textureUrl: this.textureUrl,
+      })
+
+      if (currentToken !== this.loadToken || !this.scene || !this.camera) {
+        disposeObject3D(previewObject)
+        return
+      }
+
+      previewObject.rotation.set(this.dragState.rotationX, this.dragState.rotationY, 0.08)
+      this.scene.add(previewObject)
+      this.previewObject = previewObject
+      this.framePreviewObject(previewObject)
+    } catch (error) {
+      console.error('Failed to load model preview asset', error)
+    }
+  }
+
+  private framePreviewObject(object: T.Object3D) {
+    if (!this.camera) return
+
+    const box = new T.Box3().setFromObject(object)
+    const center = box.getCenter(new T.Vector3())
+    const size = box.getSize(new T.Vector3())
+    const maxDimension = Math.max(size.x, size.y, size.z, 1)
+    const distance = maxDimension / (2 * Math.tan((this.camera.fov * Math.PI) / 360))
+
+    this.camera.position.set(center.x + distance * 0.3, center.y + distance * 0.18, center.z + distance * 1.4)
+    this.camera.lookAt(center)
+    this.camera.updateProjectionMatrix()
   }
 }

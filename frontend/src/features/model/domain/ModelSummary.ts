@@ -15,6 +15,8 @@ export type ModelSummary = {
   title: string;
   sourceJobId: string | null;
   outputFolder: string;
+  meshAssetUrl: string;
+  textureAssetUrl: string | null;
   createdAt: string;
   coordinates: { x: number, y: number, z: number };
   voteCount: number;

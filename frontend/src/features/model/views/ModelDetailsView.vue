@@ -110,7 +110,11 @@ const islandButtonTitle = computed(() => {
         <div class="model-details-layout">
           <section class="model-viewer-panel">
             <div class="model-viewer-stage">
-              <model-preview-viewport />
+              <model-preview-viewport
+                :key="modelDetails.id"
+                :mesh-url="modelDetails.meshAssetUrl"
+                :texture-url="modelDetails.textureAssetUrl"
+              />
             </div>
           </section>
 

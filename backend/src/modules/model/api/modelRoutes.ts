@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticate, optionalAuthenticate } from "../../../shared/authenticate";
-import { deleteModelController, getAllModelsController, getCatalogModelByIdController, getIslandModelsController, getUserModelByIdController, getUserModelsController, unvoteForModelController, voteForModelController } from "./modelController";
+import { deleteModelController, getAllModelsController, getCatalogModelByIdController, getIslandModelsController, getModelMeshAssetController, getModelTextureAssetController, getUserModelByIdController, getUserModelsController, unvoteForModelController, voteForModelController } from "./modelController";
 
 const router = Router();
 
@@ -10,6 +10,8 @@ router.delete("/list/:modelId", authenticate, deleteModelController);
 router.get("/catalog", optionalAuthenticate, getAllModelsController)
 router.get("/catalog/:modelId", optionalAuthenticate, getCatalogModelByIdController)
 router.get("/island", optionalAuthenticate, getIslandModelsController)
+router.get("/:modelId/mesh", optionalAuthenticate, getModelMeshAssetController)
+router.get("/:modelId/texture", optionalAuthenticate, getModelTextureAssetController)
 router.post('/:modelId/vote', authenticate, voteForModelController);
 router.delete('/:modelId/vote', authenticate, unvoteForModelController);
 

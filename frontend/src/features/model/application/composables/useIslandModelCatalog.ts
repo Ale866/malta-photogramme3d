@@ -6,7 +6,8 @@ export type IslandModelPlacement = {
   id: string;
   title: string;
   coordinates: ModelSummary['coordinates'];
-  assetUrl: string | null;
+  meshAssetUrl: string | null;
+  textureAssetUrl: string | null;
 };
 
 function toIslandModelPlacement(model: ModelSummary): IslandModelPlacement {
@@ -14,7 +15,8 @@ function toIslandModelPlacement(model: ModelSummary): IslandModelPlacement {
     id: model.id,
     title: model.title,
     coordinates: model.coordinates,
-    assetUrl: null,
+    meshAssetUrl: model.meshAssetUrl,
+    textureAssetUrl: model.textureAssetUrl,
   };
 }
 

@@ -1,19 +1,22 @@
 import * as T from 'three'
 import gsap from 'gsap'
+import { disposeObject3D, loadTexturedPlyModel } from '@/features/model/infrastructure/texturedPlyModel'
 
 type IslandModelRenderInput = {
-  id: string;
-  coordinates: { x: number; y: number; z: number };
+  id: string
+  coordinates: { x: number; y: number; z: number }
+  meshAssetUrl: string | null
+  textureAssetUrl: string | null
 }
 
-const DEFAULT_COLOR = 0x1f7a8c
 const HOVER_EMISSIVE = 0x0d79ff
-const SELECTED_LIFT = 1.2
+const TARGET_MODEL_HEIGHT = 4
+const SELECTED_LIFT = 0.45
 const SELECTED_SCALE = 1.06
 const DEEMPHASIZED_SCALE = 0.97
 const DEEMPHASIZED_OPACITY = 0.38
 
-type MeshFocusState = {
+type ObjectFocusState = {
   position: T.Vector3
   scale: T.Vector3
   rotation: T.Euler
@@ -23,52 +26,63 @@ type MeshFocusState = {
 export class IslandModelRenderer {
   private readonly scene: T.Scene
   private readonly group = new T.Group()
-  private readonly boxGeometry = new T.BoxGeometry(4, 4, 4)
-  private readonly meshesByModelId = new Map<string, T.Mesh<T.BoxGeometry, T.MeshStandardMaterial>>()
+  private readonly objectsByModelId = new Map<string, T.Object3D>()
   private readonly coordinatesByModelId = new Map<string, { x: number; y: number; z: number }>()
-  private readonly originalStatesByModelId = new Map<string, MeshFocusState>()
+  private readonly originalStatesByModelId = new Map<string, ObjectFocusState>()
   private hoveredModelId: string | null = null
   private selectedModelId: string | null = null
   private focusTimeline: gsap.core.Timeline | null = null
 
   constructor(scene: T.Scene) {
     this.scene = scene
-    this.group.name = 'island-model-placeholders'
+    this.group.name = 'island-models'
     this.scene.add(this.group)
   }
 
-  setModels(models: readonly IslandModelRenderInput[]) {
+  async setModels(models: readonly IslandModelRenderInput[]) {
     this.clear()
 
     for (const model of models) {
-      const material = new T.MeshStandardMaterial({
-        color: DEFAULT_COLOR,
-        emissive: 0x000000,
-        emissiveIntensity: 0,
-        transparent: true,
-        opacity: 1,
-      })
-      const mesh = new T.Mesh(this.boxGeometry, material)
-      mesh.position.set(
-        model.coordinates.x,
-        model.coordinates.y + 2,
-        model.coordinates.z,
-      )
-      mesh.userData.modelId = model.id
-      this.group.add(mesh)
-      this.meshesByModelId.set(model.id, mesh)
-      this.coordinatesByModelId.set(model.id, model.coordinates)
-      this.originalStatesByModelId.set(model.id, {
-        position: mesh.position.clone(),
-        scale: mesh.scale.clone(),
-        rotation: mesh.rotation.clone(),
-        opacity: material.opacity,
-      })
+      if (!model.meshAssetUrl) continue
+
+      try {
+        const object = await loadTexturedPlyModel({
+          meshUrl: model.meshAssetUrl,
+          textureUrl: model.textureAssetUrl,
+        })
+
+        const box = new T.Box3().setFromObject(object)
+        const size = box.getSize(new T.Vector3())
+        const height = Math.max(size.y, 1e-6)
+        const scale = TARGET_MODEL_HEIGHT / height
+        object.scale.setScalar(scale)
+
+        const scaledBox = new T.Box3().setFromObject(object)
+        object.position.set(
+          model.coordinates.x,
+          model.coordinates.y - scaledBox.min.y,
+          model.coordinates.z,
+        )
+
+        object.userData.modelId = model.id
+        this.setObjectOpacity(object, 1)
+        this.group.add(object)
+        this.objectsByModelId.set(model.id, object)
+        this.coordinatesByModelId.set(model.id, model.coordinates)
+        this.originalStatesByModelId.set(model.id, {
+          position: object.position.clone(),
+          scale: object.scale.clone(),
+          rotation: object.rotation.clone(),
+          opacity: 1,
+        })
+      } catch (error) {
+        console.error(`Failed to load island model asset for ${model.id}`, error)
+      }
     }
   }
 
   getInteractiveObjects(): T.Object3D[] {
-    return Array.from(this.meshesByModelId.values())
+    return Array.from(this.objectsByModelId.values())
   }
 
   getModelIdFromObject(object: T.Object3D | null): string | null {
@@ -86,7 +100,7 @@ export class IslandModelRenderer {
   }
 
   getModelObject(modelId: string) {
-    return this.meshesByModelId.get(modelId) ?? null
+    return this.objectsByModelId.get(modelId) ?? null
   }
 
   getSelectedModelId() {
@@ -98,8 +112,7 @@ export class IslandModelRenderer {
   }
 
   focusModel(modelId: string) {
-    if (!this.meshesByModelId.has(modelId)) return
-
+    if (!this.objectsByModelId.has(modelId)) return
     if (this.selectedModelId === modelId) return
 
     this.selectedModelId = modelId
@@ -117,37 +130,35 @@ export class IslandModelRenderer {
   rotateFocusedModel(deltaX: number, deltaY: number) {
     if (!this.selectedModelId) return
 
-    const mesh = this.meshesByModelId.get(this.selectedModelId)
+    const object = this.objectsByModelId.get(this.selectedModelId)
     const originalState = this.originalStatesByModelId.get(this.selectedModelId)
-    if (!mesh || !originalState) return
+    if (!object || !originalState) return
 
     const yawStep = deltaX * 0.01
     const pitchStep = deltaY * 0.0055
     const minPitch = originalState.rotation.x - 0.45
     const maxPitch = originalState.rotation.x + 0.45
 
-    mesh.rotation.y += yawStep
-    mesh.rotation.x = T.MathUtils.clamp(mesh.rotation.x + pitchStep, minPitch, maxPitch)
+    object.rotation.y += yawStep
+    object.rotation.x = T.MathUtils.clamp(object.rotation.x + pitchStep, minPitch, maxPitch)
   }
 
   setHoveredModel(modelId: string | null) {
     if (this.selectedModelId) {
-      if (this.hoveredModelId) {
-        this.hoveredModelId = null
-      }
+      if (this.hoveredModelId) this.hoveredModelId = null
       return
     }
 
     if (this.hoveredModelId === modelId) return
 
     if (this.hoveredModelId) {
-      this.setMeshHighlight(this.hoveredModelId, false)
+      this.setObjectHighlight(this.hoveredModelId, false)
     }
 
     this.hoveredModelId = modelId
 
     if (this.hoveredModelId) {
-      this.setMeshHighlight(this.hoveredModelId, true)
+      this.setObjectHighlight(this.hoveredModelId, true)
     }
   }
 
@@ -155,16 +166,13 @@ export class IslandModelRenderer {
     this.stopFocusAnimation()
     this.setHoveredModel(null)
     this.selectedModelId = null
-    for (const mesh of this.meshesByModelId.values()) {
-      const material = mesh.material
-      if (Array.isArray(material)) {
-        material.forEach((item) => item.dispose())
-      } else {
-        material.dispose()
-      }
+
+    for (const object of this.objectsByModelId.values()) {
+      disposeObject3D(object)
     }
+
     this.group.clear()
-    this.meshesByModelId.clear()
+    this.objectsByModelId.clear()
     this.coordinatesByModelId.clear()
     this.originalStatesByModelId.clear()
   }
@@ -172,16 +180,23 @@ export class IslandModelRenderer {
   dispose() {
     this.clear()
     this.scene.remove(this.group)
-    this.boxGeometry.dispose()
   }
 
-  private setMeshHighlight(modelId: string, highlighted: boolean) {
-    const mesh = this.meshesByModelId.get(modelId)
-    if (!mesh) return
+  private setObjectHighlight(modelId: string, highlighted: boolean) {
+    const object = this.objectsByModelId.get(modelId)
+    if (!object) return
 
-    const material = mesh.material
-    material.emissive.setHex(highlighted ? HOVER_EMISSIVE : 0x000000)
-    material.emissiveIntensity = highlighted ? 0.85 : 0
+    object.traverse((child) => {
+      const mesh = child as T.Mesh
+      if (!mesh.isMesh) return
+
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      for (const material of materials) {
+        const standardMaterial = material as T.MeshStandardMaterial
+        standardMaterial.emissive.setHex(highlighted ? HOVER_EMISSIVE : 0x000000)
+        standardMaterial.emissiveIntensity = highlighted ? 0.6 : 0
+      }
+    })
   }
 
   private animateFocusState() {
@@ -199,11 +214,10 @@ export class IslandModelRenderer {
       },
     })
 
-    for (const [modelId, mesh] of this.meshesByModelId.entries()) {
+    for (const [modelId, object] of this.objectsByModelId.entries()) {
       const originalState = this.originalStatesByModelId.get(modelId)
       if (!originalState) continue
 
-      const material = mesh.material
       const isSelected = this.selectedModelId === modelId
       const hasFocusedModel = this.selectedModelId !== null
       const targetScale = isSelected
@@ -214,36 +228,31 @@ export class IslandModelRenderer {
       const targetOpacity = hasFocusedModel
         ? (isSelected ? originalState.opacity : DEEMPHASIZED_OPACITY)
         : originalState.opacity
-      const targetEmissive = new T.Color(0x000000)
-      const targetEmissiveIntensity = 0
 
-      timeline.to(mesh.position, {
+      timeline.to(object.position, {
         x: originalState.position.x,
         y: originalState.position.y + (isSelected ? SELECTED_LIFT : 0),
         z: originalState.position.z,
       }, 0)
 
-      timeline.to(mesh.scale, {
+      timeline.to(object.scale, {
         x: targetScale,
         y: targetScale,
         z: targetScale,
       }, 0)
 
-      timeline.to(mesh.rotation, {
+      timeline.to(object.rotation, {
         x: originalState.rotation.x,
         y: originalState.rotation.y,
         z: originalState.rotation.z,
       }, 0)
 
-      timeline.to(material, {
-        opacity: targetOpacity,
-        emissiveIntensity: targetEmissiveIntensity,
-      }, 0)
-
-      timeline.to(material.emissive, {
-        r: targetEmissive.r,
-        g: targetEmissive.g,
-        b: targetEmissive.b,
+      const opacityState = { value: this.getObjectOpacity(object) }
+      timeline.to(opacityState, {
+        value: targetOpacity,
+        onUpdate: () => {
+          this.setObjectOpacity(object, opacityState.value)
+        },
       }, 0)
     }
 
@@ -256,12 +265,37 @@ export class IslandModelRenderer {
       this.focusTimeline = null
     }
 
-    for (const mesh of this.meshesByModelId.values()) {
-      gsap.killTweensOf(mesh.position)
-      gsap.killTweensOf(mesh.scale)
-      gsap.killTweensOf(mesh.rotation)
-      gsap.killTweensOf(mesh.material)
-      gsap.killTweensOf(mesh.material.emissive)
+    for (const object of this.objectsByModelId.values()) {
+      gsap.killTweensOf(object.position)
+      gsap.killTweensOf(object.scale)
+      gsap.killTweensOf(object.rotation)
     }
+  }
+
+  private getObjectOpacity(object: T.Object3D) {
+    let opacity = 1
+
+    object.traverse((child) => {
+      const mesh = child as T.Mesh
+      if (!mesh.isMesh) return
+      const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
+      opacity = (material as T.MeshStandardMaterial).opacity
+    })
+
+    return opacity
+  }
+
+  private setObjectOpacity(object: T.Object3D, opacity: number) {
+    object.traverse((child) => {
+      const mesh = child as T.Mesh
+      if (!mesh.isMesh) return
+
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      for (const material of materials) {
+        const standardMaterial = material as T.MeshStandardMaterial
+        standardMaterial.transparent = true
+        standardMaterial.opacity = opacity
+      }
+    })
   }
 }

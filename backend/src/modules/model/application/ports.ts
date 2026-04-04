@@ -7,6 +7,16 @@ export type ModelsServices = {
   users: UserRepository;
 };
 
+export type ModelAssetStorage = {
+  resolveMeshPath(outputFolder: string): string | null;
+  resolveTexturePath(outputFolder: string): string | null;
+};
+
+export type ModelAssetServices = {
+  models: ModelRepository;
+  assets: ModelAssetStorage;
+};
+
 export type ModelLibraryServices = {
   models: ModelRepository;
   modelJobs: ModelJobRepository;

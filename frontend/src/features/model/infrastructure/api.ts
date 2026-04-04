@@ -69,6 +69,7 @@ type ModelJobDetailsDto = {
   progress: number;
   error: string | null;
   modelId: string | null;
+  hasBeenRerun?: boolean;
   coordinates: { x: number, y: number, z: number } | null;
   imageCount: number;
   createdAt: string;
@@ -102,6 +103,8 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     title: dto.title,
     sourceJobId: dto.sourceJobId ?? null,
     outputFolder: dto.outputFolder,
+    meshAssetUrl: `/model/${dto.id}/mesh`,
+    textureAssetUrl: `/model/${dto.id}/texture`,
     createdAt: dto.createdAt,
     coordinates: dto.coordinates,
     voteCount: dto.voteCount,

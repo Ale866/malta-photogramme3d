@@ -3,6 +3,7 @@ import { Response } from "express";
 import { getUserModelLibrary } from "../application/getModelLibrary";
 import { getAllModels } from "../application/getAllModels";
 import { getCatalogModelById, getUserModelById } from "../application/getModelById";
+import { getModelMeshAssetPath, getModelTextureAssetPath } from "../application/getModelAssetPath";
 import { getIslandModels } from "../application/getIslandModels";
 import { notFound, sendErrorResponse, unauthorized, } from "../../../shared/errors/applicationError";
 import { modelRepo } from "../infrastructure/modelRepo";
@@ -11,6 +12,7 @@ import { authServices } from "../../auth/infrastructure/authServices";
 import { unvoteForModel, voteForModel } from "../application/voteForModel";
 import { deleteModel } from "../application/deleteModel";
 import { FileStorage } from "../../upload/infrastructure/fileStorage";
+import { modelAssetStorage } from "../infrastructure/modelAssetStorage";
 
 const modelLibraryDependencies = {
   models: modelRepo,
@@ -21,6 +23,11 @@ const modelLibraryDependencies = {
 const modelDependencies = {
   models: modelRepo,
   users: authServices.users,
+};
+
+const modelAssetDependencies = {
+  models: modelRepo,
+  assets: modelAssetStorage,
 };
 
 const deleteModelDependencies = {
@@ -75,6 +82,25 @@ export async function getIslandModelsController(req: AuthedRequest, res: Respons
   try {
     const catalog = await getIslandModels(modelDependencies, req.user?.sub);
     return res.status(200).json(catalog);
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function getModelMeshAssetController(req: AuthedRequest, res: Response) {
+  try {
+    const assetPath = await getModelMeshAssetPath(modelAssetDependencies, req.params.modelId);
+    res.type("application/octet-stream");
+    return res.sendFile(assetPath);
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function getModelTextureAssetController(req: AuthedRequest, res: Response) {
+  try {
+    const assetPath = await getModelTextureAssetPath(modelAssetDependencies, req.params.modelId);
+    return res.sendFile(assetPath);
   } catch (error) {
     return sendErrorResponse(res, error);
   }

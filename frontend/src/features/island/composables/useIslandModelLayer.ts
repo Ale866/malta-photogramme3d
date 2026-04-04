@@ -6,6 +6,8 @@ import { IslandModelRenderer } from '@/features/island/infrastructure/IslandMode
 type PositionedModel = {
   id: string;
   coordinates: { x: number; y: number; z: number };
+  meshAssetUrl: string | null;
+  textureAssetUrl: string | null;
 }
 
 const renderer = shallowRef<IslandModelRenderer | null>(null)
@@ -22,10 +24,10 @@ export function useIslandModelLayer() {
     return renderer.value
   }
 
-  function renderModels(orchestrator: IslandOrchestrator, models: PositionedModel[]) {
+  async function renderModels(orchestrator: IslandOrchestrator, models: PositionedModel[]) {
     focusedModelId.value = null
     orchestrator.setTerrainClickEnabled(true)
-    ensureRenderer(orchestrator).setModels(models)
+    await ensureRenderer(orchestrator).setModels(models)
   }
 
   function attachInteractions(

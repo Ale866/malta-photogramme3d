@@ -3,6 +3,8 @@ import { ModelPreviewScene } from '@/features/model/infrastructure/ModelPreviewS
 
 type UseModelPreviewOptions = {
   interactive?: boolean
+  meshUrl?: string | null
+  textureUrl?: string | null
 }
 
 export function useModelPreview(options: UseModelPreviewOptions = {}) {

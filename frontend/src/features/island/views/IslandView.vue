@@ -115,7 +115,7 @@ onMounted(async () => {
     })
 
     await refresh()
-    renderModels(islandOrchestrator, placements.value)
+    await renderModels(islandOrchestrator, placements.value)
     attachInteractions(islandOrchestrator, {
       onModelFocus: () => {
         clearTerrainSelection()
