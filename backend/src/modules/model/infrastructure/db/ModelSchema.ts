@@ -29,6 +29,15 @@ const modelSchema = new Schema(
       },
       required: true
     },
+    orientation: {
+      type: {
+        x: { type: Number, required: true, default: 0 },
+        y: { type: Number, required: true, default: 0 },
+        z: { type: Number, required: true, default: 0 },
+      },
+      required: true,
+      default: () => ({ x: 0, y: 0, z: 0 }),
+    },
     createdAt: {
       type: Date,
       default: null,

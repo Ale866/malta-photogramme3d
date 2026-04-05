@@ -10,6 +10,7 @@ export type ModelListItemDto = {
   outputFolder: string;
   createdAt: Date;
   coordinates: { x: number; y: number; z: number };
+  orientation: { x: number; y: number; z: number };
   voteCount: number;
   hasVoted: boolean;
   hasBeenRerun?: boolean;
@@ -47,6 +48,7 @@ export function toModelListItemDto(input: {
     outputFolder: input.model.outputFolder,
     createdAt: input.model.createdAt,
     coordinates: input.model.coordinates,
+    orientation: input.model.orientation,
     voteCount: input.model.userVotesIds.length,
     hasVoted: typeof input.currentUserId === 'string' && input.currentUserId.length > 0
       ? input.model.userVotesIds.includes(input.currentUserId)

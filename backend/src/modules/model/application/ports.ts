@@ -40,3 +40,7 @@ export type ModelRerunServices = {
   modelJobs: ModelJobRepository;
   deleteDirectory: (directoryPath: string) => void;
 };
+
+export type ModelOrientationUpdateServices = {
+  models: ModelRepository;
+};

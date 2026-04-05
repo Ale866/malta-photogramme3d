@@ -11,6 +11,7 @@ function toDomain(doc: any): Model {
     outputFolder: doc.outputFolder,
     createdAt: doc.createdAt,
     coordinates: doc.coordinates,
+    orientation: doc.orientation ?? { x: 0, y: 0, z: 0 },
     userVotesIds: doc.userVotesIds || []
   };
 }
@@ -23,6 +24,7 @@ export const modelRepo: ModelRepository = {
       sourceJobId: input.sourceJobId ?? undefined,
       outputFolder: input.outputFolder,
       coordinates: input.coordinates,
+      orientation: input.orientation ?? { x: 0, y: 0, z: 0 },
       userVotesIds: [],
     });
 
@@ -51,6 +53,20 @@ export const modelRepo: ModelRepository = {
       [`userVotesIds.${requiredVoteIndex}`]: { $exists: true },
     }).sort({ createdAt: -1 }).lean();
     return docs.map(toDomain);
+  },
+
+  async updateOrientation(modelId: string, orientation) {
+    const doc = await ModelSchema.findByIdAndUpdate(
+      modelId,
+      {
+        $set: {
+          orientation,
+        },
+      },
+      { returnDocument: 'after' }
+    ).lean();
+    if (!doc) return null;
+    return toDomain(doc);
   },
 
   async vote(modelId: string, userId: string) {

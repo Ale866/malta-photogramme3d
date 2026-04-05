@@ -20,6 +20,7 @@ export async function createModelFromJob(services: Pick<ModelsServices, 'models'
     outputFolder,
     sourceJobId,
     coordinates: input.coordinates,
+    orientation: input.orientation ?? { x: 0, y: 0, z: 0 },
   });
 
   return model;

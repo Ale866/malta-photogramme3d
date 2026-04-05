@@ -12,6 +12,7 @@ import { authServices } from "../../auth/infrastructure/authServices";
 import { unvoteForModel, voteForModel } from "../application/voteForModel";
 import { deleteModel } from "../application/deleteModel";
 import { rerunCompletedModel } from "../application/rerunCompletedModel";
+import { updateModelOrientation } from "../application/updateModelOrientation";
 import { FileStorage } from "../../upload/infrastructure/fileStorage";
 import { modelAssetStorage } from "../infrastructure/modelAssetStorage";
 
@@ -41,6 +42,10 @@ const deleteModelDependencies = {
   models: modelRepo,
   modelJobs: modelJobRepo,
   deleteDirectory: FileStorage.deleteDirectory,
+};
+
+const updateModelOrientationDependencies = {
+  models: modelRepo,
 };
 
 const rerunModelDependencies = {
@@ -183,6 +188,23 @@ export async function rerunCompletedModelController(req: AuthedRequest, res: Res
       message: "Model queued for rerun",
       jobId: rerunJob.id,
     });
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function updateModelOrientationController(req: AuthedRequest, res: Response) {
+  try {
+    if (!req.user) throw unauthorized("Not authenticated");
+
+    await updateModelOrientation(updateModelOrientationDependencies, {
+      modelId: req.params.modelId,
+      ownerId: req.user.sub,
+      orientation: req.body?.orientation,
+    });
+
+    const model = await getUserModelById(userModelDependencies, req.params.modelId, req.user.sub);
+    return res.status(200).json(model);
   } catch (error) {
     return sendErrorResponse(res, error);
   }

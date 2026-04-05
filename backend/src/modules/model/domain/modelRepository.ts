@@ -1,3 +1,9 @@
+export type ModelOrientation = {
+  x: number;
+  y: number;
+  z: number;
+};
+
 export type Model = {
   id: string;
   ownerId: string;
@@ -6,6 +12,7 @@ export type Model = {
   outputFolder: string;
   createdAt: Date;
   coordinates: { x: number, y: number, z: number };
+  orientation: ModelOrientation;
   userVotesIds: string[];
 };
 
@@ -15,6 +22,7 @@ export type CreateModelInput = {
   outputFolder: string;
   sourceJobId?: string | null;
   coordinates: { x: number, y: number, z: number };
+  orientation?: ModelOrientation;
 };
 
 export type VoteChangeResult = {
@@ -27,6 +35,7 @@ export interface ModelRepository {
   listCatalog(): Promise<Model[]>;
   listIslandCatalog(): Promise<Model[]>;
   listByOwner(ownerId: string): Promise<Model[]>;
+  updateOrientation(modelId: string, orientation: ModelOrientation): Promise<Model | null>;
   vote(modelId: string, userId: string): Promise<VoteChangeResult>;
   unvote(modelId: string, userId: string): Promise<VoteChangeResult>;
   deleteById(modelId: string): Promise<boolean>;
