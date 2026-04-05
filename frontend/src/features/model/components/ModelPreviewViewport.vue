@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useModelPreview } from '@/features/model/application/useModelPreview'
 
 const props = withDefaults(defineProps<{
@@ -7,22 +7,35 @@ const props = withDefaults(defineProps<{
   showOverlay?: boolean
   meshUrl?: string | null
   textureUrl?: string | null
+  orientation?: { x: number; y: number; z: number } | null
+  dragMode?: 'orbit' | 'roll'
   loadingLabel?: string
+  overlayCaption?: string
 }>(), {
   interactive: true,
   showOverlay: true,
   meshUrl: null,
   textureUrl: null,
+  orientation: null,
+  dragMode: 'orbit',
   loadingLabel: 'Loading model preview',
+  overlayCaption: 'Drag inside the viewer to inspect the generated model.',
 })
+
+const emit = defineEmits<{
+  (event: 'orientation-change', orientation: { x: number; y: number; z: number }): void
+}>()
 
 const isLoading = ref(Boolean(props.meshUrl))
 const hasError = ref(false)
 const element = useTemplateRef<HTMLElement>('scene-element-container')
-const { mount } = useModelPreview({
+const { mount, setOrientation, setDragMode } = useModelPreview({
   interactive: props.interactive,
   meshUrl: props.meshUrl,
   textureUrl: props.textureUrl,
+  orientation: props.orientation,
+  dragMode: props.dragMode,
+  onOrientationChange: (orientation) => emit('orientation-change', orientation),
   onLoaded: () => {
     isLoading.value = false
     hasError.value = false
@@ -37,6 +50,22 @@ onMounted(async () => {
   await nextTick()
   mount(element.value ?? null)
 })
+
+watch(
+  () => props.orientation,
+  (orientation) => {
+    if (!orientation) return
+    setOrientation(orientation)
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.dragMode,
+  (dragMode) => {
+    setDragMode(dragMode)
+  }
+)
 </script>
 
 <template>
@@ -51,7 +80,7 @@ onMounted(async () => {
     </div>
     <div v-if="showOverlay" class="model-preview-overlay">
       <p class="model-preview-label">Preview</p>
-      <p class="model-preview-caption">Drag inside the viewer to inspect the generated model.</p>
+      <p class="model-preview-caption">{{ overlayCaption }}</p>
     </div>
   </div>
 </template>

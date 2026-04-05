@@ -16,6 +16,12 @@ export type ModelRerunResponse = {
   jobId: string;
 };
 
+export type ModelOrientationInput = {
+  x: number;
+  y: number;
+  z: number;
+};
+
 export type UploadProgressSnapshot = {
   totalFiles: number;
   uploadedFiles: number;
@@ -67,6 +73,7 @@ type ModelDto = {
   outputFolder: string;
   createdAt: string;
   coordinates: { x: number, y: number, z: number };
+  orientation: { x: number, y: number, z: number };
   voteCount: number;
   hasVoted: boolean;
   hasBeenRerun?: boolean;
@@ -131,6 +138,7 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     textureAssetUrl: `/model/${dto.id}/texture`,
     createdAt: dto.createdAt,
     coordinates: dto.coordinates,
+    orientation: dto.orientation ?? { x: 0, y: 0, z: 0 },
     voteCount: dto.voteCount,
     hasVoted: dto.hasVoted,
     hasBeenRerun: dto.hasBeenRerun ?? false,
@@ -456,6 +464,22 @@ export const ModelApi = {
       });
 
       return res.data;
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async updateModelOrientation(modelId: string, orientation: ModelOrientationInput, accessToken: string): Promise<ModelSummary> {
+    try {
+      const res = await http.patch<ModelDto>(`/model/list/${modelId}/orientation`, {
+        orientation,
+      }, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return toModelSummary(res.data);
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }

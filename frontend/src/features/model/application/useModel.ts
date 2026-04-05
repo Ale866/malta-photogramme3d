@@ -1,5 +1,5 @@
 import { ModelApi } from "../infrastructure/api";
-import type { UploadProgressSnapshot } from "../infrastructure/api";
+import type { ModelOrientationInput, UploadProgressSnapshot } from "../infrastructure/api";
 import { authStore, requireAccessToken } from "@/features/auth/application/useAuth";
 import type { ModelCreationDraft } from "../domain/ModelCreationDraft";
 import type { ModelJobDetails } from "../domain/ModelJobDetails";
@@ -96,6 +96,11 @@ export function use3dModel() {
     return ModelApi.rerunCompletedModel(modelId, accessToken);
   }
 
+  async function updateModelOrientation(modelId: string, orientation: ModelOrientationInput): Promise<ModelSummary> {
+    const accessToken = await requireAccessToken();
+    return ModelApi.updateModelOrientation(modelId, orientation, accessToken);
+  }
+
   return {
     uploadModel,
     getModelLibrary,
@@ -111,5 +116,6 @@ export function use3dModel() {
     deleteFailedModelJob,
     rerunFailedModelJob,
     rerunCompletedModel,
+    updateModelOrientation,
   }
 }

@@ -88,6 +88,7 @@ const deleteButtonLabel = computed(() =>
         :show-overlay="false"
         :mesh-url="card.meshAssetUrl"
         :texture-url="card.textureAssetUrl"
+        :orientation="card.orientation"
         loading-label="Loading preview"
       />
       <div v-else class="model-list-card-job-stage">

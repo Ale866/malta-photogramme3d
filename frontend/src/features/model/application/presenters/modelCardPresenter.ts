@@ -9,6 +9,7 @@ export type ModelCardViewModel = {
   type: 'model' | 'job';
   meshAssetUrl: string | null;
   textureAssetUrl: string | null;
+  orientation: { x: number; y: number; z: number } | null;
   createdAt: string;
   title: string;
   locationCoordinates: { x: number; y: number; z: number } | null;
@@ -28,6 +29,7 @@ export function toModelCardViewModel(model: ModelSummary): ModelCardViewModel {
     type: 'model',
     meshAssetUrl: model.meshAssetUrl,
     textureAssetUrl: model.textureAssetUrl,
+    orientation: model.orientation,
     createdAt: model.createdAt,
     title: model.title,
     locationCoordinates: model.coordinates,
@@ -52,6 +54,7 @@ function toModelJobCardViewModel(job: NonCompletedModelJobSummary): ModelCardVie
     type: 'job',
     meshAssetUrl: null,
     textureAssetUrl: null,
+    orientation: null,
     createdAt: job.createdAt,
     title: job.title,
     locationCoordinates: job.coordinates,

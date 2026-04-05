@@ -5,6 +5,9 @@ type ModelPreviewSceneOptions = {
   interactive?: boolean
   meshUrl?: string | null
   textureUrl?: string | null
+  orientation?: { x: number; y: number; z: number } | null
+  dragMode?: 'orbit' | 'roll'
+  onOrientationChange?: (orientation: { x: number; y: number; z: number }) => void
   onLoaded?: () => void
   onError?: () => void
 }
@@ -13,8 +16,6 @@ type DragState = {
   pointerId: number | null
   lastX: number
   lastY: number
-  rotationX: number
-  rotationY: number
 }
 
 export class ModelPreviewScene {
@@ -28,23 +29,37 @@ export class ModelPreviewScene {
   private readonly interactive: boolean
   private readonly meshUrl: string | null
   private readonly textureUrl: string | null
+  private readonly onOrientationChange?: (orientation: { x: number; y: number; z: number }) => void
   private readonly onLoaded?: () => void
   private readonly onError?: () => void
+  private baseOrientation = { x: 0.3, y: 0.45, z: 0.08 }
+  private dragMode: 'orbit' | 'roll'
   private loadToken = 0
   private dragState: DragState = {
     pointerId: null,
     lastX: 0,
     lastY: 0,
-    rotationX: 0.3,
-    rotationY: 0.45,
   }
 
   constructor(options: ModelPreviewSceneOptions = {}) {
     this.interactive = options.interactive ?? true
     this.meshUrl = options.meshUrl ?? null
     this.textureUrl = options.textureUrl ?? null
+    this.dragMode = options.dragMode ?? 'orbit'
+    if (options.orientation) {
+      this.baseOrientation = { ...options.orientation }
+    }
+    this.onOrientationChange = options.onOrientationChange
     this.onLoaded = options.onLoaded
     this.onError = options.onError
+  }
+
+  setOrientation(orientation: { x: number; y: number; z: number }) {
+    this.baseOrientation = this.normalizeOrientation(orientation)
+  }
+
+  setDragMode(mode: 'orbit' | 'roll') {
+    this.dragMode = mode
   }
 
   mount(sceneElement: HTMLElement) {
@@ -145,11 +160,13 @@ export class ModelPreviewScene {
 
     if (this.previewObject) {
       if (this.interactive) {
-        this.previewObject.rotation.x = this.dragState.rotationX
-        this.previewObject.rotation.y = this.dragState.rotationY
+        this.previewObject.rotation.x = this.baseOrientation.x
+        this.previewObject.rotation.y = this.baseOrientation.y
+        this.previewObject.rotation.z = this.baseOrientation.z
       } else {
-        this.previewObject.rotation.x = 0.42
+        this.previewObject.rotation.x = this.baseOrientation.x
         this.previewObject.rotation.y += 0.01
+        this.previewObject.rotation.z = this.baseOrientation.z
       }
     }
 
@@ -183,10 +200,23 @@ export class ModelPreviewScene {
     const deltaX = event.clientX - this.dragState.lastX
     const deltaY = event.clientY - this.dragState.lastY
 
-    this.dragState.rotationY += deltaX * 0.006
-    this.dragState.rotationX = Math.max(-0.8, Math.min(0.8, this.dragState.rotationX + deltaY * 0.005))
+    const rotateRoll = this.dragMode === 'roll' || event.shiftKey
+
+    if (rotateRoll) {
+      this.baseOrientation = {
+        ...this.baseOrientation,
+        z: this.normalizeAngle(this.baseOrientation.z + deltaX * 0.006),
+      }
+    } else {
+      this.baseOrientation = {
+        ...this.baseOrientation,
+        x: this.normalizeAngle(this.baseOrientation.x + deltaY * 0.005),
+        y: this.normalizeAngle(this.baseOrientation.y + deltaX * 0.006),
+      }
+    }
     this.dragState.lastX = event.clientX
     this.dragState.lastY = event.clientY
+    this.onOrientationChange?.({ ...this.baseOrientation })
   }
 
   private handlePointerUp = (event: PointerEvent) => {
@@ -218,7 +248,7 @@ export class ModelPreviewScene {
         return
       }
 
-      previewObject.rotation.set(this.dragState.rotationX, this.dragState.rotationY, 0.08)
+      previewObject.rotation.set(this.baseOrientation.x, this.baseOrientation.y, this.baseOrientation.z)
       this.scene.add(previewObject)
       this.previewObject = previewObject
       this.framePreviewObject(previewObject)
@@ -237,9 +267,30 @@ export class ModelPreviewScene {
     const size = box.getSize(new T.Vector3())
     const maxDimension = Math.max(size.x, size.y, size.z, 1)
     const distance = maxDimension / (2 * Math.tan((this.camera.fov * Math.PI) / 360))
+    const framedDistance = distance * 1.75
 
-    this.camera.position.set(center.x + distance * 0.3, center.y + distance * 0.18, center.z + distance * 1.4)
+    this.camera.position.set(
+      center.x + framedDistance * 0.18,
+      center.y + framedDistance * 0.12,
+      center.z + framedDistance * 1.55,
+    )
     this.camera.lookAt(center)
     this.camera.updateProjectionMatrix()
+  }
+
+  private normalizeOrientation(orientation: { x: number; y: number; z: number }) {
+    return {
+      x: this.normalizeAngle(orientation.x),
+      y: this.normalizeAngle(orientation.y),
+      z: this.normalizeAngle(orientation.z),
+    }
+  }
+
+  private normalizeAngle(angle: number) {
+    const fullTurn = Math.PI * 2
+    let normalized = angle % fullTurn
+    if (normalized <= -Math.PI) normalized += fullTurn
+    if (normalized > Math.PI) normalized -= fullTurn
+    return normalized
   }
 }

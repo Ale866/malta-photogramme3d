@@ -5,6 +5,7 @@ import { disposeObject3D, loadTexturedPlyModel } from '@/features/model/infrastr
 type IslandModelRenderInput = {
   id: string
   coordinates: { x: number; y: number; z: number }
+  orientation: { x: number; y: number; z: number }
   meshAssetUrl: string | null
   textureAssetUrl: string | null
 }
@@ -56,6 +57,7 @@ export class IslandModelRenderer {
         const height = Math.max(size.y, 1e-6)
         const scale = TARGET_MODEL_HEIGHT / height
         object.scale.setScalar(scale)
+        object.rotation.set(model.orientation.x, model.orientation.y, model.orientation.z)
 
         const scaledBox = new T.Box3().setFromObject(object)
         object.position.set(

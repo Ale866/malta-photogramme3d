@@ -6,6 +6,7 @@ import { IslandModelRenderer } from '@/features/island/infrastructure/IslandMode
 type PositionedModel = {
   id: string;
   coordinates: { x: number; y: number; z: number };
+  orientation: { x: number; y: number; z: number };
   meshAssetUrl: string | null;
   textureAssetUrl: string | null;
 }

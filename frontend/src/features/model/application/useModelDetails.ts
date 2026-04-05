@@ -10,7 +10,7 @@ type DetailMode = 'job' | 'model'
 export function useModelDetails() {
   const route = useRoute()
   const router = useRouter()
-  const { getPublicModelById, getUserModelById, getModelJobDetails, rerunFailedModelJob, rerunCompletedModel } = use3dModel()
+  const { getPublicModelById, getUserModelById, getModelJobDetails, rerunFailedModelJob, rerunCompletedModel, updateModelOrientation } = use3dModel()
   const {
     job: liveJobSnapshot,
     trackingError,
@@ -26,6 +26,8 @@ export function useModelDetails() {
   const isRetrying = ref(false)
   const modelRerunError = ref<string | null>(null)
   const isModelRerunning = ref(false)
+  const orientationError = ref<string | null>(null)
+  const isSavingOrientation = ref(false)
 
   const detailMode = computed<DetailMode>(() => route.name === 'ModelJobDetails' ? 'job' : 'model')
   const detailSource = computed<'catalog' | 'list'>(() => route.query.from === 'catalog' ? 'catalog' : 'list')
@@ -75,6 +77,7 @@ export function useModelDetails() {
     errorMessage.value = null
     retryError.value = null
     modelRerunError.value = null
+    orientationError.value = null
     stopTracking()
     liveJobSnapshot.value = null
 
@@ -176,6 +179,26 @@ export function useModelDetails() {
     }
   }
 
+  async function saveCurrentModelOrientation(orientation: { x: number; y: number; z: number }) {
+    const currentModel = modelDetails.value
+    if (!currentModel) {
+      orientationError.value = 'Missing model'
+      return
+    }
+
+    isSavingOrientation.value = true
+    orientationError.value = null
+
+    try {
+      const updatedModel = await updateModelOrientation(currentModel.id, orientation)
+      modelDetails.value = updatedModel
+    } catch (error) {
+      orientationError.value = error instanceof Error ? error.message : 'Could not save the model orientation'
+    } finally {
+      isSavingOrientation.value = false
+    }
+  }
+
   watch(
     () => [detailMode.value, modelId.value, jobId.value, detailSource.value],
     async () => {
@@ -197,9 +220,11 @@ export function useModelDetails() {
     errorMessage,
     retryError,
     modelRerunError,
+    orientationError,
     isLoading,
     isRetrying,
     isModelRerunning,
+    isSavingOrientation,
     applyVoteState,
     setError,
     goBack,
@@ -208,5 +233,6 @@ export function useModelDetails() {
     openCurrentModelOnIsland,
     retryCurrentJob,
     rerunCurrentModel,
+    saveCurrentModelOrientation,
   }
 }

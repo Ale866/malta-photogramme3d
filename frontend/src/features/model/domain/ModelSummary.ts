@@ -19,6 +19,7 @@ export type ModelSummary = {
   textureAssetUrl: string | null;
   createdAt: string;
   coordinates: { x: number, y: number, z: number };
+  orientation: { x: number, y: number, z: number };
   voteCount: number;
   hasVoted: boolean;
   hasBeenRerun: boolean;
