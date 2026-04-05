@@ -6,7 +6,6 @@ export type PipelineStage =
   | "dense_stereo"
   | "fusion"
   | "meshing"
-  | "simplification"
   | "texturing";
 
 export type PipelineProfile = "strict" | "relaxed";
@@ -27,7 +26,8 @@ export type PipelineServices = {
   runDensePreparation: (inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
   runDenseStereo: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
   runFusion: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
-  runMeshing: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
-  runSimplification: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
-  runTexturing: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
+  runOpenMvsInterface: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
+  runOpenMvsDensify: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
+  runOpenMvsMeshing: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
+  runOpenMvsTexturing: (outputFolder: string, hooks?: RunColmapStageHooks) => Promise<void>;
 };

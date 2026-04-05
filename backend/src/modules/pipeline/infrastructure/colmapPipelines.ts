@@ -5,11 +5,14 @@ import {
   runFeatureExtraction,
   runFeatureMatching,
   runFusion,
-  runMeshing,
-  runSimplification,
   runSparseMapping,
-  runTexturing,
 } from "./colmap";
+import {
+  runOpenMvsDensify,
+  runOpenMvsInterface,
+  runOpenMvsMeshing,
+  runOpenMvsTexturing,
+} from "./openmvs";
 
 function createColmapPipelineServices(profile: PipelineProfile): PipelineServices {
   return {
@@ -19,9 +22,10 @@ function createColmapPipelineServices(profile: PipelineProfile): PipelineService
     runDensePreparation,
     runDenseStereo: (outputFolder, hooks) => runDenseStereo(outputFolder, hooks, profile),
     runFusion: (outputFolder, hooks) => runFusion(outputFolder, hooks, profile),
-    runMeshing,
-    runSimplification,
-    runTexturing,
+    runOpenMvsInterface,
+    runOpenMvsDensify,
+    runOpenMvsMeshing,
+    runOpenMvsTexturing,
   };
 }
 

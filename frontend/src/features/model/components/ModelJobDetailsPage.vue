@@ -54,7 +54,7 @@ const progressValue = computed(() => clampProgress(props.job.progress))
 const stageLabel = computed(() => {
   if (props.job.status === MODEL_JOB_STATUS.COMPLETED) return 'Completed'
   if (props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN) return 'Queued for second attempt'
-  return formatLabel(props.job.stage)
+  return formatLabel(normalizeRoadmapStatus(props.job.stage))
 })
 const { placeLabel } = usePlaceLabel(() => props.job.coordinates!)
 const isFailedState = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED)
@@ -114,23 +114,28 @@ const stageRoadmap = [
   { key: MODEL_JOB_STATUS.DENSE_STEREO, label: 'Depth' },
   { key: MODEL_JOB_STATUS.FUSION, label: 'Fusion' },
   { key: MODEL_JOB_STATUS.MESHING, label: 'Mesh' },
-  { key: MODEL_JOB_STATUS.SIMPLIFICATION, label: 'Simplify' },
   { key: MODEL_JOB_STATUS.TEXTURING, label: 'Texture' },
 ] as const
 
 const stageStatusOrder = stageRoadmap.map((stage) => stage.key)
+
+function normalizeRoadmapStatus(status: string) {
+  const normalized = status.endsWith('_failed') ? status.slice(0, -'_failed'.length) : status
+  if (normalized === MODEL_JOB_STATUS.QUEUED_TO_RERUN) return MODEL_JOB_STATUS.QUEUED
+  return normalized
+}
 
 const currentRoadmapIndex = computed(() => {
   if (props.job.status === MODEL_JOB_STATUS.COMPLETED) {
     return stageStatusOrder.length - 1
   }
 
-  const status = props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN
-    ? MODEL_JOB_STATUS.QUEUED
-    : props.job.status
+  const status = normalizeRoadmapStatus(props.job.status)
 
   if (status === MODEL_JOB_STATUS.FAILED) {
-    const failedStageIndex = stageStatusOrder.indexOf(props.job.stage as typeof stageStatusOrder[number])
+    const failedStageIndex = stageStatusOrder.indexOf(
+      normalizeRoadmapStatus(props.job.stage) as typeof stageStatusOrder[number]
+    )
     return failedStageIndex >= 0 ? failedStageIndex : stageStatusOrder.length - 1
   }
 

@@ -14,7 +14,7 @@ function buildSimplificationCommand(outputFolder: string): StageCommand {
   requireExistingFile(outputPaths.denseMeshedPoisson, "COLMAP meshed point cloud");
 
   return {
-    stage: "simplification",
+    stage: "meshing",
     command: config.COLMAP_BIN,
     logLabel: "simplification",
     args: [

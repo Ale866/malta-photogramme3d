@@ -20,6 +20,15 @@ const OUTPUT_DIRECTORIES = {
   denseMeshedPoisson: path.join("dense", "meshed-poisson.ply"),
   denseMeshedPoissonSimplified: path.join("dense", "meshed-poisson-simplified.ply"),
   denseTextured: path.join("dense", "textured"),
+  openmvsWorkspace: "openmvs",
+  openmvsScene: path.join("openmvs", "scene.mvs"),
+  openmvsSceneDense: path.join("openmvs", "scene_dense.mvs"),
+  openmvsSceneDensePly: path.join("openmvs", "scene_dense.ply"),
+  openmvsSceneDenseMesh: path.join("openmvs", "scene_dense_mesh.mvs"),
+  openmvsSceneDenseMeshPly: path.join("openmvs", "scene_dense_mesh.ply"),
+  openmvsSceneDenseMeshTexture: path.join("openmvs", "scene_dense_mesh_texture.mvs"),
+  openmvsSceneDenseMeshTexturePly: path.join("openmvs", "scene_dense_mesh_texture.ply"),
+  openmvsSceneDenseMeshTextureImage: path.join("openmvs", "scene_dense_mesh_texture0.png"),
 };
 
 export type StageCommand = {
@@ -27,6 +36,8 @@ export type StageCommand = {
   command: string;
   args: string[];
   logLabel: string;
+  toolLabel?: string;
+  cwd?: string;
 };
 
 export type OutputPaths = {
@@ -43,6 +54,15 @@ export type OutputPaths = {
   denseMeshedPoisson: string;
   denseMeshedPoissonSimplified: string;
   denseTextured: string;
+  openmvsWorkspace: string;
+  openmvsScene: string;
+  openmvsSceneDense: string;
+  openmvsSceneDensePly: string;
+  openmvsSceneDenseMesh: string;
+  openmvsSceneDenseMeshPly: string;
+  openmvsSceneDenseMeshTexture: string;
+  openmvsSceneDenseMeshTexturePly: string;
+  openmvsSceneDenseMeshTextureImage: string;
 };
 
 export function ensureDirectory(dir: string) {
@@ -126,6 +146,15 @@ export function resolveOutputPaths(outputFolder: string): OutputPaths {
     denseMeshedPoisson: path.join(root, OUTPUT_DIRECTORIES.denseMeshedPoisson),
     denseMeshedPoissonSimplified: path.join(root, OUTPUT_DIRECTORIES.denseMeshedPoissonSimplified),
     denseTextured: path.join(root, OUTPUT_DIRECTORIES.denseTextured),
+    openmvsWorkspace: path.join(root, OUTPUT_DIRECTORIES.openmvsWorkspace),
+    openmvsScene: path.join(root, OUTPUT_DIRECTORIES.openmvsScene),
+    openmvsSceneDense: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDense),
+    openmvsSceneDensePly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDensePly),
+    openmvsSceneDenseMesh: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMesh),
+    openmvsSceneDenseMeshPly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshPly),
+    openmvsSceneDenseMeshTexture: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshTexture),
+    openmvsSceneDenseMeshTexturePly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshTexturePly),
+    openmvsSceneDenseMeshTextureImage: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshTextureImage),
   };
 }
 
@@ -194,8 +223,8 @@ function formatCommandForLog(command: string, args: string[]) {
   return quoted.join(" ");
 }
 
-export function verifyColmapBinary(): void {
-  const result = spawnSync(config.COLMAP_BIN, ["-h"], {
+export function verifyExecutable(command: string, args: string[], label: string): void {
+  const result = spawnSync(command, args, {
     shell: false,
     windowsHide: true,
     encoding: "utf8",
@@ -203,24 +232,30 @@ export function verifyColmapBinary(): void {
   });
 
   if (result.error) {
-    throw new Error(`COLMAP_BIN is invalid or not available: ${config.COLMAP_BIN}. ${result.error.message}`);
+    throw new Error(`${label} is invalid or not available: ${command}. ${result.error.message}`);
   }
 
   if (typeof result.status === "number" && result.status !== 0) {
     const details = result.stderr?.trim() || result.stdout?.trim() || `exit code ${result.status}`;
-    throw new Error(`COLMAP_BIN failed validation: ${config.COLMAP_BIN}. ${details}`);
+    throw new Error(`${label} failed validation: ${command}. ${details}`);
   }
+}
+
+export function verifyColmapBinary(): void {
+  verifyExecutable(config.COLMAP_BIN, ["-h"], "COLMAP_BIN");
 }
 
 export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Promise<void> {
   return new Promise((resolve, reject) => {
     let lastProgress = 0;
+    const toolLabel = stageCommand.toolLabel ?? "COLMAP";
 
-    console.log(`[COLMAP ${stageCommand.logLabel}] Executing ${formatCommandForLog(stageCommand.command, stageCommand.args)}`);
+    console.log(`[${toolLabel} ${stageCommand.logLabel}] Executing ${formatCommandForLog(stageCommand.command, stageCommand.args)}`);
 
     const child = spawn(stageCommand.command, stageCommand.args, {
       shell: false,
       windowsHide: true,
+      cwd: stageCommand.cwd,
     });
 
     const emitLine = (line: string) => {
@@ -238,21 +273,21 @@ export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks
     };
 
     streamToLines(child.stdout, (line) => {
-      console.log(`[COLMAP ${stageCommand.logLabel}]`, line);
+      console.log(`[${toolLabel} ${stageCommand.logLabel}]`, line);
       emitLine(line);
     });
 
     streamToLines(child.stderr, (line) => {
       if (isColmapErrorLine(line)) {
-        console.error(`[COLMAP ${stageCommand.logLabel} ERROR]`, line);
+        console.error(`[${toolLabel} ${stageCommand.logLabel} ERROR]`, line);
       } else {
-        console.log(`[COLMAP ${stageCommand.logLabel}]`, line);
+        console.log(`[${toolLabel} ${stageCommand.logLabel}]`, line);
       }
       emitLine(line);
     });
 
     child.on("error", (error) => {
-      reject(new Error(`Failed to start COLMAP executable "${stageCommand.command}": ${error.message}`));
+      reject(new Error(`Failed to start ${toolLabel} executable "${stageCommand.command}": ${error.message}`));
     });
 
     child.on("close", (code) => {
@@ -261,7 +296,7 @@ export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks
         return;
       }
 
-      reject(new Error(`COLMAP ${stageCommand.logLabel} failed with exit code ${code}`));
+      reject(new Error(`${toolLabel} ${stageCommand.logLabel} failed with exit code ${code}`));
     });
   });
 }

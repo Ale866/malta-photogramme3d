@@ -46,9 +46,8 @@ const PIPELINE_PROGRESS_RANGES: Record<PipelineStage, PipelineProgressRange> = {
   dense_preparation: { baseProgress: 45, span: 10 },
   dense_stereo: { baseProgress: 55, span: 30 },
   fusion: { baseProgress: 85, span: 5 },
-  meshing: { baseProgress: 90, span: 4 },
-  simplification: { baseProgress: 94, span: 3 },
-  texturing: { baseProgress: 97, span: 2 },
+  meshing: { baseProgress: 90, span: 7 },
+  texturing: { baseProgress: 97, span: 3 },
 };
 
 const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
@@ -117,18 +116,14 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     activeStatus: MODEL_JOB_STATUS.MESHING,
     activeStageLabel: MODEL_JOB_STATUS.MESHING,
     run: async (services, job, onProgress) => {
-      await services.runMeshing(job.outputFolder, {
-        onProgress: (event) => onProgress(event.stage, event.progress),
+      await services.runOpenMvsInterface(job.outputFolder, {
+        onProgress: (event) => onProgress("meshing", event.progress),
       });
-    },
-  },
-  {
-    key: "simplification",
-    activeStatus: MODEL_JOB_STATUS.SIMPLIFICATION,
-    activeStageLabel: MODEL_JOB_STATUS.SIMPLIFICATION,
-    run: async (services, job, onProgress) => {
-      await services.runSimplification(job.outputFolder, {
-        onProgress: (event) => onProgress(event.stage, event.progress),
+      await services.runOpenMvsDensify(job.outputFolder, {
+        onProgress: (event) => onProgress("meshing", event.progress),
+      });
+      await services.runOpenMvsMeshing(job.outputFolder, {
+        onProgress: (event) => onProgress("meshing", event.progress),
       });
     },
   },
@@ -137,8 +132,8 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     activeStatus: MODEL_JOB_STATUS.TEXTURING,
     activeStageLabel: MODEL_JOB_STATUS.TEXTURING,
     run: async (services, job, onProgress) => {
-      await services.runTexturing(job.outputFolder, {
-        onProgress: (event) => onProgress(event.stage, event.progress),
+      await services.runOpenMvsTexturing(job.outputFolder, {
+        onProgress: (event) => onProgress("texturing", event.progress),
       });
     },
   },

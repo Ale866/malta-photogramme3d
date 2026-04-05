@@ -1,6 +1,7 @@
 import { processNextQueuedModelJob } from "./modules/pipeline/application/processNextQueuedModelJob";
 import { relaxedColmapPipelineServices, strictColmapPipelineServices } from "./modules/pipeline/infrastructure/colmapPipelines";
 import { verifyColmapBinary } from "./modules/pipeline/infrastructure/colmapRunner";
+import { verifyOpenMvsBinaries } from "./modules/pipeline/infrastructure/openmvsRunner";
 import { modelRepo } from "./modules/model/infrastructure/modelRepo";
 import { modelJobRepo } from "./modules/model-jobs/infrastructure/modelJobRepo";
 import { config } from "./shared/config/env";
@@ -24,8 +25,10 @@ async function sleep(ms: number): Promise<void> {
 async function startWorker(): Promise<void> {
   ensureStorageDirectories();
   verifyColmapBinary();
+  verifyOpenMvsBinaries();
   await connectDb();
   console.log(`COLMAP binary ready: ${config.COLMAP_BIN}`);
+  console.log(`OpenMVS binaries ready: ${config.OPENMVS_INTERFACE_COLMAP_BIN}, ${config.OPENMVS_DENSIFY_POINT_CLOUD_BIN}, ${config.OPENMVS_RECONSTRUCT_MESH_BIN}, ${config.OPENMVS_TEXTURE_MESH_BIN}`);
   console.log("Model job worker started");
 
   let keepRunning = true;

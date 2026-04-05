@@ -12,6 +12,11 @@ function parsePositiveInteger(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function parsePositiveNumber(value: string | undefined, fallback: number) {
+  const parsed = Number.parseFloat(value ?? '');
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function parseBoolean(value: string | undefined, fallback: boolean) {
   if (typeof value !== 'string' || value.trim() === '') return fallback;
   return value.trim().toLowerCase() === 'true';
@@ -38,6 +43,12 @@ function resolveColmapExecutable(value: string | undefined) {
   return configured;
 }
 
+function resolveOpenMvsExecutable(value: string | undefined, fallback: string) {
+  const configured = value?.trim();
+  if (!configured) return fallback;
+  return configured;
+}
+
 function resolveFfmpegExecutable(value: string | undefined) {
   const configured = value?.trim();
   if (!configured) return "ffmpeg";
@@ -54,6 +65,11 @@ export const config = {
   OUTPUT_DIR: resolveConfiguredPath("OUTPUT_DIR", process.env.OUTPUT_DIR ?? 'output'),
   UPLOAD_TMP: resolveConfiguredPath("UPLOAD_TMP", process.env.UPLOAD_TMP ?? path.join('uploads', 'tmp')),
   COLMAP_BIN: resolveColmapExecutable(process.env.COLMAP_BIN),
+  OPENMVS_INTERFACE_COLMAP_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_INTERFACE_COLMAP_BIN, 'InterfaceCOLMAP'),
+  OPENMVS_DENSIFY_POINT_CLOUD_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_DENSIFY_POINT_CLOUD_BIN, 'DensifyPointCloud'),
+  OPENMVS_RECONSTRUCT_MESH_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_RECONSTRUCT_MESH_BIN, 'ReconstructMesh'),
+  OPENMVS_RECONSTRUCT_MESH_DECIMATE: parsePositiveNumber(process.env.OPENMVS_RECONSTRUCT_MESH_DECIMATE, 0.5),
+  OPENMVS_TEXTURE_MESH_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_TEXTURE_MESH_BIN, 'TextureMesh'),
   FFMPEG_BIN: resolveFfmpegExecutable(process.env.FFMPEG_BIN),
 
   MONGODB_URI: requireEnv('MONGODB_URI'),
