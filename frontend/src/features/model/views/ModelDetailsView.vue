@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { usePlaceLabel } from '@/core/application/usePlaceLabel'
 import { useAuth } from '@/features/auth/application/useAuth'
 import { useModelDetailVoting } from '@/features/model/application/useModelDetailVoting'
@@ -18,9 +18,11 @@ const {
   errorMessage,
   retryError,
   modelRerunError,
+  orientationError,
   isLoading,
   isRetrying,
   isModelRerunning,
+  isSavingOrientation,
   applyVoteState,
   setError,
   goBack,
@@ -28,6 +30,7 @@ const {
   openCurrentModelOnIsland,
   retryCurrentJob,
   rerunCurrentModel,
+  saveCurrentModelOrientation,
 } = useModelDetails()
 
 const auth = useAuth()
@@ -87,6 +90,9 @@ const islandButtonTitle = computed(() => {
   return `Needs at least ${MIN_ISLAND_MODEL_VOTES} votes to appear on the island`
 })
 
+const orientationDraft = ref({ x: 0, y: 0, z: 0 })
+const orientationDragMode = ref<'orbit' | 'roll'>('orbit')
+
 const showModelRerunPanel = computed(() => {
   const model = modelDetails.value
   if (!model) return false
@@ -95,6 +101,53 @@ const showModelRerunPanel = computed(() => {
     && detailMode.value === 'model'
     && Boolean(model.sourceJobId)
 })
+
+const canEditOrientation = computed(() =>
+  detailSource.value === 'list'
+  && detailMode.value === 'model'
+  && Boolean(modelDetails.value)
+)
+
+const previewOrientation = computed(() => {
+  if (canEditOrientation.value) return orientationDraft.value
+  return modelDetails.value?.orientation ?? { x: 0, y: 0, z: 0 }
+})
+
+const hasOrientationChanges = computed(() => {
+  const model = modelDetails.value
+  if (!model) return false
+
+  return !(
+    Math.abs(orientationDraft.value.x - model.orientation.x) < 1e-6
+    && Math.abs(orientationDraft.value.y - model.orientation.y) < 1e-6
+    && Math.abs(orientationDraft.value.z - model.orientation.z) < 1e-6
+  )
+})
+
+watch(
+  () => modelDetails.value,
+  (model) => {
+    if (!model) return
+    orientationDraft.value = { ...model.orientation }
+  },
+  { immediate: true }
+)
+
+function handlePreviewOrientationChange(orientation: { x: number; y: number; z: number }) {
+  if (!canEditOrientation.value) return
+  orientationDraft.value = { ...orientation }
+}
+
+function resetOrientation() {
+  const model = modelDetails.value
+  if (!model) return
+  orientationDraft.value = { ...model.orientation }
+  orientationDragMode.value = 'orbit'
+}
+
+async function saveOrientation() {
+  await saveCurrentModelOrientation(orientationDraft.value)
+}
 </script>
 
 <template>
@@ -126,16 +179,71 @@ const showModelRerunPanel = computed(() => {
                 :key="modelDetails.id"
                 :mesh-url="modelDetails.meshAssetUrl"
                 :texture-url="modelDetails.textureAssetUrl"
+                :orientation="previewOrientation"
+                :show-overlay="false"
+                :drag-mode="orientationDragMode"
                 loading-label="Loading 3D model"
+                @orientation-change="handlePreviewOrientationChange"
               />
             </div>
+
+            <div class="model-viewer-toolbar">
+              <div class="model-viewer-toolbar-copy">
+                <p class="model-viewer-toolbar-eyebrow">
+                  {{ canEditOrientation ? 'Set model position' : 'Preview' }}
+                </p>
+                <p class="model-viewer-toolbar-text">
+                  {{ canEditOrientation
+                    ? orientationDragMode === 'roll'
+                      ? 'Drag in the preview to rotate the model sideways.'
+                      : 'Drag in the preview to turn and tilt the model.'
+                    : 'Inspect the generated model here.' }}
+                </p>
+                <p v-if="canEditOrientation" class="model-viewer-toolbar-hint">
+                  On mobile, use the sideways mode for the third axis. On desktop, you can also hold Shift while dragging.
+                </p>
+              </div>
+
+              <div v-if="canEditOrientation" class="model-viewer-toolbar-actions">
+                <div class="model-viewer-mode-toggle" role="group" aria-label="Model drag mode">
+                  <button
+                    class="btn model-viewer-mode-button"
+                    :class="{ 'model-viewer-mode-button--active': orientationDragMode === 'orbit' }"
+                    type="button"
+                    :disabled="isSavingOrientation"
+                    @click="orientationDragMode = 'orbit'"
+                  >
+                    Turn & tilt
+                  </button>
+                  <button
+                    class="btn model-viewer-mode-button"
+                    :class="{ 'model-viewer-mode-button--active': orientationDragMode === 'roll' }"
+                    type="button"
+                    :disabled="isSavingOrientation"
+                    @click="orientationDragMode = 'roll'"
+                  >
+                    Rotate sideways
+                  </button>
+                </div>
+                <div class="model-viewer-toolbar-buttons">
+                  <button class="btn model-summary-orientation-reset" type="button" :disabled="isSavingOrientation || !hasOrientationChanges" @click="resetOrientation">
+                    Reset
+                  </button>
+                  <button class="btn btn-primary model-summary-orientation-save" type="button" :disabled="isSavingOrientation || !hasOrientationChanges" @click="saveOrientation">
+                    {{ isSavingOrientation ? 'Saving...' : 'Save position' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p v-if="orientationError" class="text-error model-viewer-toolbar-error">{{ orientationError }}</p>
           </section>
 
           <aside class="model-summary-panel">
             <p class="model-summary-eyebrow">Created Model</p>
             <h1 class="model-summary-title">{{ modelDetails.title }}</h1>
             <p class="model-summary-copy">
-              A finished model ready to inspect here and place on the island.
+              A finished model ready to inspect here.
             </p>
 
             <dl class="model-summary-details">
@@ -163,8 +271,9 @@ const showModelRerunPanel = computed(() => {
               </div>
             </dl>
 
-            <div class="model-summary-actions">
+            <div v-if="detailSource === 'catalog' || showVoting" class="model-summary-actions">
               <button class="btn btn-primary model-summary-island-button"
+                v-if="detailSource === 'catalog'"
                 :class="{ 'model-summary-island-button--solo': !showVoting }" type="button"
                 :disabled="isIslandButtonDisabled" :title="islandButtonTitle" @click="openCurrentModelOnIsland">
                 View on island
@@ -193,29 +302,32 @@ const showModelRerunPanel = computed(() => {
               </button>
             </div>
 
-            <div v-if="showModelRerunPanel" class="model-summary-rerun-callout">
-              <p class="model-summary-rerun-eyebrow">
-                {{ modelDetails.hasBeenRerun ? 'Final model' : 'One rerun with more tolerant settings available' }}
-              </p>
-              <p class="model-summary-rerun-title">
-                {{ modelDetails.hasBeenRerun ? 'This model is already the second attempt' : 'Replace this model with a second attempt' }}
-              </p>
-              <p class="model-summary-rerun-copy">
-                <template v-if="!modelDetails.hasBeenRerun">
-                  We can rebuild this model once more with more tolerant settings. The current model will be discarded, and the new result will become the final version. This may recover more of the shape, but the new model may look rougher or less accurate.
-                </template>
-                <template v-else>
-                  This model cannot be rerun again here. If you want a better result, the best next step is to capture a new photo or video set with better coverage and clarity.
-                </template>
-              </p>
-              <p v-if="modelRerunError" class="text-error model-summary-rerun-error">{{ modelRerunError }}</p>
-              <div v-if="!modelDetails.hasBeenRerun" class="model-summary-rerun-actions">
-                <button class="btn model-summary-rerun-button" type="button" :disabled="isModelRerunning" @click="rerunCurrentModel">
-                  {{ isModelRerunning ? 'Starting new attempt...' : 'Rebuild with more tolerant settings' }}
-                </button>
-              </div>
-            </div>
           </aside>
+        </div>
+
+        <div v-if="showModelRerunPanel" class="model-details-secondary-row">
+          <div class="model-summary-rerun-callout">
+            <p class="model-summary-rerun-eyebrow">
+              {{ modelDetails.hasBeenRerun ? 'Final model' : 'One rerun with more tolerant settings available' }}
+            </p>
+            <p class="model-summary-rerun-title">
+              {{ modelDetails.hasBeenRerun ? 'This model is already the second attempt' : 'Replace this model with a second attempt' }}
+            </p>
+            <p class="model-summary-rerun-copy">
+              <template v-if="!modelDetails.hasBeenRerun">
+                We can rebuild this model once more with more tolerant settings. The current model will be discarded, and the new result will become the final version. This may recover more of the shape, but the new model may look rougher or less accurate.
+              </template>
+              <template v-else>
+                This model cannot be rerun again here. If you want a better result, the best next step is to capture a new photo or video set with better coverage and clarity.
+              </template>
+            </p>
+            <p v-if="modelRerunError" class="text-error model-summary-rerun-error">{{ modelRerunError }}</p>
+            <div v-if="!modelDetails.hasBeenRerun" class="model-summary-rerun-actions">
+              <button class="btn model-summary-rerun-button" type="button" :disabled="isModelRerunning" @click="rerunCurrentModel">
+                {{ isModelRerunning ? 'Starting new attempt...' : 'Rebuild' }}
+              </button>
+            </div>
+          </div>
         </div>
       </template>
 
