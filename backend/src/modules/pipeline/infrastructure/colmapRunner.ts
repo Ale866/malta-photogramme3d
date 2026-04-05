@@ -223,7 +223,12 @@ function formatCommandForLog(command: string, args: string[]) {
   return quoted.join(" ");
 }
 
-export function verifyExecutable(command: string, args: string[], label: string): void {
+export function verifyExecutable(
+  command: string,
+  args: string[],
+  label: string,
+  options?: { allowedExitCodes?: number[] }
+): void {
   const result = spawnSync(command, args, {
     shell: false,
     windowsHide: true,
@@ -235,7 +240,8 @@ export function verifyExecutable(command: string, args: string[], label: string)
     throw new Error(`${label} is invalid or not available: ${command}. ${result.error.message}`);
   }
 
-  if (typeof result.status === "number" && result.status !== 0) {
+  const allowedExitCodes = options?.allowedExitCodes ?? [0];
+  if (typeof result.status === "number" && !allowedExitCodes.includes(result.status)) {
     const details = result.stderr?.trim() || result.stdout?.trim() || `exit code ${result.status}`;
     throw new Error(`${label} failed validation: ${command}. ${details}`);
   }
