@@ -85,6 +85,11 @@ export class IslandModelInteractor {
         this.pointerDownClient = { x: event.clientX, y: event.clientY }
         return
       }
+
+      if (this.isDragging) {
+        this.renderer.setHoveredModel(null)
+        return
+      }
     }
 
     this.renderer.setHoveredModel(this.pickModelId(event.clientX, event.clientY))

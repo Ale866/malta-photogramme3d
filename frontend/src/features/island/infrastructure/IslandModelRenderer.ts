@@ -10,12 +10,13 @@ type IslandModelRenderInput = {
   textureAssetUrl: string | null
 }
 
-const HOVER_EMISSIVE = 0x0d79ff
+const HOVER_EMISSIVE = 0xffffff
 const TARGET_MODEL_HEIGHT = 4
 const SELECTED_LIFT = 0.45
 const SELECTED_SCALE = 1.06
 const DEEMPHASIZED_SCALE = 0.97
 const DEEMPHASIZED_OPACITY = 0.38
+const INTERACTION_TARGET_MIN_SIZE = 1.5
 
 type ObjectFocusState = {
   position: T.Vector3
@@ -28,6 +29,7 @@ export class IslandModelRenderer {
   private readonly scene: T.Scene
   private readonly group = new T.Group()
   private readonly objectsByModelId = new Map<string, T.Object3D>()
+  private readonly interactionTargetsByModelId = new Map<string, T.Object3D>()
   private readonly coordinatesByModelId = new Map<string, { x: number; y: number; z: number }>()
   private readonly originalStatesByModelId = new Map<string, ObjectFocusState>()
   private hoveredModelId: string | null = null
@@ -54,6 +56,7 @@ export class IslandModelRenderer {
 
         const box = new T.Box3().setFromObject(object)
         const size = box.getSize(new T.Vector3())
+        const center = box.getCenter(new T.Vector3())
         const height = Math.max(size.y, 1e-6)
         const scale = TARGET_MODEL_HEIGHT / height
         object.scale.setScalar(scale)
@@ -67,9 +70,11 @@ export class IslandModelRenderer {
         )
 
         object.userData.modelId = model.id
+        object.add(this.createInteractionTarget(model.id, size, center))
         this.setObjectOpacity(object, 1)
         this.group.add(object)
         this.objectsByModelId.set(model.id, object)
+        this.interactionTargetsByModelId.set(model.id, object.children[object.children.length - 1]!)
         this.coordinatesByModelId.set(model.id, model.coordinates)
         this.originalStatesByModelId.set(model.id, {
           position: object.position.clone(),
@@ -84,7 +89,7 @@ export class IslandModelRenderer {
   }
 
   getInteractiveObjects(): T.Object3D[] {
-    return Array.from(this.objectsByModelId.values())
+    return Array.from(this.interactionTargetsByModelId.values())
   }
 
   getModelIdFromObject(object: T.Object3D | null): string | null {
@@ -117,6 +122,9 @@ export class IslandModelRenderer {
     if (!this.objectsByModelId.has(modelId)) return
     if (this.selectedModelId === modelId) return
 
+    if (this.hoveredModelId) {
+      this.setObjectHighlight(this.hoveredModelId, false)
+    }
     this.selectedModelId = modelId
     this.hoveredModelId = null
     this.animateFocusState()
@@ -147,7 +155,10 @@ export class IslandModelRenderer {
 
   setHoveredModel(modelId: string | null) {
     if (this.selectedModelId) {
-      if (this.hoveredModelId) this.hoveredModelId = null
+      if (this.hoveredModelId) {
+        this.setObjectHighlight(this.hoveredModelId, false)
+        this.hoveredModelId = null
+      }
       return
     }
 
@@ -175,6 +186,7 @@ export class IslandModelRenderer {
 
     this.group.clear()
     this.objectsByModelId.clear()
+    this.interactionTargetsByModelId.clear()
     this.coordinatesByModelId.clear()
     this.originalStatesByModelId.clear()
   }
@@ -191,12 +203,13 @@ export class IslandModelRenderer {
     object.traverse((child) => {
       const mesh = child as T.Mesh
       if (!mesh.isMesh) return
+      if (mesh.userData?.isInteractionTarget) return
 
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
       for (const material of materials) {
         const standardMaterial = material as T.MeshStandardMaterial
         standardMaterial.emissive.setHex(highlighted ? HOVER_EMISSIVE : 0x000000)
-        standardMaterial.emissiveIntensity = highlighted ? 0.6 : 0
+        standardMaterial.emissiveIntensity = highlighted ? 0.16 : 0
       }
     })
   }
@@ -280,6 +293,7 @@ export class IslandModelRenderer {
     object.traverse((child) => {
       const mesh = child as T.Mesh
       if (!mesh.isMesh) return
+      if (mesh.userData?.isInteractionTarget) return
       const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
       opacity = (material as T.MeshStandardMaterial).opacity
     })
@@ -291,6 +305,7 @@ export class IslandModelRenderer {
     object.traverse((child) => {
       const mesh = child as T.Mesh
       if (!mesh.isMesh) return
+      if (mesh.userData?.isInteractionTarget) return
 
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
       for (const material of materials) {
@@ -299,5 +314,26 @@ export class IslandModelRenderer {
         standardMaterial.opacity = opacity
       }
     })
+  }
+
+  private createInteractionTarget(modelId: string, size: T.Vector3, center: T.Vector3) {
+    const target = new T.Mesh(
+      new T.BoxGeometry(
+        Math.max(size.x * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(size.y * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(size.z * 1.08, INTERACTION_TARGET_MIN_SIZE),
+      ),
+      new T.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    )
+
+    target.position.copy(center)
+    target.userData.modelId = modelId
+    target.userData.isInteractionTarget = true
+    return target
   }
 }

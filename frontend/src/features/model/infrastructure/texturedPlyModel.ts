@@ -6,9 +6,14 @@ type LoadTexturedPlyModelInput = {
   textureUrl?: string | null
 }
 
+const SHARED_ASSET_KEY = '__sharedModelAsset'
+const plyLoader = new PLYLoader()
+const textureLoader = new T.TextureLoader()
+const geometryCache = new Map<string, Promise<T.BufferGeometry>>()
+const textureCache = new Map<string, Promise<T.Texture | null>>()
+
 export async function loadTexturedPlyModel(input: LoadTexturedPlyModelInput): Promise<T.Group> {
-  const geometry = await new PLYLoader().loadAsync(input.meshUrl)
-  geometry.computeVertexNormals()
+  const geometry = await loadCachedGeometry(input.meshUrl)
 
   const materialOptions: ConstructorParameters<typeof T.MeshStandardMaterial>[0] = {
     roughness: 0.92,
@@ -22,9 +27,10 @@ export async function loadTexturedPlyModel(input: LoadTexturedPlyModelInput): Pr
 
   if (input.textureUrl && geometry.getAttribute('uv')) {
     try {
-      const texture = await new T.TextureLoader().loadAsync(input.textureUrl)
-      texture.colorSpace = T.SRGBColorSpace
-      materialOptions.map = texture
+      const texture = await loadCachedTexture(input.textureUrl)
+      if (texture) {
+        materialOptions.map = texture
+      }
     } catch (error) {
       console.warn(`Failed to load model texture from ${input.textureUrl}`, error)
     }
@@ -50,7 +56,9 @@ export function disposeObject3D(object: T.Object3D) {
     const mesh = child as T.Mesh
     if (!mesh.isMesh) return
 
-    mesh.geometry?.dispose()
+    if (!mesh.geometry?.userData?.[SHARED_ASSET_KEY]) {
+      mesh.geometry?.dispose()
+    }
 
     if (Array.isArray(mesh.material)) {
       for (const material of mesh.material) {
@@ -65,6 +73,34 @@ export function disposeObject3D(object: T.Object3D) {
 
 function disposeMaterial(material: T.Material) {
   const standardMaterial = material as T.MeshStandardMaterial
-  standardMaterial.map?.dispose()
+  if (!standardMaterial.map?.userData?.[SHARED_ASSET_KEY]) {
+    standardMaterial.map?.dispose()
+  }
   material.dispose()
+}
+
+function loadCachedGeometry(meshUrl: string) {
+  let cached = geometryCache.get(meshUrl)
+  if (cached) return cached
+
+  cached = plyLoader.loadAsync(meshUrl).then((geometry) => {
+    geometry.computeVertexNormals()
+    geometry.userData[SHARED_ASSET_KEY] = true
+    return geometry
+  })
+  geometryCache.set(meshUrl, cached)
+  return cached
+}
+
+function loadCachedTexture(textureUrl: string) {
+  let cached = textureCache.get(textureUrl)
+  if (cached) return cached
+
+  cached = textureLoader.loadAsync(textureUrl).then((texture) => {
+    texture.colorSpace = T.SRGBColorSpace
+    texture.userData[SHARED_ASSET_KEY] = true
+    return texture
+  })
+  textureCache.set(textureUrl, cached)
+  return cached
 }
