@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { authenticate, optionalAuthenticate } from "../../../shared/authenticate";
-import { deleteModelController, getAllModelsController, getCatalogModelByIdController, getIslandModelsController, getModelMeshAssetController, getModelTextureAssetController, getUserModelByIdController, getUserModelsController, unvoteForModelController, voteForModelController } from "./modelController";
+import { deleteModelController, getAllModelsController, getCatalogModelByIdController, getIslandModelsController, getModelMeshAssetController, getModelTextureAssetController, getUserModelByIdController, getUserModelsController, rerunCompletedModelController, unvoteForModelController, voteForModelController } from "./modelController";
 
 const router = Router();
 
 router.get("/list", authenticate, getUserModelsController);
 router.get("/list/:modelId", authenticate, getUserModelByIdController);
 router.delete("/list/:modelId", authenticate, deleteModelController);
+router.post("/list/:modelId/rerun", authenticate, rerunCompletedModelController);
 router.get("/catalog", optionalAuthenticate, getAllModelsController)
 router.get("/catalog/:modelId", optionalAuthenticate, getCatalogModelByIdController)
 router.get("/island", optionalAuthenticate, getIslandModelsController)

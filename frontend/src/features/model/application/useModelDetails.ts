@@ -10,7 +10,7 @@ type DetailMode = 'job' | 'model'
 export function useModelDetails() {
   const route = useRoute()
   const router = useRouter()
-  const { getPublicModelById, getUserModelById, getModelJobDetails, rerunFailedModelJob } = use3dModel()
+  const { getPublicModelById, getUserModelById, getModelJobDetails, rerunFailedModelJob, rerunCompletedModel } = use3dModel()
   const {
     job: liveJobSnapshot,
     trackingError,
@@ -24,6 +24,8 @@ export function useModelDetails() {
   const errorMessage = ref<string | null>(null)
   const retryError = ref<string | null>(null)
   const isRetrying = ref(false)
+  const modelRerunError = ref<string | null>(null)
+  const isModelRerunning = ref(false)
 
   const detailMode = computed<DetailMode>(() => route.name === 'ModelJobDetails' ? 'job' : 'model')
   const detailSource = computed<'catalog' | 'list'>(() => route.query.from === 'catalog' ? 'catalog' : 'list')
@@ -72,6 +74,7 @@ export function useModelDetails() {
     isLoading.value = true
     errorMessage.value = null
     retryError.value = null
+    modelRerunError.value = null
     stopTracking()
     liveJobSnapshot.value = null
 
@@ -149,6 +152,30 @@ export function useModelDetails() {
     }
   }
 
+  async function rerunCurrentModel() {
+    const currentModel = modelDetails.value
+    if (!currentModel) {
+      modelRerunError.value = 'Missing model'
+      return
+    }
+
+    isModelRerunning.value = true
+    modelRerunError.value = null
+
+    try {
+      const result = await rerunCompletedModel(currentModel.id)
+      await router.replace({
+        name: 'ModelJobDetails',
+        params: { jobId: result.jobId },
+        query: { from: 'list' },
+      })
+    } catch (error) {
+      modelRerunError.value = error instanceof Error ? error.message : 'Could not start the rerun'
+    } finally {
+      isModelRerunning.value = false
+    }
+  }
+
   watch(
     () => [detailMode.value, modelId.value, jobId.value, detailSource.value],
     async () => {
@@ -169,8 +196,10 @@ export function useModelDetails() {
     trackingError,
     errorMessage,
     retryError,
+    modelRerunError,
     isLoading,
     isRetrying,
+    isModelRerunning,
     applyVoteState,
     setError,
     goBack,
@@ -178,5 +207,6 @@ export function useModelDetails() {
     openGeneratedModelOnIsland,
     openCurrentModelOnIsland,
     retryCurrentJob,
+    rerunCurrentModel,
   }
 }

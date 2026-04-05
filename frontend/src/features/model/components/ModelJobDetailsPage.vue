@@ -75,7 +75,7 @@ const summary = computed(() => {
   }
 
   if (props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN) {
-    return 'A second attempt is queued using gentler settings on the same pictures. This may recover more of the scene, but the final model may look rougher or less accurate than a result built from better pictures.'
+    return 'A second attempt is queued using more tolerant settings on the same pictures. This may recover more of the scene, but the final model may look rougher or less accurate than a result built from better pictures.'
   }
 
   if (props.job.status === MODEL_JOB_STATUS.FAILED) {
@@ -83,7 +83,7 @@ const summary = computed(() => {
       return 'We could not build a complete result from these pictures, even after the second attempt. At this point, the best next step is to take more pictures or clearer ones with better coverage of the object.'
     }
 
-    return 'We could not build a complete result from these pictures. You can try one more time with gentler settings, but that is only a fallback. The best way to improve the result is to have a more complete and clearer dataset.'
+    return 'We could not build a complete result from these pictures. You can try one more time with more tolerant settings, but that is only a fallback. The best way to improve the result is to have a more complete and clearer dataset.'
   }
 
   if (props.job.status === MODEL_JOB_STATUS.COMPLETED) {
@@ -136,7 +136,7 @@ const details = computed(() => [
             <p class="model-job-retry-eyebrow">One fallback attempt</p>
             <p class="model-job-retry-title">Try again with the same photos</p>
             <p class="model-job-retry-copy">
-              We can make one more attempt using gentler settings on the same photos. This may help recover more of the shape, but the final model may be less clean or less accurate. Taking more photos, or taking clearer ones with better coverage of the object, is still the best option.
+              We can make one more attempt using more tolerant settings on the same photos. This may help recover more of the shape, but the final model may be less clean or less accurate. Taking more photos, or taking clearer ones with better coverage of the object, is still the best option.
             </p>
           </div>
 

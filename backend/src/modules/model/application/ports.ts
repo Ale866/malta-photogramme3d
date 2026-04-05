@@ -7,6 +7,12 @@ export type ModelsServices = {
   users: UserRepository;
 };
 
+export type UserModelServices = {
+  models: ModelRepository;
+  modelJobs: ModelJobRepository;
+  users: UserRepository;
+};
+
 export type ModelAssetStorage = {
   resolveMeshPath(outputFolder: string): string | null;
   resolveTexturePath(outputFolder: string): string | null;
@@ -24,6 +30,12 @@ export type ModelLibraryServices = {
 };
 
 export type ModelDeletionServices = {
+  models: ModelRepository;
+  modelJobs: ModelJobRepository;
+  deleteDirectory: (directoryPath: string) => void;
+};
+
+export type ModelRerunServices = {
   models: ModelRepository;
   modelJobs: ModelJobRepository;
   deleteDirectory: (directoryPath: string) => void;

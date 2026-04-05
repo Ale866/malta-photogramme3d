@@ -11,6 +11,7 @@ import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
 import { authServices } from "../../auth/infrastructure/authServices";
 import { unvoteForModel, voteForModel } from "../application/voteForModel";
 import { deleteModel } from "../application/deleteModel";
+import { rerunCompletedModel } from "../application/rerunCompletedModel";
 import { FileStorage } from "../../upload/infrastructure/fileStorage";
 import { modelAssetStorage } from "../infrastructure/modelAssetStorage";
 
@@ -25,12 +26,24 @@ const modelDependencies = {
   users: authServices.users,
 };
 
+const userModelDependencies = {
+  models: modelRepo,
+  modelJobs: modelJobRepo,
+  users: authServices.users,
+};
+
 const modelAssetDependencies = {
   models: modelRepo,
   assets: modelAssetStorage,
 };
 
 const deleteModelDependencies = {
+  models: modelRepo,
+  modelJobs: modelJobRepo,
+  deleteDirectory: FileStorage.deleteDirectory,
+};
+
+const rerunModelDependencies = {
   models: modelRepo,
   modelJobs: modelJobRepo,
   deleteDirectory: FileStorage.deleteDirectory,
@@ -71,7 +84,7 @@ export async function getUserModelByIdController(req: AuthedRequest, res: Respon
     if (!req.user) throw unauthorized("Not authenticated");
 
     const { modelId } = req.params;
-    const model = await getUserModelById(modelDependencies, modelId, req.user.sub);
+    const model = await getUserModelById(userModelDependencies, modelId, req.user.sub);
     return res.status(200).json(model);
   } catch (error) {
     return sendErrorResponse(res, error);
@@ -150,6 +163,25 @@ export async function deleteModelController(req: AuthedRequest, res: Response) {
     return res.status(200).json({
       success: true,
       message: "Model deleted",
+    });
+  } catch (error) {
+    return sendErrorResponse(res, error);
+  }
+}
+
+export async function rerunCompletedModelController(req: AuthedRequest, res: Response) {
+  try {
+    if (!req.user) throw unauthorized("Not authenticated");
+
+    const rerunJob = await rerunCompletedModel(rerunModelDependencies, {
+      modelId: req.params.modelId,
+      ownerId: req.user.sub,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Model queued for rerun",
+      jobId: rerunJob.id,
     });
   } catch (error) {
     return sendErrorResponse(res, error);

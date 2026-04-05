@@ -12,6 +12,7 @@ export type ModelListItemDto = {
   coordinates: { x: number; y: number; z: number };
   voteCount: number;
   hasVoted: boolean;
+  hasBeenRerun?: boolean;
 };
 
 export type ModelJobListItemDto = {
@@ -35,6 +36,7 @@ export function toModelListItemDto(input: {
   model: Model;
   ownerNickname: string;
   currentUserId?: string;
+  hasBeenRerun?: boolean;
 }): ModelListItemDto {
   return {
     id: input.model.id,
@@ -49,6 +51,9 @@ export function toModelListItemDto(input: {
     hasVoted: typeof input.currentUserId === 'string' && input.currentUserId.length > 0
       ? input.model.userVotesIds.includes(input.currentUserId)
       : false,
+    ...(typeof input.hasBeenRerun === 'boolean'
+      ? { hasBeenRerun: input.hasBeenRerun }
+      : {}),
   };
 }
 

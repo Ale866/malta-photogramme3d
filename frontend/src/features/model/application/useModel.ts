@@ -91,6 +91,11 @@ export function use3dModel() {
     await ModelApi.rerunFailedModelJob(jobId, accessToken);
   }
 
+  async function rerunCompletedModel(modelId: string) {
+    const accessToken = await requireAccessToken();
+    return ModelApi.rerunCompletedModel(modelId, accessToken);
+  }
+
   return {
     uploadModel,
     getModelLibrary,
@@ -105,5 +110,6 @@ export function use3dModel() {
     deleteModel,
     deleteFailedModelJob,
     rerunFailedModelJob,
+    rerunCompletedModel,
   }
 }

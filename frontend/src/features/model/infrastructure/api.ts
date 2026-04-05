@@ -10,6 +10,12 @@ export type UploadResponse = {
   jobId: string;
 };
 
+export type ModelRerunResponse = {
+  success: boolean;
+  message: string;
+  jobId: string;
+};
+
 export type UploadProgressSnapshot = {
   totalFiles: number;
   uploadedFiles: number;
@@ -63,6 +69,7 @@ type ModelDto = {
   coordinates: { x: number, y: number, z: number };
   voteCount: number;
   hasVoted: boolean;
+  hasBeenRerun?: boolean;
 };
 
 type ModelJobDto = {
@@ -126,6 +133,7 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     coordinates: dto.coordinates,
     voteCount: dto.voteCount,
     hasVoted: dto.hasVoted,
+    hasBeenRerun: dto.hasBeenRerun ?? false,
     modelJob: null,
   };
 }
@@ -434,6 +442,20 @@ export const ModelApi = {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
+  },
+
+  async rerunCompletedModel(modelId: string, accessToken: string): Promise<ModelRerunResponse> {
+    try {
+      const res = await http.post<ModelRerunResponse>(`/model/list/${modelId}/rerun`, undefined, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return res.data;
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }

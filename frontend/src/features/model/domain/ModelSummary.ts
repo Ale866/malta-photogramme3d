@@ -21,6 +21,7 @@ export type ModelSummary = {
   coordinates: { x: number, y: number, z: number };
   voteCount: number;
   hasVoted: boolean;
+  hasBeenRerun: boolean;
   modelJob?: ModelJobSnapshot | null;
 };
 

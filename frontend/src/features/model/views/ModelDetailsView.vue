@@ -17,14 +17,17 @@ const {
   trackingError,
   errorMessage,
   retryError,
+  modelRerunError,
   isLoading,
   isRetrying,
+  isModelRerunning,
   applyVoteState,
   setError,
   goBack,
   openGeneratedModel,
   openCurrentModelOnIsland,
   retryCurrentJob,
+  rerunCurrentModel,
 } = useModelDetails()
 
 const auth = useAuth()
@@ -82,6 +85,15 @@ const islandButtonTitle = computed(() => {
   if (!model || canRenderModelOnIsland(model.voteCount)) return undefined
 
   return `Needs at least ${MIN_ISLAND_MODEL_VOTES} votes to appear on the island`
+})
+
+const showModelRerunPanel = computed(() => {
+  const model = modelDetails.value
+  if (!model) return false
+
+  return detailSource.value === 'list'
+    && detailMode.value === 'model'
+    && Boolean(model.sourceJobId)
 })
 </script>
 
@@ -179,6 +191,29 @@ const islandButtonTitle = computed(() => {
                 </svg>
                 <span class="model-summary-vote-count">{{ modelDetails.voteCount }}</span>
               </button>
+            </div>
+
+            <div v-if="showModelRerunPanel" class="model-summary-rerun-callout">
+              <p class="model-summary-rerun-eyebrow">
+                {{ modelDetails.hasBeenRerun ? 'Final model' : 'One rerun with more tolerant settings available' }}
+              </p>
+              <p class="model-summary-rerun-title">
+                {{ modelDetails.hasBeenRerun ? 'This model is already the second attempt' : 'Replace this model with a second attempt' }}
+              </p>
+              <p class="model-summary-rerun-copy">
+                <template v-if="!modelDetails.hasBeenRerun">
+                  We can rebuild this model once more with more tolerant settings. The current model will be discarded, and the new result will become the final version. This may recover more of the shape, but the new model may look rougher or less accurate.
+                </template>
+                <template v-else>
+                  This model cannot be rerun again here. If you want a better result, the best next step is to capture a new photo or video set with better coverage and clarity.
+                </template>
+              </p>
+              <p v-if="modelRerunError" class="text-error model-summary-rerun-error">{{ modelRerunError }}</p>
+              <div v-if="!modelDetails.hasBeenRerun" class="model-summary-rerun-actions">
+                <button class="btn model-summary-rerun-button" type="button" :disabled="isModelRerunning" @click="rerunCurrentModel">
+                  {{ isModelRerunning ? 'Starting new attempt...' : 'Rebuild with more tolerant settings' }}
+                </button>
+              </div>
             </div>
           </aside>
         </div>
