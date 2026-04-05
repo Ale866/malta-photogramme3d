@@ -5,6 +5,8 @@ type ModelPreviewSceneOptions = {
   interactive?: boolean
   meshUrl?: string | null
   textureUrl?: string | null
+  onLoaded?: () => void
+  onError?: () => void
 }
 
 type DragState = {
@@ -26,6 +28,8 @@ export class ModelPreviewScene {
   private readonly interactive: boolean
   private readonly meshUrl: string | null
   private readonly textureUrl: string | null
+  private readonly onLoaded?: () => void
+  private readonly onError?: () => void
   private loadToken = 0
   private dragState: DragState = {
     pointerId: null,
@@ -39,6 +43,8 @@ export class ModelPreviewScene {
     this.interactive = options.interactive ?? true
     this.meshUrl = options.meshUrl ?? null
     this.textureUrl = options.textureUrl ?? null
+    this.onLoaded = options.onLoaded
+    this.onError = options.onError
   }
 
   mount(sceneElement: HTMLElement) {
@@ -194,7 +200,10 @@ export class ModelPreviewScene {
   }
 
   private async loadPreviewObject() {
-    if (!this.scene || !this.camera || !this.meshUrl) return
+    if (!this.scene || !this.camera || !this.meshUrl) {
+      this.onError?.()
+      return
+    }
 
     const currentToken = ++this.loadToken
 
@@ -213,8 +222,10 @@ export class ModelPreviewScene {
       this.scene.add(previewObject)
       this.previewObject = previewObject
       this.framePreviewObject(previewObject)
+      this.onLoaded?.()
     } catch (error) {
       console.error('Failed to load model preview asset', error)
+      this.onError?.()
     }
   }
 

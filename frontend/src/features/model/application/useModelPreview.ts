@@ -5,6 +5,8 @@ type UseModelPreviewOptions = {
   interactive?: boolean
   meshUrl?: string | null
   textureUrl?: string | null
+  onLoaded?: () => void
+  onError?: () => void
 }
 
 export function useModelPreview(options: UseModelPreviewOptions = {}) {

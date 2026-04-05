@@ -82,7 +82,14 @@ const deleteButtonLabel = computed(() =>
     </header>
 
     <div class="model-list-card-preview">
-      <model-preview-viewport v-if="card.type === 'model'" :interactive="false" :show-overlay="false" />
+      <model-preview-viewport
+        v-if="card.type === 'model'"
+        :interactive="false"
+        :show-overlay="false"
+        :mesh-url="card.meshAssetUrl"
+        :texture-url="card.textureAssetUrl"
+        loading-label="Loading preview"
+      />
       <div v-else class="model-list-card-job-stage">
         <div class="model-list-card-job-stage-icon" aria-hidden="true">
           <svg v-if="card.status === 'failed'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"

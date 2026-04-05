@@ -114,6 +114,7 @@ const islandButtonTitle = computed(() => {
                 :key="modelDetails.id"
                 :mesh-url="modelDetails.meshAssetUrl"
                 :texture-url="modelDetails.textureAssetUrl"
+                loading-label="Loading 3D model"
               />
             </div>
           </section>

@@ -1435,6 +1435,39 @@
   display: block;
 }
 
+.model-preview-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  gap: 0.7rem;
+  padding: 1rem;
+  text-align: center;
+  background: linear-gradient(180deg, rgb(10 17 27 / 0.38), rgb(8 12 20 / 0.72));
+  backdrop-filter: blur(6px);
+}
+
+.model-preview-loader--error {
+  background: linear-gradient(180deg, rgb(42 18 18 / 0.42), rgb(18 10 12 / 0.74));
+}
+
+.model-preview-loader-spinner {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  border: 2px solid rgb(255 255 255 / 0.12);
+  border-top-color: #72b0ff;
+  animation: model-preview-spin 0.8s linear infinite;
+}
+
+.model-preview-loader-text {
+  margin: 0;
+  color: #dbe9fb;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .model-preview-overlay {
   position: absolute;
   left: 1rem;
@@ -1477,6 +1510,12 @@
 .model-preview-caption,
 .model-summary-copy {
   line-height: 1.65;
+}
+
+@keyframes model-preview-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .model-summary-panel {
