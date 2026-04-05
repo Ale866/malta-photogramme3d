@@ -6,7 +6,6 @@ export type NonCompletedModelJobSummary = {
   title: string;
   status: ModelJobStatus;
   stage: string;
-  progress: number;
   error: string | null;
   coordinates: { x: number; y: number; z: number } | null;
   createdAt: string;

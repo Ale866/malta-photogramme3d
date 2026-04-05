@@ -84,7 +84,6 @@ type ModelJobDto = {
   title: string;
   status: NonCompletedModelJobSummary['status'];
   stage: string;
-  progress: number;
   error: string | null;
   coordinates: { x: number, y: number, z: number } | null;
   createdAt: string;
@@ -96,7 +95,6 @@ type ModelJobDetailsDto = {
   title: string;
   status: ModelJobSnapshot['status'];
   stage: string;
-  progress: number;
   error: string | null;
   modelId: string | null;
   hasBeenRerun?: boolean;
@@ -152,7 +150,6 @@ function toNonCompletedModelJobSummary(dto: ModelJobDto): NonCompletedModelJobSu
     title: dto.title,
     status: dto.status,
     stage: dto.stage,
-    progress: dto.progress,
     error: dto.error,
     coordinates: dto.coordinates,
     createdAt: dto.createdAt,
@@ -174,7 +171,6 @@ function toModelJobDetails(dto: ModelJobDetailsDto): ModelJobDetails {
     title: dto.title,
     status: dto.status,
     stage: dto.stage,
-    progress: dto.progress,
     error: dto.error ?? undefined,
     modelId: dto.modelId ?? undefined,
     hasBeenRerun: dto.hasBeenRerun ?? false,

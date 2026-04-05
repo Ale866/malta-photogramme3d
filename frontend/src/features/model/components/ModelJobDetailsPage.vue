@@ -45,12 +45,6 @@ function formatLabel(value: string | undefined) {
     .replace(/\b\w/g, (segment) => segment.toUpperCase())
 }
 
-function clampProgress(progress: number) {
-  if (Number.isNaN(progress)) return 0
-  return Math.max(0, Math.min(100, Math.round(progress)))
-}
-
-const progressValue = computed(() => clampProgress(props.job.progress))
 const stageLabel = computed(() => {
   if (props.job.status === MODEL_JOB_STATUS.COMPLETED) return 'Completed'
   if (props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN) return 'Queued for second attempt'
@@ -232,7 +226,6 @@ const details = computed(() => [
             </div>
           </div>
 
-          <p class="model-job-progress-value">{{ progressValue }}%</p>
         </div>
 
         <div class="model-job-progress-rail">

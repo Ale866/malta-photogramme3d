@@ -7,7 +7,6 @@ const WATCHED_OPERATION_TYPES = ["insert", "replace", "update"] as const;
 const JOB_UPDATE_FIELDS = new Set([
   "status",
   "stage",
-  "progress",
   "error",
   "modelId",
   "startedAt",

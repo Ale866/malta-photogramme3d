@@ -21,7 +21,6 @@ export type ModelJobListItemDto = {
   title: string;
   status: ModelJob['status'];
   stage: string;
-  progress: number;
   error: string | null;
   coordinates: { x: number; y: number; z: number } | null;
   createdAt: Date;
@@ -76,7 +75,6 @@ export function toUserModelLibraryDto(input: {
       title: job.title,
       status: job.status,
       stage: job.stage,
-      progress: job.progress,
       error: job.error,
       coordinates: job.coordinates,
       createdAt: job.createdAt,

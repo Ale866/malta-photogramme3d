@@ -54,13 +54,6 @@ const modelJobSchema = new Schema(
       required: true,
       default: MODEL_JOB_STATUS.QUEUED,
     },
-    progress: {
-      type: Number,
-      required: true,
-      min: 0,
-      max: 100,
-      default: 0,
-    },
     error: {
       type: String,
       required: false,

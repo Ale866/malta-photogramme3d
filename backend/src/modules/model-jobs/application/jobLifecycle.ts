@@ -1,7 +1,4 @@
 import { MODEL_JOB_STATUS, type ModelJob, type UpdateModelJobStateInput } from "../domain/modelJobRepository";
-import {
-  clampProgress,
-} from "../domain/modelJobState";
 import type { ModelJobServices } from "./ports";
 import { badRequest, notFound, } from "../../../shared/errors/applicationError";
 
@@ -38,7 +35,6 @@ export async function createQueuedModelJob(services: ModelJobServices, input: Cr
     outputFolder: input.outputFolder,
     coordinates: input.coordinates,
     stage: MODEL_JOB_STATUS.QUEUED,
-    progress: 0,
     error: null,
     modelId: null,
     startedAt: null,
@@ -55,7 +51,7 @@ function requireJobId(jobId: string) {
 export async function setModelJobStageActive(
   services: ModelJobServices,
   jobId: string,
-  input: { status: ModelJob["status"]; stage: string; progress: number }
+  input: { status: ModelJob["status"]; stage: string }
 ): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   const job = await requireExistingJob(services, normalizedJobId);
@@ -63,7 +59,6 @@ export async function setModelJobStageActive(
   const updated = await services.modelJobs.updateState(normalizedJobId, {
     status: input.status,
     stage: input.stage.trim(),
-    progress: Math.max(clampProgress(input.progress), clampProgress(job.progress)),
     startedAt: job.startedAt ?? new Date(),
     error: null,
   });
@@ -74,7 +69,6 @@ export async function setModelJobStageActive(
 
 export type UpdateModelJobRuntimeInput = {
   stage?: string;
-  progress?: number;
 };
 
 export async function updateModelJobRuntime(services: ModelJobServices, jobId: string, input: UpdateModelJobRuntimeInput): Promise<ModelJob> {
@@ -88,7 +82,6 @@ export async function updateModelJobRuntime(services: ModelJobServices, jobId: s
   const patch: UpdateModelJobStateInput = {};
 
   if (typeof input.stage === "string" && input.stage.trim()) patch.stage = input.stage.trim();
-  if (typeof input.progress === "number") patch.progress = clampProgress(input.progress);
 
   const updated = await services.modelJobs.updateState(normalizedJobId, patch);
   if (!updated) throw notFound("Job not found", "job_not_found");
@@ -106,7 +99,6 @@ export async function setModelJobCompleted(services: ModelJobServices, jobId: st
   const updated = await services.modelJobs.updateState(normalizedJobId, {
     status: MODEL_JOB_STATUS.COMPLETED,
     stage: MODEL_JOB_STATUS.COMPLETED,
-    progress: 100,
     error: null,
     modelId,
     finishedAt: new Date(),
@@ -119,7 +111,7 @@ export async function setModelJobCompleted(services: ModelJobServices, jobId: st
 export async function setModelJobFailed(
   services: ModelJobServices,
   jobId: string,
-  input?: { error?: string; stage?: string; progress?: number }
+  input?: { error?: string; stage?: string }
 ): Promise<ModelJob> {
   const normalizedJobId = requireJobId(jobId);
   await requireExistingJob(services, normalizedJobId);
@@ -130,7 +122,6 @@ export async function setModelJobFailed(
   const updated = await services.modelJobs.updateState(normalizedJobId, {
     status: MODEL_JOB_STATUS.FAILED,
     ...(typeof input?.stage === "string" && input.stage.trim() ? { stage: input.stage.trim() } : {}),
-    ...(typeof input?.progress === "number" ? { progress: clampProgress(input.progress) } : {}),
     error: errorMessage,
     finishedAt: new Date(),
   });

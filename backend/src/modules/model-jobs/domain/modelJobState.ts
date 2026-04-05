@@ -21,10 +21,3 @@ export function normalizeModelJobStatus(status: string): ModelJobStatus {
   }
   throw new Error(`Unknown model job status: ${status}`);
 }
-
-export function clampProgress(progress: number): number {
-  if (!Number.isFinite(progress)) return 0;
-  if (progress < 0) return 0;
-  if (progress > 100) return 100;
-  return Math.round(progress);
-}

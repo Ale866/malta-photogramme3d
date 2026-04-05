@@ -32,7 +32,6 @@ export async function rerunCompletedModel(dependencies: ModelRerunServices, inpu
   const updatedJob = await dependencies.modelJobs.updateState(sourceJob.id, {
     status: MODEL_JOB_STATUS.QUEUED_TO_RERUN,
     stage: MODEL_JOB_STATUS.QUEUED_TO_RERUN,
-    progress: 0,
     error: null,
     modelId: null,
     hasBeenRerun: true,

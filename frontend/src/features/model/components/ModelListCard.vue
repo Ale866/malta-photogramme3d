@@ -114,7 +114,7 @@ const deleteButtonLabel = computed(() =>
         <p class="model-list-card-job-stage-title">{{ card.status === 'failed' ? 'Job failed' : 'Processing job' }}</p>
         <p class="model-list-card-job-stage-copy">
           {{ card.status === 'failed' ? 'Open details to inspect the latest pipeline error.' :
-            'Open details to follow progress and live job updates.' }}
+            'Open details to follow live job updates.' }}
         </p>
       </div>
     </div>

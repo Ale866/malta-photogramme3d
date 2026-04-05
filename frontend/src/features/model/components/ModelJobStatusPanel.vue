@@ -25,12 +25,6 @@ const normalizedStatus = computed(() => props.job.status.toLowerCase())
     </div>
 
     <p class="text-muted model-job-status-stage">{{ job.stage }}</p>
-
-    <div class="model-job-status-progress" aria-hidden="true">
-      <span :style="{ width: `${job.progress}%` }"></span>
-    </div>
-
-    <p class="model-job-status-progress-label">{{ job.progress }}%</p>
     <p v-if="job.error" class="text-error model-job-status-error">{{ job.error }}</p>
   </section>
 </template>

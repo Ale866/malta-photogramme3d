@@ -1,5 +1,5 @@
 import { MODEL_JOB_STATUS, type ModelJob, type ModelJobCoordinates } from "../domain/modelJobRepository";
-import { clampProgress, normalizeModelJobStatus } from "../domain/modelJobState";
+import { normalizeModelJobStatus } from "../domain/modelJobState";
 
 function toCoordinates(value: unknown): ModelJobCoordinates | null {
   if (!value || typeof value !== "object") return null;
@@ -31,7 +31,6 @@ export function toModelJobDomain(doc: any): ModelJob {
     coordinates: toCoordinates(doc.coordinates),
     status: normalizeModelJobStatus(doc.status),
     stage: doc.stage ?? MODEL_JOB_STATUS.QUEUED,
-    progress: clampProgress(doc.progress ?? 0),
     error: doc.error ?? null,
     modelId: doc.modelId ?? null,
     hasBeenRerun: Boolean(doc.hasBeenRerun),

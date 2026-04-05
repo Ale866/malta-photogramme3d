@@ -46,7 +46,7 @@ export function useModelListPage() {
   const pageSecondaryDescription = computed(() =>
     showVoting.value
       ? 'A model needs at least 3 votes before it is placed on the island'
-      : 'Open any card to inspect details, follow progress, or remove finished and failed items from your workspace. Models become visible on the island from 3 votes onward'
+      : 'Open any card to inspect details, follow live updates, or remove finished and failed items from your workspace. Models become visible on the island from 3 votes onward'
   )
   const filterOptions = computed<FilterOption[]>(() =>
     showVoting.value

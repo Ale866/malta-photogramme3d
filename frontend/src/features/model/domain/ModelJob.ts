@@ -19,7 +19,6 @@ export type ModelJobSnapshot = {
   jobId: string;
   status: ModelJobStatus;
   stage: string;
-  progress: number;
   error?: string;
   modelId?: string;
   hasBeenRerun?: boolean;

@@ -31,7 +31,6 @@ export interface ModelJob {
   coordinates: ModelJobCoordinates | null;
   status: ModelJobStatus;
   stage: string;
-  progress: number;
   error: string | null;
   modelId: string | null;
   hasBeenRerun: boolean;
@@ -50,7 +49,6 @@ export type CreateModelJobInput = {
   imagePaths?: string[];
   coordinates?: ModelJobCoordinates | null;
   stage?: string;
-  progress?: number;
   error?: string | null;
   modelId?: string | null;
   hasBeenRerun?: boolean;
@@ -61,7 +59,6 @@ export type CreateModelJobInput = {
 export type UpdateModelJobStateInput = {
   status?: ModelJobStatus;
   stage?: string;
-  progress?: number;
   error?: string | null;
   modelId?: string | null;
   hasBeenRerun?: boolean;

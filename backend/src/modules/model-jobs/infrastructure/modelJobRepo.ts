@@ -5,7 +5,6 @@ import type {
   UpdateModelJobStateInput,
 } from '../domain/modelJobRepository';
 import { MODEL_JOB_STATUS } from '../domain/modelJobRepository';
-import { clampProgress } from '../domain/modelJobState';
 import { ModelJobSchema } from './db/ModelJobSchema';
 import { toModelJobDomain } from './modelJobMapper';
 
@@ -20,7 +19,6 @@ export const modelJobRepo: ModelJobRepository = {
       imagePaths: input.imagePaths ?? [],
       coordinates: input.coordinates ?? null,
       stage: input.stage ?? MODEL_JOB_STATUS.QUEUED,
-      progress: clampProgress(input.progress ?? 0),
       error: input.error ?? null,
       modelId: input.modelId ?? null,
       hasBeenRerun: Boolean(input.hasBeenRerun),
@@ -44,7 +42,6 @@ export const modelJobRepo: ModelJobRepository = {
       { status: { $in: [MODEL_JOB_STATUS.QUEUED, MODEL_JOB_STATUS.QUEUED_TO_RERUN] } },
       {
         $set: {
-          progress: 0,
           error: null,
           modelId: null,
           startedAt,
@@ -66,7 +63,6 @@ export const modelJobRepo: ModelJobRepository = {
 
     if (typeof patch.status === 'string') update.status = patch.status;
     if (typeof patch.stage === 'string') update.stage = patch.stage;
-    if (typeof patch.progress === 'number') update.progress = clampProgress(patch.progress);
     if (typeof patch.error === 'string' || patch.error === null) update.error = patch.error;
     if (typeof patch.modelId === 'string' || patch.modelId === null) update.modelId = patch.modelId;
     if (typeof patch.hasBeenRerun === 'boolean') update.hasBeenRerun = patch.hasBeenRerun;
