@@ -29,7 +29,7 @@ const emit = defineEmits<{
 const isLoading = ref(Boolean(props.meshUrl))
 const hasError = ref(false)
 const element = useTemplateRef<HTMLElement>('scene-element-container')
-const { mount, setOrientation, setDragMode } = useModelPreview({
+const { mount, setOrientation, setDragMode, zoomIn, zoomOut, resetZoom } = useModelPreview({
   interactive: props.interactive,
   meshUrl: props.meshUrl,
   textureUrl: props.textureUrl,
@@ -71,6 +71,17 @@ watch(
 <template>
   <div class="model-preview">
     <div ref="scene-element-container" class="model-preview-canvas" aria-label="Interactive model preview"></div>
+    <div v-if="interactive && !hasError" class="model-preview-zoom-controls" aria-label="Preview zoom controls">
+      <button class="btn model-preview-zoom-button" type="button" @click="zoomIn">
+        +
+      </button>
+      <button class="btn model-preview-zoom-button" type="button" @click="zoomOut">
+        -
+      </button>
+      <button class="btn model-preview-zoom-button model-preview-zoom-button--reset" type="button" @click="resetZoom">
+        100%
+      </button>
+    </div>
     <div v-if="isLoading" class="model-preview-loader" aria-live="polite">
       <div class="model-preview-loader-spinner" aria-hidden="true"></div>
       <p class="model-preview-loader-text">{{ loadingLabel }}</p>

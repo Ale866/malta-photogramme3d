@@ -32,6 +32,18 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     scene.setDragMode(mode)
   }
 
+  function zoomIn() {
+    scene.zoomIn()
+  }
+
+  function zoomOut() {
+    scene.zoomOut()
+  }
+
+  function resetZoom() {
+    scene.resetZoom()
+  }
+
   onBeforeUnmount(() => {
     unmount()
   })
@@ -41,5 +53,8 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     unmount,
     setOrientation,
     setDragMode,
+    zoomIn,
+    zoomOut,
+    resetZoom,
   }
 }

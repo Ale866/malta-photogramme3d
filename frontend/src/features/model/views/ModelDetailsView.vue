@@ -305,24 +305,19 @@ async function saveOrientation() {
           </aside>
         </div>
 
-        <div v-if="showModelRerunPanel" class="model-details-secondary-row">
+        <div v-if="showModelRerunPanel && !modelDetails.hasBeenRerun" class="model-details-secondary-row">
           <div class="model-summary-rerun-callout">
             <p class="model-summary-rerun-eyebrow">
-              {{ modelDetails.hasBeenRerun ? 'Final model' : 'One rerun with more tolerant settings available' }}
+              One rerun with more tolerant settings available
             </p>
             <p class="model-summary-rerun-title">
-              {{ modelDetails.hasBeenRerun ? 'This model is already the second attempt' : 'Replace this model with a second attempt' }}
+              Replace this model with a second attempt
             </p>
             <p class="model-summary-rerun-copy">
-              <template v-if="!modelDetails.hasBeenRerun">
-                We can rebuild this model once more with more tolerant settings. The current model will be discarded, and the new result will become the final version. This may recover more of the shape, but the new model may look rougher or less accurate.
-              </template>
-              <template v-else>
-                This model cannot be rerun again here. If you want a better result, the best next step is to capture a new photo or video set with better coverage and clarity.
-              </template>
+              We can rebuild this model once more with more tolerant settings. The current model will be discarded, and the new result will become the final version. This may recover more of the shape, but the new model may look rougher or less accurate.
             </p>
             <p v-if="modelRerunError" class="text-error model-summary-rerun-error">{{ modelRerunError }}</p>
-            <div v-if="!modelDetails.hasBeenRerun" class="model-summary-rerun-actions">
+            <div class="model-summary-rerun-actions">
               <button class="btn model-summary-rerun-button" type="button" :disabled="isModelRerunning" @click="rerunCurrentModel">
                 {{ isModelRerunning ? 'Starting new attempt...' : 'Rebuild' }}
               </button>

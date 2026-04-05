@@ -51,7 +51,11 @@ function clampProgress(progress: number) {
 }
 
 const progressValue = computed(() => clampProgress(props.job.progress))
-const stageLabel = computed(() => formatLabel(props.job.stage))
+const stageLabel = computed(() => {
+  if (props.job.status === MODEL_JOB_STATUS.COMPLETED) return 'Completed'
+  if (props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN) return 'Queued for second attempt'
+  return formatLabel(props.job.stage)
+})
 const { placeLabel } = usePlaceLabel(() => props.job.coordinates!)
 const isFailedState = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED)
 const isRetryQueuedState = computed(() => props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN)
@@ -100,6 +104,61 @@ const progressNote = computed(() => {
 
   return null
 })
+
+const stageRoadmap = [
+  { key: MODEL_JOB_STATUS.QUEUED, label: 'Queued' },
+  { key: MODEL_JOB_STATUS.FEATURE_EXTRACTION, label: 'Features' },
+  { key: MODEL_JOB_STATUS.FEATURE_MATCHING, label: 'Matching' },
+  { key: MODEL_JOB_STATUS.SPARSE_MAPPING, label: 'Sparse' },
+  { key: MODEL_JOB_STATUS.DENSE_PREPARATION, label: 'Dense prep' },
+  { key: MODEL_JOB_STATUS.DENSE_STEREO, label: 'Depth' },
+  { key: MODEL_JOB_STATUS.FUSION, label: 'Fusion' },
+  { key: MODEL_JOB_STATUS.MESHING, label: 'Mesh' },
+  { key: MODEL_JOB_STATUS.SIMPLIFICATION, label: 'Simplify' },
+  { key: MODEL_JOB_STATUS.TEXTURING, label: 'Texture' },
+] as const
+
+const stageStatusOrder = stageRoadmap.map((stage) => stage.key)
+
+const currentRoadmapIndex = computed(() => {
+  if (props.job.status === MODEL_JOB_STATUS.COMPLETED) {
+    return stageStatusOrder.length - 1
+  }
+
+  const status = props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN
+    ? MODEL_JOB_STATUS.QUEUED
+    : props.job.status
+
+  if (status === MODEL_JOB_STATUS.FAILED) {
+    const failedStageIndex = stageStatusOrder.indexOf(props.job.stage as typeof stageStatusOrder[number])
+    return failedStageIndex >= 0 ? failedStageIndex : stageStatusOrder.length - 1
+  }
+
+  const index = stageStatusOrder.indexOf(status as typeof stageStatusOrder[number])
+  if (index >= 0) return index
+  return 0
+})
+
+const roadmapItems = computed(() =>
+  stageRoadmap.map((stage, index) => {
+    let state: 'done' | 'current' | 'pending' | 'failed' = 'pending'
+
+    if (props.job.status === MODEL_JOB_STATUS.COMPLETED) {
+      state = 'done'
+    } else if (isFailedState.value && index === currentRoadmapIndex.value) {
+      state = 'failed'
+    } else if (index < currentRoadmapIndex.value) {
+      state = 'done'
+    } else if (index === currentRoadmapIndex.value) {
+      state = 'current'
+    }
+
+    return {
+      ...stage,
+      state,
+    }
+  })
+)
 
 const canRetry = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED && !props.job.hasBeenRerun)
 
@@ -172,9 +231,19 @@ const details = computed(() => [
         </div>
 
         <div class="model-job-progress-rail">
-          <div class="model-job-progress-bar" aria-hidden="true">
-            <span :style="{ width: `${progressValue}%` }"></span>
-          </div>
+          <ol class="model-job-roadmap" aria-label="Reconstruction stages">
+            <li
+              v-for="item in roadmapItems"
+              :key="item.key"
+              class="model-job-roadmap-item"
+              :class="`model-job-roadmap-item--${item.state}`"
+            >
+              <span class="model-job-roadmap-dot" aria-hidden="true"></span>
+              <span class="model-job-roadmap-copy">
+                <span class="model-job-roadmap-label">{{ item.label }}</span>
+              </span>
+            </li>
+          </ol>
 
           <div class="model-job-status-footer" :class="{ 'model-job-status-footer--action': canOpenGeneratedModel }">
             <p v-if="progressNote" class="model-job-progress-note">{{ progressNote }}</p>

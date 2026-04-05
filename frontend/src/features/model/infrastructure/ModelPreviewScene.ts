@@ -18,6 +18,8 @@ type DragState = {
   lastY: number
 }
 
+const DEFAULT_ZOOM_SCALE = 0.72
+
 export class ModelPreviewScene {
   private sceneElement: HTMLElement | null = null
   private renderer: T.WebGLRenderer | null = null
@@ -35,6 +37,9 @@ export class ModelPreviewScene {
   private baseOrientation = { x: 0.3, y: 0.45, z: 0.08 }
   private dragMode: 'orbit' | 'roll'
   private loadToken = 0
+  private frameCenter: T.Vector3 | null = null
+  private baseCameraDistance = 5.2
+  private zoomScale = DEFAULT_ZOOM_SCALE
   private dragState: DragState = {
     pointerId: null,
     lastX: 0,
@@ -60,6 +65,18 @@ export class ModelPreviewScene {
 
   setDragMode(mode: 'orbit' | 'roll') {
     this.dragMode = mode
+  }
+
+  zoomIn() {
+    this.setZoomScale(this.zoomScale * 0.88)
+  }
+
+  zoomOut() {
+    this.setZoomScale(this.zoomScale * 1.12)
+  }
+
+  resetZoom() {
+    this.setZoomScale(DEFAULT_ZOOM_SCALE)
   }
 
   mount(sceneElement: HTMLElement) {
@@ -111,6 +128,7 @@ export class ModelPreviewScene {
       sceneElement.addEventListener('pointerup', this.handlePointerUp)
       sceneElement.addEventListener('pointerleave', this.handlePointerUp)
       sceneElement.addEventListener('pointercancel', this.handlePointerUp)
+      sceneElement.addEventListener('wheel', this.handleWheel, { passive: false })
     }
 
     void this.loadPreviewObject()
@@ -124,6 +142,7 @@ export class ModelPreviewScene {
       this.sceneElement.removeEventListener('pointerup', this.handlePointerUp)
       this.sceneElement.removeEventListener('pointerleave', this.handlePointerUp)
       this.sceneElement.removeEventListener('pointercancel', this.handlePointerUp)
+      this.sceneElement.removeEventListener('wheel', this.handleWheel)
     }
 
     if (this.frameId !== null) {
@@ -229,6 +248,13 @@ export class ModelPreviewScene {
     this.dragState.pointerId = null
   }
 
+  private handleWheel = (event: WheelEvent) => {
+    event.preventDefault()
+
+    const direction = event.deltaY > 0 ? 1.08 : 0.92
+    this.setZoomScale(this.zoomScale * direction)
+  }
+
   private async loadPreviewObject() {
     if (!this.scene || !this.camera || !this.meshUrl) {
       this.onError?.()
@@ -248,6 +274,7 @@ export class ModelPreviewScene {
         return
       }
 
+      this.centerPreviewObject(previewObject)
       previewObject.rotation.set(this.baseOrientation.x, this.baseOrientation.y, this.baseOrientation.z)
       this.scene.add(previewObject)
       this.previewObject = previewObject
@@ -267,14 +294,33 @@ export class ModelPreviewScene {
     const size = box.getSize(new T.Vector3())
     const maxDimension = Math.max(size.x, size.y, size.z, 1)
     const distance = maxDimension / (2 * Math.tan((this.camera.fov * Math.PI) / 360))
-    const framedDistance = distance * 1.75
+    this.frameCenter = center
+    this.baseCameraDistance = distance * 1.16
+    this.applyCameraFrame()
+  }
+
+  private centerPreviewObject(object: T.Object3D) {
+    const box = new T.Box3().setFromObject(object)
+    const center = box.getCenter(new T.Vector3())
+    object.position.sub(center)
+  }
+
+  private setZoomScale(scale: number) {
+    this.zoomScale = T.MathUtils.clamp(scale, 0.42, 1.9)
+    this.applyCameraFrame()
+  }
+
+  private applyCameraFrame() {
+    if (!this.camera || !this.frameCenter) return
+
+    const framedDistance = this.baseCameraDistance * this.zoomScale
 
     this.camera.position.set(
-      center.x + framedDistance * 0.18,
-      center.y + framedDistance * 0.12,
-      center.z + framedDistance * 1.55,
+      this.frameCenter.x + framedDistance * 0.18,
+      this.frameCenter.y + framedDistance * 0.12,
+      this.frameCenter.z + framedDistance * 1.42,
     )
-    this.camera.lookAt(center)
+    this.camera.lookAt(this.frameCenter)
     this.camera.updateProjectionMatrix()
   }
 
