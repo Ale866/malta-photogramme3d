@@ -3,6 +3,7 @@ import path from "path";
 import { config } from "../../../../shared/config/env";
 import type { RunColmapStageHooks } from "../../application/ports";
 import {
+  cleanupIntermediatePipelineOutputs,
   ensureDirectory,
   requireExistingDirectory,
   requireExistingFile,
@@ -40,6 +41,7 @@ export async function runOpenMvsTexturing(outputFolder: string, hooks?: RunColma
   requireExistingFile(outputPaths.openmvsSceneDenseMeshTextureImage, "OpenMVS textured atlas");
 
   publishFinalTexturedOutputs(outputPaths);
+  cleanupIntermediatePipelineOutputs(outputFolder);
 }
 
 function publishFinalTexturedOutputs(outputPaths: ReturnType<typeof resolveOutputPaths>) {

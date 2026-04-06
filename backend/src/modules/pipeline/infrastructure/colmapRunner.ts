@@ -74,6 +74,11 @@ export function resetDirectory(dir: string) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+export function removePathIfExists(targetPath: string) {
+  const normalized = resolveRequiredPath(targetPath, "Path");
+  fs.rmSync(normalized, { recursive: true, force: true });
+}
+
 export function resolveRequiredPath(targetPath: string, label: string) {
   const normalizedInput = typeof targetPath === "string" ? targetPath.trim() : "";
   if (!normalizedInput) {
@@ -249,6 +254,23 @@ export function verifyExecutable(
 
 export function verifyColmapBinary(): void {
   verifyExecutable(config.COLMAP_BIN, ["-h"], "COLMAP_BIN");
+}
+
+export function cleanupIntermediatePipelineOutputs(outputFolder: string) {
+  const outputPaths = resolveOutputPaths(outputFolder);
+
+  removePathIfExists(outputPaths.database);
+  removePathIfExists(outputPaths.sparseRoot);
+  removePathIfExists(outputPaths.openmvsWorkspace);
+  removePathIfExists(outputPaths.denseImages);
+  removePathIfExists(outputPaths.denseSparse);
+  removePathIfExists(outputPaths.denseStereo);
+  removePathIfExists(outputPaths.denseFused);
+  removePathIfExists(outputPaths.denseMeshedPoisson);
+  removePathIfExists(outputPaths.denseMeshedPoissonSimplified);
+
+  ensureDirectory(outputPaths.denseWorkspace);
+  ensureDirectory(outputPaths.denseTextured);
 }
 
 export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks): Promise<void> {
