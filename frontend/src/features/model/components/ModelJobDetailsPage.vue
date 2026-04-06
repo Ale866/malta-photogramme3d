@@ -45,10 +45,23 @@ function formatLabel(value: string | undefined) {
     .replace(/\b\w/g, (segment) => segment.toUpperCase())
 }
 
+const STAGE_LABELS: Record<string, string> = {
+  [MODEL_JOB_STATUS.QUEUED]: 'Queued',
+  [MODEL_JOB_STATUS.FEATURE_EXTRACTION]: 'Feature extraction',
+  [MODEL_JOB_STATUS.FEATURE_MATCHING]: 'Feature matching',
+  [MODEL_JOB_STATUS.SPARSE_MAPPING]: 'Sparse reconstruction',
+  [MODEL_JOB_STATUS.DENSE_PREPARATION]: 'Image undistortion',
+  [MODEL_JOB_STATUS.DENSE_STEREO]: 'Depth estimation',
+  [MODEL_JOB_STATUS.FUSION]: 'Point fusion',
+  [MODEL_JOB_STATUS.MESHING]: 'Mesh reconstruction',
+  [MODEL_JOB_STATUS.TEXTURING]: 'Texture mapping',
+}
+
 const stageLabel = computed(() => {
   if (props.job.status === MODEL_JOB_STATUS.COMPLETED) return 'Completed'
   if (props.job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN) return 'Queued for second attempt'
-  return formatLabel(normalizeRoadmapStatus(props.job.stage))
+  const normalized = normalizeRoadmapStatus(props.job.stage)
+  return STAGE_LABELS[normalized] ?? formatLabel(normalized)
 })
 const { placeLabel } = usePlaceLabel(() => props.job.coordinates!)
 const isFailedState = computed(() => props.job.status === MODEL_JOB_STATUS.FAILED)
@@ -100,15 +113,15 @@ const progressNote = computed(() => {
 })
 
 const stageRoadmap = [
-  { key: MODEL_JOB_STATUS.QUEUED, label: 'Queued' },
-  { key: MODEL_JOB_STATUS.FEATURE_EXTRACTION, label: 'Features' },
-  { key: MODEL_JOB_STATUS.FEATURE_MATCHING, label: 'Matching' },
-  { key: MODEL_JOB_STATUS.SPARSE_MAPPING, label: 'Sparse' },
-  { key: MODEL_JOB_STATUS.DENSE_PREPARATION, label: 'Dense prep' },
-  { key: MODEL_JOB_STATUS.DENSE_STEREO, label: 'Depth' },
-  { key: MODEL_JOB_STATUS.FUSION, label: 'Fusion' },
-  { key: MODEL_JOB_STATUS.MESHING, label: 'Mesh' },
-  { key: MODEL_JOB_STATUS.TEXTURING, label: 'Texture' },
+  { key: MODEL_JOB_STATUS.QUEUED, label: STAGE_LABELS[MODEL_JOB_STATUS.QUEUED] },
+  { key: MODEL_JOB_STATUS.FEATURE_EXTRACTION, label: STAGE_LABELS[MODEL_JOB_STATUS.FEATURE_EXTRACTION] },
+  { key: MODEL_JOB_STATUS.FEATURE_MATCHING, label: STAGE_LABELS[MODEL_JOB_STATUS.FEATURE_MATCHING] },
+  { key: MODEL_JOB_STATUS.SPARSE_MAPPING, label: STAGE_LABELS[MODEL_JOB_STATUS.SPARSE_MAPPING] },
+  { key: MODEL_JOB_STATUS.DENSE_PREPARATION, label: STAGE_LABELS[MODEL_JOB_STATUS.DENSE_PREPARATION] },
+  { key: MODEL_JOB_STATUS.DENSE_STEREO, label: STAGE_LABELS[MODEL_JOB_STATUS.DENSE_STEREO] },
+  { key: MODEL_JOB_STATUS.FUSION, label: STAGE_LABELS[MODEL_JOB_STATUS.FUSION] },
+  { key: MODEL_JOB_STATUS.MESHING, label: STAGE_LABELS[MODEL_JOB_STATUS.MESHING] },
+  { key: MODEL_JOB_STATUS.TEXTURING, label: STAGE_LABELS[MODEL_JOB_STATUS.TEXTURING] },
 ] as const
 
 const stageStatusOrder = stageRoadmap.map((stage) => stage.key)

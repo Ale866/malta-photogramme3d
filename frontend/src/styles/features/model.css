@@ -2143,32 +2143,42 @@
   display: grid;
   gap: 0.8rem;
   margin-top: 0.55rem;
+  justify-items: start;
 }
 
 .model-job-roadmap {
+  --model-job-roadmap-dot-size: 0.78rem;
+  --model-job-roadmap-line-thickness: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 0;
+  width: 100%;
 }
 
 .model-job-roadmap-item {
   position: relative;
   display: grid;
-  gap: 0.42rem;
+  gap: 0.5rem;
   justify-items: center;
+  align-items: start;
   text-align: center;
+  min-width: 0;
+  padding-inline: 0.12rem;
 }
 
 .model-job-roadmap-item::before {
   content: "";
   position: absolute;
-  top: 0.36rem;
-  left: calc(-50% + 0.45rem);
-  width: calc(100% - 0.2rem);
-  height: 2px;
+  top: calc(
+    (var(--model-job-roadmap-dot-size) - var(--model-job-roadmap-line-thickness)) /
+      2
+  );
+  left: -50%;
+  width: 100%;
+  height: var(--model-job-roadmap-line-thickness);
   background: rgb(255 255 255 / 0.08);
 }
 
@@ -2177,30 +2187,39 @@
 }
 
 .model-job-roadmap-dot {
-  width: 0.78rem;
-  height: 0.78rem;
+  width: var(--model-job-roadmap-dot-size);
+  height: var(--model-job-roadmap-dot-size);
   border-radius: 999px;
   position: relative;
   z-index: 1;
   border: 2px solid rgb(255 255 255 / 0.16);
   background: rgb(13 18 27 / 0.98);
-  box-shadow: 0 0 0 6px rgb(13 18 27 / 0.7);
+  box-shadow: none;
 }
 
 .model-job-roadmap-copy {
   display: grid;
+  width: 100%;
+  min-height: 2.8rem;
+  align-items: start;
+  justify-items: center;
 }
 
 .model-job-roadmap-label {
-  font-size: 0.78rem;
+  display: block;
+  width: 100%;
+  font-size: 0.73rem;
   font-weight: var(--font-weight-semibold);
   color: #cddbef;
+  line-height: 1.35;
+  text-wrap: balance;
+  min-height: calc(1.35em * 2);
 }
 
 .model-job-roadmap-item--done::before,
 .model-job-roadmap-item--current::before,
 .model-job-roadmap-item--failed::before {
-  background: linear-gradient(90deg, rgb(13 121 255 / 0.8), rgb(74 163 255 / 0.7));
+  background: rgb(41 134 248 / 0.95);
 }
 
 .model-job-roadmap-item--done .model-job-roadmap-dot {
@@ -2212,7 +2231,6 @@
   border-color: rgb(137 196 255 / 0.64);
   background: #4aa3ff;
   box-shadow:
-    0 0 0 6px rgb(13 18 27 / 0.7),
     0 0 0 1px rgb(137 196 255 / 0.16),
     0 0 20px rgb(74 163 255 / 0.34);
 }
@@ -2588,10 +2606,11 @@
   }
 
   .model-job-roadmap {
-    grid-template-columns: repeat(10, minmax(5.4rem, 1fr));
+    grid-template-columns: repeat(9, minmax(8rem, 1fr));
     overflow-x: auto;
     padding-bottom: 0.25rem;
     scrollbar-width: none;
+    width: 100%;
   }
 
   .model-job-roadmap::-webkit-scrollbar {
