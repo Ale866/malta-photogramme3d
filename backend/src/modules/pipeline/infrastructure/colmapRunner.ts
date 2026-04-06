@@ -318,9 +318,14 @@ export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks
       reject(new Error(`Failed to start ${toolLabel} executable "${stageCommand.command}": ${error.message}`));
     });
 
-    child.on("close", (code) => {
+    child.on("close", (code, signal) => {
       if (code === 0) {
         resolve();
+        return;
+      }
+
+      if (signal) {
+        reject(new Error(`${toolLabel} ${stageCommand.logLabel} terminated by signal ${signal}`));
         return;
       }
 

@@ -26,9 +26,10 @@ function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "scene_dense.mvs",
-      "-m", "scene_dense_mesh.ply",
-      "-o", "scene_dense_mesh_texture.mvs",
+      "--working-folder", outputPaths.openmvsWorkspace,
+      "--input-file", outputPaths.openmvsSceneDense,
+      "-m", outputPaths.openmvsSceneDenseMeshPly,
+      "--output-file", outputPaths.openmvsSceneDenseMeshTexture,
     ],
   };
 }

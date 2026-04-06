@@ -12,7 +12,6 @@ import {
   runStage,
   type StageCommand,
 } from "../colmapRunner";
-import { relativePathFrom } from "../openmvsRunner";
 
 function buildInterfaceImportCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
@@ -31,9 +30,10 @@ function buildInterfaceImportCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "-i", relativePathFrom(outputPaths.openmvsWorkspace, outputPaths.denseWorkspace),
-      "-o", "scene.mvs",
-      "--image-folder", relativePathFrom(outputPaths.openmvsWorkspace, outputPaths.denseImages),
+      "--working-folder", outputPaths.openmvsWorkspace,
+      "--input-file", outputPaths.denseWorkspace,
+      "--output-file", outputPaths.openmvsScene,
+      "--image-folder", outputPaths.denseImages,
     ],
   };
 }

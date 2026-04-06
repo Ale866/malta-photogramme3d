@@ -20,9 +20,10 @@ function buildOpenMvsMeshingCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "scene_dense.mvs",
-      "-p", "scene_dense.ply",
-      "-o", "scene_dense_mesh.mvs",
+      "--working-folder", outputPaths.openmvsWorkspace,
+      "--input-file", outputPaths.openmvsSceneDense,
+      "--output-file", outputPaths.openmvsSceneDenseMesh,
+      "-p", outputPaths.openmvsSceneDensePly,
       "--decimate", String(config.OPENMVS_RECONSTRUCT_MESH_DECIMATE),
     ],
   };

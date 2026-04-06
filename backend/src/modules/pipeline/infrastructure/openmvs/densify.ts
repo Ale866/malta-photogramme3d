@@ -20,8 +20,11 @@ function buildDensifyCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "scene.mvs",
-      "-o", "scene_dense.mvs",
+      "--working-folder", outputPaths.openmvsWorkspace,
+      "--input-file", outputPaths.openmvsScene,
+      "--output-file", outputPaths.openmvsSceneDense,
+      "--archive-type", "-1",
+      "--verbosity", "1",
     ],
   };
 }
