@@ -11,7 +11,7 @@ import {
 function buildOpenMvsMeshingCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
-  requireExistingFile(outputPaths.openmvsSceneDense, "OpenMVS dense scene");
+  requireExistingFile(outputPaths.openmvsScene, "OpenMVS scene");
 
   return {
     stage: "meshing",
@@ -20,18 +20,24 @@ function buildOpenMvsMeshingCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "--working-folder", outputPaths.openmvsWorkspace,
-      "--input-file", outputPaths.openmvsSceneDense,
-      "--output-file", outputPaths.openmvsSceneDenseMesh,
-      "-p", outputPaths.openmvsSceneDensePly,
-      "--decimate", String(config.OPENMVS_RECONSTRUCT_MESH_DECIMATE),
+      "scene.mvs",
+      "-p", "scene.ply",
+      "-o", "scene_mesh.mvs",
     ],
   };
 }
 
 export async function runOpenMvsMeshing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
-  await runStage(buildOpenMvsMeshingCommand(outputFolder), hooks);
-  requireExistingFile(outputPaths.openmvsSceneDensePly, "OpenMVS dense point cloud");
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshPly, "OpenMVS mesh");
+  try {
+    await runStage(buildOpenMvsMeshingCommand(outputFolder), hooks);
+  } catch (error) {
+    try {
+      requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
+    } catch {
+      throw error;
+    }
+  }
+
+  requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
 }

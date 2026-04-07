@@ -16,8 +16,8 @@ import {
 function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
-  requireExistingFile(outputPaths.openmvsSceneDense, "OpenMVS dense scene");
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshPly, "OpenMVS mesh");
+  requireExistingFile(outputPaths.openmvsScene, "OpenMVS scene");
+  requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
 
   return {
     stage: "texturing",
@@ -26,20 +26,28 @@ function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "--working-folder", outputPaths.openmvsWorkspace,
-      "--input-file", outputPaths.openmvsSceneDense,
-      "-m", outputPaths.openmvsSceneDenseMeshPly,
-      "--output-file", outputPaths.openmvsSceneDenseMeshTexture,
+      "scene.mvs",
+      "-m", "scene_mesh.ply",
+      "-o", "scene_mesh_texture.mvs",
     ],
   };
 }
 
 export async function runOpenMvsTexturing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
-  await runStage(buildOpenMvsTexturingCommand(outputFolder), hooks);
+  try {
+    await runStage(buildOpenMvsTexturingCommand(outputFolder), hooks);
+  } catch (error) {
+    try {
+      requireExistingFile(outputPaths.openmvsSceneMeshTexturePly, "OpenMVS textured mesh");
+      requireExistingFile(outputPaths.openmvsSceneMeshTextureImage, "OpenMVS textured atlas");
+    } catch {
+      throw error;
+    }
+  }
 
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshTexturePly, "OpenMVS textured mesh");
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshTextureImage, "OpenMVS textured atlas");
+  requireExistingFile(outputPaths.openmvsSceneMeshTexturePly, "OpenMVS textured mesh");
+  requireExistingFile(outputPaths.openmvsSceneMeshTextureImage, "OpenMVS textured atlas");
 
   publishFinalTexturedOutputs(outputPaths);
   cleanupIntermediatePipelineOutputs(outputFolder);
@@ -50,11 +58,11 @@ function publishFinalTexturedOutputs(outputPaths: ReturnType<typeof resolveOutpu
   ensureDirectory(outputPaths.denseTextured);
 
   fs.copyFileSync(
-    outputPaths.openmvsSceneDenseMeshTexturePly,
+    outputPaths.openmvsSceneMeshTexturePly,
     path.join(outputPaths.denseTextured, "mesh.ply"),
   );
   fs.copyFileSync(
-    outputPaths.openmvsSceneDenseMeshTextureImage,
+    outputPaths.openmvsSceneMeshTextureImage,
     path.join(outputPaths.denseTextured, "texture.png"),
   );
 }

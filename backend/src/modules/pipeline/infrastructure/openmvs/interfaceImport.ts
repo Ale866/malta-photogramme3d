@@ -30,9 +30,8 @@ function buildInterfaceImportCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "--working-folder", outputPaths.openmvsWorkspace,
-      "--input-file", outputPaths.denseWorkspace,
-      "--output-file", outputPaths.openmvsScene,
+      "-i", outputPaths.denseWorkspace,
+      "-o", outputPaths.openmvsScene,
       "--image-folder", outputPaths.denseImages,
     ],
   };

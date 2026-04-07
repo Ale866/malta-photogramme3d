@@ -29,6 +29,11 @@ const OUTPUT_DIRECTORIES = {
   openmvsSceneDenseMeshTexture: path.join("openmvs", "scene_dense_mesh_texture.mvs"),
   openmvsSceneDenseMeshTexturePly: path.join("openmvs", "scene_dense_mesh_texture.ply"),
   openmvsSceneDenseMeshTextureImage: path.join("openmvs", "scene_dense_mesh_texture0.png"),
+  openmvsSceneMesh: path.join("openmvs", "scene_mesh.mvs"),
+  openmvsSceneMeshPly: path.join("openmvs", "scene_mesh.ply"),
+  openmvsSceneMeshTexture: path.join("openmvs", "scene_mesh_texture.mvs"),
+  openmvsSceneMeshTexturePly: path.join("openmvs", "scene_mesh_texture.ply"),
+  openmvsSceneMeshTextureImage: path.join("openmvs", "scene_mesh_texture0.png"),
 };
 
 export type StageCommand = {
@@ -63,6 +68,11 @@ export type OutputPaths = {
   openmvsSceneDenseMeshTexture: string;
   openmvsSceneDenseMeshTexturePly: string;
   openmvsSceneDenseMeshTextureImage: string;
+  openmvsSceneMesh: string;
+  openmvsSceneMeshPly: string;
+  openmvsSceneMeshTexture: string;
+  openmvsSceneMeshTexturePly: string;
+  openmvsSceneMeshTextureImage: string;
 };
 
 export function ensureDirectory(dir: string) {
@@ -160,6 +170,11 @@ export function resolveOutputPaths(outputFolder: string): OutputPaths {
     openmvsSceneDenseMeshTexture: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshTexture),
     openmvsSceneDenseMeshTexturePly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshTexturePly),
     openmvsSceneDenseMeshTextureImage: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshTextureImage),
+    openmvsSceneMesh: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMesh),
+    openmvsSceneMeshPly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshPly),
+    openmvsSceneMeshTexture: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTexture),
+    openmvsSceneMeshTexturePly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTexturePly),
+    openmvsSceneMeshTextureImage: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTextureImage),
   };
 }
 
