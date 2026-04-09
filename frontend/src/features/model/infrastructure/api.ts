@@ -1,4 +1,5 @@
 import { getErrorMessage, http } from '@/core/api/httpClient';
+import { runtimeConfig } from '@/core/config/runtime';
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 import type { ModelLibrary, NonCompletedModelJobSummary } from '@/features/model/domain/ModelLibrary';
@@ -132,8 +133,8 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     title: dto.title,
     sourceJobId: dto.sourceJobId ?? null,
     outputFolder: dto.outputFolder,
-    meshAssetUrl: `/model/${dto.id}/mesh`,
-    textureAssetUrl: `/model/${dto.id}/texture`,
+    meshAssetUrl: toApiAssetUrl(`/model/${dto.id}/mesh`),
+    textureAssetUrl: toApiAssetUrl(`/model/${dto.id}/texture`),
     createdAt: dto.createdAt,
     coordinates: dto.coordinates,
     orientation: dto.orientation ?? { x: 0, y: 0, z: 0 },
@@ -142,6 +143,19 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     hasBeenRerun: dto.hasBeenRerun ?? false,
     modelJob: null,
   };
+}
+
+function toApiAssetUrl(pathname: string) {
+  const apiBaseUrl = runtimeConfig.apiBaseUrl.trim();
+  if (!apiBaseUrl) {
+    return pathname;
+  }
+
+  return new URL(pathname, ensureTrailingSlash(apiBaseUrl)).toString();
+}
+
+function ensureTrailingSlash(value: string) {
+  return value.endsWith('/') ? value : `${value}/`;
 }
 
 function toNonCompletedModelJobSummary(dto: ModelJobDto): NonCompletedModelJobSummary {
