@@ -30,14 +30,22 @@ function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
       "scene.mvs",
       "-m", "scene_mesh.ply",
       "-o", "scene_mesh_texture.mvs",
+      "--decimate", "0.5",
+      "--resolution-level", "1",
+      "--max-threads", "4",
+      "--max-texture-size", "4096",
     ],
   };
 }
 
 export async function runOpenMvsTexturing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
+  const command = buildOpenMvsTexturingCommand(outputFolder);
   try {
-    await runStage(buildOpenMvsTexturingCommand(outputFolder), hooks);
+    console.info(
+      `[OpenMVS] TextureMesh command: ${command.command} ${command.args.join(" ")}`,
+    );
+    await runStage(command, hooks);
   } catch (error) {
     try {
       requireExistingFile(outputPaths.openmvsSceneMeshTexturePly, "OpenMVS textured mesh");
