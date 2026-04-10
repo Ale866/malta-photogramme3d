@@ -3,8 +3,9 @@ import { Response } from "express";
 import { getUserModelLibrary } from "../application/getModelLibrary";
 import { getAllModels } from "../application/getAllModels";
 import { getCatalogModelById, getUserModelById } from "../application/getModelById";
-import { getModelMeshAssetPath, getModelTextureAssetPath } from "../application/getModelAssetPath";
+import { getModelMeshAsset, getModelTextureAsset } from "../application/getModelAsset";
 import { getIslandModels } from "../application/getIslandModels";
+import type { ModelAssetDelivery } from "../application/ports";
 import { notFound, sendErrorResponse, unauthorized, } from "../../../shared/errors/applicationError";
 import { modelRepo } from "../infrastructure/modelRepo";
 import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
@@ -107,9 +108,13 @@ export async function getIslandModelsController(req: AuthedRequest, res: Respons
 
 export async function getModelMeshAssetController(req: AuthedRequest, res: Response) {
   try {
-    const assetPath = await getModelMeshAssetPath(modelAssetDependencies, req.params.modelId);
-    res.type("application/octet-stream");
-    return res.sendFile(assetPath);
+    const asset = await getModelMeshAsset(
+      modelAssetDependencies,
+      req.params.modelId,
+      req.headers["accept-encoding"],
+    );
+
+    return sendAssetVariant(res, asset);
   } catch (error) {
     return sendErrorResponse(res, error);
   }
@@ -117,8 +122,13 @@ export async function getModelMeshAssetController(req: AuthedRequest, res: Respo
 
 export async function getModelTextureAssetController(req: AuthedRequest, res: Response) {
   try {
-    const assetPath = await getModelTextureAssetPath(modelAssetDependencies, req.params.modelId);
-    return res.sendFile(assetPath);
+    const asset = await getModelTextureAsset(
+      modelAssetDependencies,
+      req.params.modelId,
+      req.headers.accept,
+    );
+
+    return sendAssetVariant(res, asset);
   } catch (error) {
     return sendErrorResponse(res, error);
   }
@@ -219,4 +229,18 @@ async function getVoteState(modelId: string, userId: string) {
     voteCount: model.userVotesIds.length,
     hasVoted: model.userVotesIds.includes(userId),
   };
+}
+
+function sendAssetVariant(res: Response, asset: ModelAssetDelivery) {
+  if (asset.varyHeader) {
+    res.vary(asset.varyHeader);
+  }
+
+  res.type(asset.contentType);
+
+  if (asset.contentEncoding) {
+    res.setHeader("Content-Encoding", asset.contentEncoding);
+  }
+
+  return res.sendFile(asset.path);
 }

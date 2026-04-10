@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { config } from "../../../../shared/config/env";
+import { writeOptimizedModelAssetVariants } from "../../../../shared/infrastructure/modelAssetCompression";
 import type { RunColmapStageHooks } from "../../application/ports";
 import {
   cleanupIntermediatePipelineOutputs,
@@ -49,20 +50,23 @@ export async function runOpenMvsTexturing(outputFolder: string, hooks?: RunColma
   requireExistingFile(outputPaths.openmvsSceneMeshTexturePly, "OpenMVS textured mesh");
   requireExistingFile(outputPaths.openmvsSceneMeshTextureImage, "OpenMVS textured atlas");
 
-  publishFinalTexturedOutputs(outputPaths);
+  await publishFinalTexturedOutputs(outputPaths);
   cleanupIntermediatePipelineOutputs(outputFolder);
 }
 
-function publishFinalTexturedOutputs(outputPaths: ReturnType<typeof resolveOutputPaths>) {
+async function publishFinalTexturedOutputs(outputPaths: ReturnType<typeof resolveOutputPaths>) {
   resetDirectory(outputPaths.denseTextured);
   ensureDirectory(outputPaths.denseTextured);
 
-  fs.copyFileSync(
-    outputPaths.openmvsSceneMeshTexturePly,
-    path.join(outputPaths.denseTextured, "mesh.ply"),
-  );
-  fs.copyFileSync(
-    outputPaths.openmvsSceneMeshTextureImage,
-    path.join(outputPaths.denseTextured, "texture.png"),
-  );
+  const meshOutputPath = path.join(outputPaths.denseTextured, "mesh.ply");
+  const textureOutputPath = path.join(outputPaths.denseTextured, "texture.png");
+
+  fs.copyFileSync(outputPaths.openmvsSceneMeshTexturePly, meshOutputPath);
+  fs.copyFileSync(outputPaths.openmvsSceneMeshTextureImage, textureOutputPath);
+
+  try {
+    await writeOptimizedModelAssetVariants(meshOutputPath, textureOutputPath);
+  } catch (error) {
+    console.warn("Failed to generate optimized model asset variants", error);
+  }
 }

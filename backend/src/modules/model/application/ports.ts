@@ -13,9 +13,22 @@ export type UserModelServices = {
   users: UserRepository;
 };
 
+export type ModelAssetDelivery = {
+  path: string;
+  contentType: string;
+  contentEncoding?: "br" | "gzip";
+  varyHeader?: "Accept" | "Accept-Encoding";
+};
+
 export type ModelAssetStorage = {
-  resolveMeshPath(outputFolder: string): string | null;
-  resolveTexturePath(outputFolder: string): string | null;
+  resolveMeshDelivery(
+    outputFolder: string,
+    acceptEncodingHeader: string | string[] | undefined,
+  ): Promise<ModelAssetDelivery | null>;
+  resolveTextureDelivery(
+    outputFolder: string,
+    acceptHeader: string | string[] | undefined,
+  ): Promise<ModelAssetDelivery | null>;
 };
 
 export type ModelAssetServices = {
