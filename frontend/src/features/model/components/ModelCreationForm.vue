@@ -363,11 +363,6 @@ const showNext = () => {
   currentPage.value = (currentPage.value + 1) % totalPages.value
 }
 
-const goToPage = (page: number) => {
-  if (page < 0 || page >= totalPages.value) return
-  currentPage.value = page
-}
-
 const submitForm = () => {
   const sanitizedTitle = title.value.trim()
   if (!sanitizedTitle) return
