@@ -89,15 +89,15 @@
 
     <div v-if="sourceType === 'images' && files.length > 0" class="model-form-carousel">
       <div class="model-form-carousel-track">
-        <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Previous slide"
-          :disabled="totalPages <= 1" @click="showPrevious">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-            stroke-linejoin="round" aria-hidden="true">
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-
         <div class="model-form-carousel-slide">
+          <button type="button" class="btn btn-icon model-form-carousel-arrow model-form-carousel-arrow--previous" aria-label="Previous slide"
+            :disabled="totalPages <= 1" @click="showPrevious">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+
           <div class="model-form-carousel-grid" :style="{ '--carousel-columns': String(columnsPerSlide) }">
             <div v-for="entry in visibleFiles" :key="entry.index" class="model-form-image-wrap">
               <div class="model-form-image-frame">
@@ -116,22 +116,24 @@
               </button>
             </div>
           </div>
-        </div>
 
-        <button type="button" class="btn btn-icon model-form-carousel-arrow" aria-label="Next slide"
-          :disabled="totalPages <= 1" @click="showNext">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-            stroke-linejoin="round" aria-hidden="true">
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
+          <button type="button" class="btn btn-icon model-form-carousel-arrow model-form-carousel-arrow--next" aria-label="Next slide"
+            :disabled="totalPages <= 1" @click="showNext">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div v-if="totalPages > 1" class="model-form-pagination" aria-label="Image pages">
-        <button v-for="page in pageIndexes" :key="page" type="button" class="model-form-pagination-dot"
-          :class="{ 'model-form-pagination-dot--active': page === currentPage }"
-          :aria-label="`Go to image page ${page + 1}`" :aria-current="page === currentPage ? 'true' : undefined"
-          @click="goToPage(page)" />
+        <span class="model-form-pagination-status">
+          Page {{ currentPage + 1 }} / {{ totalPages }}
+        </span>
+        <span class="model-form-pagination-meta">
+          Showing {{ visibleRangeLabel }}
+        </span>
       </div>
     </div>
 
@@ -219,7 +221,7 @@ const uploadStatusCopy = computed(() => {
 })
 
 const columnsPerSlide = computed(() => {
-  if (viewportWidth.value <= 420) return 2
+  if (viewportWidth.value <= 420) return 3
   if (viewportWidth.value <= 700) return 3
   return 5
 })
@@ -230,15 +232,19 @@ const totalPages = computed(() =>
   Math.max(1, Math.ceil(files.value.length / itemsPerSlide.value))
 )
 
-const pageIndexes = computed(() =>
-  Array.from({ length: totalPages.value }, (_, index) => index)
-)
-
 const visibleFiles = computed(() => {
   const start = currentPage.value * itemsPerSlide.value
   return files.value
     .slice(start, start + itemsPerSlide.value)
     .map((file, offset) => ({ file, index: start + offset }))
+})
+
+const visibleRangeLabel = computed(() => {
+  if (files.value.length === 0) return '0 images'
+
+  const start = currentPage.value * itemsPerSlide.value + 1
+  const end = Math.min(start + itemsPerSlide.value - 1, files.value.length)
+  return `${start}-${end} of ${files.value.length}`
 })
 
 const updateViewportWidth = () => {
