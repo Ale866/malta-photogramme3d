@@ -292,14 +292,33 @@ export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks
   return new Promise((resolve, reject) => {
     let lastProgress = 0;
     const toolLabel = stageCommand.toolLabel ?? "COLMAP";
+    const shouldDebugSpawn = toolLabel === "OpenMVS" && stageCommand.logLabel === "densify";
 
     console.log(`[${toolLabel} ${stageCommand.logLabel}] Executing ${formatCommandForLog(stageCommand.command, stageCommand.args)}`);
 
-    const child = spawn(stageCommand.command, stageCommand.args, {
+    const spawnOptions = {
       shell: false,
       windowsHide: true,
       cwd: stageCommand.cwd,
-    });
+    } as const;
+
+    if (shouldDebugSpawn) {
+      const envSnapshot = {
+        CUDA_VISIBLE_DEVICES: process.env.CUDA_VISIBLE_DEVICES,
+        LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH,
+        PATH: process.env.PATH,
+        HOME: process.env.HOME,
+        USER: process.env.USER,
+        LOGNAME: process.env.LOGNAME,
+      };
+      console.info(`[${toolLabel} ${stageCommand.logLabel}] Spawn options:`, spawnOptions);
+      console.info(`[${toolLabel} ${stageCommand.logLabel}] Env snapshot:`, envSnapshot);
+    }
+
+    const child = spawn(stageCommand.command, stageCommand.args, spawnOptions);
+    if (shouldDebugSpawn) {
+      console.info(`[${toolLabel} ${stageCommand.logLabel}] Spawned PID: ${child.pid ?? "unknown"}`);
+    }
 
     const emitLine = (line: string) => {
       const parsedProgress = parsePercent(line);
@@ -332,6 +351,14 @@ export function runStage(stageCommand: StageCommand, hooks?: RunColmapStageHooks
     child.on("error", (error) => {
       reject(new Error(`Failed to start ${toolLabel} executable "${stageCommand.command}": ${error.message}`));
     });
+
+    if (shouldDebugSpawn) {
+      child.on("exit", (code, signal) => {
+        console.info(
+          `[${toolLabel} ${stageCommand.logLabel}] Exit event: code=${code ?? "null"} signal=${signal ?? "null"}`
+        );
+      });
+    }
 
     child.on("close", (code, signal) => {
       if (code === 0) {
