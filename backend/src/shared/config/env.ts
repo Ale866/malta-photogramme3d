@@ -68,7 +68,7 @@ export const config = {
   OPENMVS_INTERFACE_COLMAP_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_INTERFACE_COLMAP_BIN, 'InterfaceCOLMAP'),
   OPENMVS_DENSIFY_POINT_CLOUD_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_DENSIFY_POINT_CLOUD_BIN, 'DensifyPointCloud'),
   OPENMVS_RECONSTRUCT_MESH_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_RECONSTRUCT_MESH_BIN, 'ReconstructMesh'),
-  OPENMVS_RECONSTRUCT_MESH_DECIMATE: parsePositiveNumber(process.env.OPENMVS_RECONSTRUCT_MESH_DECIMATE, 0.5),
+  OPENMVS_RECONSTRUCT_MESH_DECIMATE: parsePositiveNumber(process.env.OPENMVS_RECONSTRUCT_MESH_DECIMATE, 1),
   OPENMVS_TEXTURE_MESH_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_TEXTURE_MESH_BIN, 'TextureMesh'),
   FFMPEG_BIN: resolveFfmpegExecutable(process.env.FFMPEG_BIN),
 

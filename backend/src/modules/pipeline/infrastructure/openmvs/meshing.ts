@@ -1,3 +1,4 @@
+import path from "path";
 import { config } from "../../../../shared/config/env";
 import type { RunColmapStageHooks } from "../../application/ports";
 import {
@@ -11,7 +12,7 @@ import {
 function buildOpenMvsMeshingCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
-  requireExistingFile(outputPaths.openmvsScene, "OpenMVS scene");
+  requireExistingFile(outputPaths.openmvsSceneDense, "OpenMVS dense scene");
 
   return {
     stage: "meshing",
@@ -20,9 +21,9 @@ function buildOpenMvsMeshingCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      "scene.mvs",
-      "-p", "scene.ply",
-      "-o", "scene_mesh.mvs",
+      path.basename(outputPaths.openmvsSceneDense),
+      "-p", path.basename(outputPaths.openmvsSceneDensePly),
+      "-o", path.basename(outputPaths.openmvsSceneDenseMesh),
     ],
   };
 }
@@ -33,11 +34,11 @@ export async function runOpenMvsMeshing(outputFolder: string, hooks?: RunColmapS
     await runStage(buildOpenMvsMeshingCommand(outputFolder), hooks);
   } catch (error) {
     try {
-      requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
+      requireExistingFile(outputPaths.openmvsSceneDenseMeshPly, "OpenMVS dense mesh");
     } catch {
       throw error;
     }
   }
 
-  requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
+  requireExistingFile(outputPaths.openmvsSceneDenseMeshPly, "OpenMVS dense mesh");
 }
