@@ -88,7 +88,8 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
     activeStageLabel: MODEL_JOB_STATUS.MESHING,
     run: async (services, job) => {
       await services.runOpenMvsInterface(job.outputFolder);
-      await services.runOpenMvsDensify(job.outputFolder);
+      // DensifyPointCloud temporarily disabled.
+      // await services.runOpenMvsDensify(job.outputFolder);
       await services.runOpenMvsMeshing(job.outputFolder);
     },
   },

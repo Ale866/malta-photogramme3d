@@ -17,8 +17,9 @@ import {
 function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
-  requireExistingFile(outputPaths.openmvsSceneDense, "OpenMVS dense scene");
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshPly, "OpenMVS dense mesh");
+  // DensifyPointCloud disabled: use the base scene + mesh from ReconstructMesh.
+  requireExistingFile(outputPaths.openmvsScene, "OpenMVS scene");
+  requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
 
   return {
     stage: "texturing",
@@ -27,9 +28,9 @@ function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      path.basename(outputPaths.openmvsSceneDense),
-      "-m", path.basename(outputPaths.openmvsSceneDenseMeshPly),
-      "-o", path.basename(outputPaths.openmvsSceneDenseMeshTexture),
+      path.basename(outputPaths.openmvsScene),
+      "-m", path.basename(outputPaths.openmvsSceneMeshPly),
+      "-o", path.basename(outputPaths.openmvsSceneMeshTexture),
       "--decimate", "0.75",
       "--resolution-level", "1",
       "--max-threads", "1",
@@ -48,15 +49,15 @@ export async function runOpenMvsTexturing(outputFolder: string, hooks?: RunColma
     await runStage(command, hooks);
   } catch (error) {
     try {
-      requireExistingFile(outputPaths.openmvsSceneDenseMeshTexturePly, "OpenMVS textured mesh");
-      requireExistingFile(outputPaths.openmvsSceneDenseMeshTextureImage, "OpenMVS textured atlas");
+      requireExistingFile(outputPaths.openmvsSceneMeshTexturePly, "OpenMVS textured mesh");
+      requireExistingFile(outputPaths.openmvsSceneMeshTextureImage, "OpenMVS textured atlas");
     } catch {
       throw error;
     }
   }
 
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshTexturePly, "OpenMVS textured mesh");
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshTextureImage, "OpenMVS textured atlas");
+  requireExistingFile(outputPaths.openmvsSceneMeshTexturePly, "OpenMVS textured mesh");
+  requireExistingFile(outputPaths.openmvsSceneMeshTextureImage, "OpenMVS textured atlas");
 
   await publishFinalTexturedOutputs(outputPaths);
   cleanupIntermediatePipelineOutputs(outputFolder);
@@ -69,8 +70,8 @@ async function publishFinalTexturedOutputs(outputPaths: ReturnType<typeof resolv
   const meshOutputPath = path.join(outputPaths.denseTextured, "mesh.ply");
   const textureOutputPath = path.join(outputPaths.denseTextured, "texture.png");
 
-  fs.copyFileSync(outputPaths.openmvsSceneDenseMeshTexturePly, meshOutputPath);
-  fs.copyFileSync(outputPaths.openmvsSceneDenseMeshTextureImage, textureOutputPath);
+  fs.copyFileSync(outputPaths.openmvsSceneMeshTexturePly, meshOutputPath);
+  fs.copyFileSync(outputPaths.openmvsSceneMeshTextureImage, textureOutputPath);
 
   try {
     await writeOptimizedModelAssetVariants(meshOutputPath, textureOutputPath);

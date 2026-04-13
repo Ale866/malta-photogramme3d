@@ -12,7 +12,8 @@ import {
 function buildOpenMvsMeshingCommand(outputFolder: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
-  requireExistingFile(outputPaths.openmvsSceneDense, "OpenMVS dense scene");
+  // DensifyPointCloud disabled: use the base scene from InterfaceCOLMAP.
+  requireExistingFile(outputPaths.openmvsScene, "OpenMVS scene");
 
   return {
     stage: "meshing",
@@ -21,9 +22,9 @@ function buildOpenMvsMeshingCommand(outputFolder: string): StageCommand {
     toolLabel: "OpenMVS",
     cwd: outputPaths.openmvsWorkspace,
     args: [
-      path.basename(outputPaths.openmvsSceneDense),
-      "-p", path.basename(outputPaths.openmvsSceneDensePly),
-      "-o", path.basename(outputPaths.openmvsSceneDenseMesh),
+      path.basename(outputPaths.openmvsScene),
+      "-p", path.basename(outputPaths.openmvsSceneMeshPly),
+      "-o", path.basename(outputPaths.openmvsSceneMesh),
     ],
   };
 }
@@ -34,11 +35,11 @@ export async function runOpenMvsMeshing(outputFolder: string, hooks?: RunColmapS
     await runStage(buildOpenMvsMeshingCommand(outputFolder), hooks);
   } catch (error) {
     try {
-      requireExistingFile(outputPaths.openmvsSceneDenseMeshPly, "OpenMVS dense mesh");
+      requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
     } catch {
       throw error;
     }
   }
 
-  requireExistingFile(outputPaths.openmvsSceneDenseMeshPly, "OpenMVS dense mesh");
+  requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
 }
