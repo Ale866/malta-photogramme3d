@@ -26,6 +26,9 @@ function buildStrictFusionCommand(outputFolder: string): StageCommand {
       "--workspace_format", "COLMAP",
       "--input_type", "geometric",
       "--output_path", outputPaths.denseFused,
+      "--StereoFusion.min_num_pixels", "6",
+      "--StereoFusion.max_depth_error", "0.01",
+      "--StereoFusion.max_reproj_error", "2",
     ],
   };
 }

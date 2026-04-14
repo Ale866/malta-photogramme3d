@@ -26,6 +26,11 @@ function buildStrictSparseMappingCommand(inputFolder: string, outputFolder: stri
       "--database_path", outputPaths.database,
       "--image_path", imagePath,
       "--output_path", outputPaths.sparseRoot,
+      "--Mapper.init_min_num_inliers", "120",
+      "--Mapper.init_min_tri_angle", "12",
+      "--Mapper.abs_pose_min_num_inliers", "40",
+      "--Mapper.abs_pose_min_inlier_ratio", "0.25",
+      "--Mapper.filter_min_tri_angle", "2.5",
     ],
   };
 }
