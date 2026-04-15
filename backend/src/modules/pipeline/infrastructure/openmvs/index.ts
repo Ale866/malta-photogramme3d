@@ -1,4 +1,5 @@
 export { runOpenMvsInterface } from "./interfaceImport";
 export { runOpenMvsDensify } from "./densify";
 export { runOpenMvsMeshing } from "./meshing";
-export { runOpenMvsTexturing } from "./texturing";
+export { runOpenMvsTexturing, runOpenMvsTexturingWithMesh } from "./texturing";
+export { resolveStrictMeshForTexturing, runStrictMeshFocusCleanup } from "./meshFocusCleanup";

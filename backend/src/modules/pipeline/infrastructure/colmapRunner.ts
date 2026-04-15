@@ -31,6 +31,7 @@ const OUTPUT_DIRECTORIES = {
   openmvsSceneDenseMeshTextureImage: path.join("openmvs", "scene_dense_mesh_texture0.png"),
   openmvsSceneMesh: path.join("openmvs", "scene_mesh.mvs"),
   openmvsSceneMeshPly: path.join("openmvs", "scene_mesh.ply"),
+  openmvsSceneMeshCleanedPly: path.join("openmvs", "scene_mesh_cleaned.ply"),
   openmvsSceneMeshTexture: path.join("openmvs", "scene_mesh_texture.mvs"),
   openmvsSceneMeshTexturePly: path.join("openmvs", "scene_mesh_texture.ply"),
   openmvsSceneMeshTextureImage: path.join("openmvs", "scene_mesh_texture0.png"),
@@ -70,6 +71,7 @@ export type OutputPaths = {
   openmvsSceneDenseMeshTextureImage: string;
   openmvsSceneMesh: string;
   openmvsSceneMeshPly: string;
+  openmvsSceneMeshCleanedPly: string;
   openmvsSceneMeshTexture: string;
   openmvsSceneMeshTexturePly: string;
   openmvsSceneMeshTextureImage: string;
@@ -117,6 +119,14 @@ export function requireExistingFile(filePath: string, label: string) {
 }
 
 export function readPlyVertexCount(filePath: string, label: string) {
+  return readPlyElementCount(filePath, label, "vertex");
+}
+
+export function readPlyFaceCount(filePath: string, label: string) {
+  return readPlyElementCount(filePath, label, "face");
+}
+
+function readPlyElementCount(filePath: string, label: string, element: "vertex" | "face") {
   const normalized = requireExistingFile(filePath, label);
   const fileDescriptor = fs.openSync(normalized, "r");
 
@@ -125,16 +135,16 @@ export function readPlyVertexCount(filePath: string, label: string) {
     const bytesRead = fs.readSync(fileDescriptor, buffer, 0, buffer.length, 0);
     const header = buffer.toString("utf8", 0, bytesRead).split(/\r?\n/);
     const endHeaderIndex = header.findIndex((line) => line.trim() === "end_header");
-    const vertexLine = header
+    const elementLine = header
       .slice(0, endHeaderIndex >= 0 ? endHeaderIndex + 1 : header.length)
-      .find((line) => line.startsWith("element vertex "));
+      .find((line) => line.startsWith(`element ${element} `));
 
-    const vertexCount = Number(vertexLine?.slice("element vertex ".length) ?? "");
-    if (!Number.isFinite(vertexCount)) {
-      throw new Error(`${label} has an invalid vertex count: ${normalized}`);
+    const count = Number(elementLine?.slice(`element ${element} `.length) ?? "");
+    if (!Number.isFinite(count)) {
+      throw new Error(`${label} has an invalid ${element} count: ${normalized}`);
     }
 
-    return vertexCount;
+    return count;
   } finally {
     fs.closeSync(fileDescriptor);
   }
@@ -172,6 +182,7 @@ export function resolveOutputPaths(outputFolder: string): OutputPaths {
     openmvsSceneDenseMeshTextureImage: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneDenseMeshTextureImage),
     openmvsSceneMesh: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMesh),
     openmvsSceneMeshPly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshPly),
+    openmvsSceneMeshCleanedPly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshCleanedPly),
     openmvsSceneMeshTexture: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTexture),
     openmvsSceneMeshTexturePly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTexturePly),
     openmvsSceneMeshTextureImage: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTextureImage),

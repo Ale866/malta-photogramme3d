@@ -14,12 +14,12 @@ import {
   type StageCommand,
 } from "../colmapRunner";
 
-function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
+function buildOpenMvsTexturingCommand(outputFolder: string, meshPath?: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
   // DensifyPointCloud disabled: use the base scene + mesh from ReconstructMesh.
   requireExistingFile(outputPaths.openmvsScene, "OpenMVS scene");
-  requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
+  const meshToTexture = requireExistingFile(meshPath ?? outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
 
   return {
     stage: "texturing",
@@ -29,7 +29,7 @@ function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
     cwd: outputPaths.openmvsWorkspace,
     args: [
       path.basename(outputPaths.openmvsScene),
-      "-m", path.basename(outputPaths.openmvsSceneMeshPly),
+      "-m", path.basename(meshToTexture),
       "-o", path.basename(outputPaths.openmvsSceneMeshTexture),
       "--resolution-level", "0",
       "--max-threads", "1",
@@ -39,8 +39,16 @@ function buildOpenMvsTexturingCommand(outputFolder: string): StageCommand {
 }
 
 export async function runOpenMvsTexturing(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+  await runOpenMvsTexturingWithMesh(outputFolder, undefined, hooks);
+}
+
+export async function runOpenMvsTexturingWithMesh(
+  outputFolder: string,
+  meshPath?: string,
+  hooks?: RunColmapStageHooks
+): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
-  const command = buildOpenMvsTexturingCommand(outputFolder);
+  const command = buildOpenMvsTexturingCommand(outputFolder, meshPath);
   try {
     console.info(
       `[OpenMVS] TextureMesh command: ${command.command} ${command.args.join(" ")}`,
