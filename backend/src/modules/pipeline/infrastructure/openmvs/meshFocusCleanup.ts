@@ -14,9 +14,8 @@ import {
 } from "../colmapRunner";
 
 const MESH_CLEANUP_REQUIREMENTS = ["numpy", "scipy", "trimesh", "PIL"];
-const MESH_CLEANUP_PACKAGES = ["numpy", "scipy", "trimesh", "pillow"];
 
-let meshCleanupBootstrapPromise: Promise<string> | null = null;
+let meshCleanupPythonPromise: Promise<string> | null = null;
 
 export async function runStrictMeshFocusCleanup(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
@@ -67,34 +66,29 @@ export function resolveStrictMeshForTexturing(outputFolder: string): string {
 }
 
 async function ensureMeshCleanupPython(): Promise<string> {
-  if (!meshCleanupBootstrapPromise) {
-    meshCleanupBootstrapPromise = Promise.resolve().then(() => bootstrapMeshCleanupPython());
+  if (!meshCleanupPythonPromise) {
+    meshCleanupPythonPromise = Promise.resolve().then(() => resolveMeshCleanupPython());
   }
 
-  return meshCleanupBootstrapPromise;
+  return meshCleanupPythonPromise;
 }
 
-function bootstrapMeshCleanupPython(): string {
+function resolveMeshCleanupPython(): string {
   const venvDir = path.join(config.BACKEND_ROOT, ".mesh_cleanup_venv");
   const venvPython = getVenvPythonPath(venvDir);
 
-  if (!fs.existsSync(venvPython)) {
-    const bootstrapPython = resolveBootstrapPython();
-    console.info(`[OpenMVS focus_cleanup] Creating mesh cleanup venv at ${venvDir}`);
-    runCheckedCommand(bootstrapPython.command, [...bootstrapPython.args, "-m", "venv", venvDir], "create mesh cleanup venv");
+  if (!fs.existsSync(venvDir) || !fs.statSync(venvDir).isDirectory()) {
+    throw new Error(`Mesh cleanup venv directory is missing: ${venvDir}`);
   }
 
+  if (!fs.existsSync(venvPython) || !fs.statSync(venvPython).isFile()) {
+    throw new Error(`Mesh cleanup python executable is missing: ${venvPython}`);
+  }
+
+  console.info(`[OpenMVS focus_cleanup] Using pre-provisioned mesh cleanup environment at ${venvDir}`);
+
   if (!hasMeshCleanupDependencies(venvPython)) {
-    console.info(
-      `[OpenMVS focus_cleanup] Installing mesh cleanup dependencies into ${venvDir}: ${MESH_CLEANUP_PACKAGES.join(", ")}`
-    );
-    runCheckedCommand(
-      venvPython,
-      ["-m", "pip", "install", "--disable-pip-version-check", ...MESH_CLEANUP_PACKAGES],
-      "install mesh cleanup dependencies"
-    );
-  } else {
-    console.info(`[OpenMVS focus_cleanup] Reusing mesh cleanup environment at ${venvDir}`);
+    throw new Error(`Mesh cleanup environment is missing required dependencies: ${venvPython}`);
   }
 
   return venvPython;
@@ -113,34 +107,6 @@ function hasMeshCleanupDependencies(pythonExecutable: string): boolean {
   );
 
   return !result.error && result.status === 0;
-}
-
-function resolveBootstrapPython(): { command: string; args: string[] } {
-  const candidates = process.platform === "win32"
-    ? [
-      { command: "py", args: ["-3"] },
-      { command: "python", args: [] },
-      { command: "python3", args: [] },
-    ]
-    : [
-      { command: "python3", args: [] },
-      { command: "python", args: [] },
-    ];
-
-  for (const candidate of candidates) {
-    const result = spawnSync(candidate.command, [...candidate.args, "--version"], {
-      shell: false,
-      windowsHide: true,
-      encoding: "utf8",
-      timeout: 15000,
-    });
-
-    if (!result.error && result.status === 0) {
-      return candidate;
-    }
-  }
-
-  throw new Error("No Python interpreter found for mesh cleanup bootstrap");
 }
 
 function getVenvPythonPath(venvDir: string): string {
