@@ -3,6 +3,7 @@ import path from "path";
 import { config } from "../../../../shared/config/env";
 import { writeOptimizedModelAssetVariants } from "../../../../shared/infrastructure/modelAssetCompression";
 import type { RunColmapStageHooks } from "../../application/ports";
+import { runOptionalGlbConversion } from "./glbConversion";
 import {
   cleanupIntermediatePipelineOutputs,
   ensureDirectory,
@@ -67,6 +68,7 @@ export async function runOpenMvsTexturingWithMesh(
   requireExistingFile(outputPaths.openmvsSceneMeshTextureImage, "OpenMVS textured atlas");
 
   await publishFinalTexturedOutputs(outputPaths);
+  await runOptionalGlbConversion(outputFolder);
   cleanupIntermediatePipelineOutputs(outputFolder);
 }
 
@@ -78,11 +80,40 @@ async function publishFinalTexturedOutputs(outputPaths: ReturnType<typeof resolv
   const textureOutputPath = path.join(outputPaths.denseTextured, "texture.png");
 
   fs.copyFileSync(outputPaths.openmvsSceneMeshTexturePly, meshOutputPath);
-  fs.copyFileSync(outputPaths.openmvsSceneMeshTextureImage, textureOutputPath);
+  const atlasFileNames = readReferencedTextureAtlases(meshOutputPath, path.basename(outputPaths.openmvsSceneMeshTextureImage));
+
+  for (const atlasFileName of atlasFileNames) {
+    const sourceAtlasPath = path.join(outputPaths.openmvsWorkspace, atlasFileName);
+    requireExistingFile(sourceAtlasPath, `OpenMVS textured atlas ${atlasFileName}`);
+    fs.copyFileSync(sourceAtlasPath, path.join(outputPaths.denseTextured, atlasFileName));
+  }
+
+  const primaryAtlasPath = path.join(outputPaths.denseTextured, atlasFileNames[0] ?? path.basename(outputPaths.openmvsSceneMeshTextureImage));
+  requireExistingFile(primaryAtlasPath, "OpenMVS primary textured atlas");
+  fs.copyFileSync(primaryAtlasPath, textureOutputPath);
 
   try {
     await writeOptimizedModelAssetVariants(meshOutputPath, textureOutputPath);
   } catch (error) {
     console.warn("Failed to generate optimized model asset variants", error);
   }
+}
+
+function readReferencedTextureAtlases(meshPath: string, fallbackAtlasFileName: string): string[] {
+  const meshContents = fs.readFileSync(meshPath, "utf8");
+  const atlasFileNames = meshContents
+    .split(/\r?\n/)
+    .map((line) => line.match(/^comment\s+TextureFile\s+(.+)$/u)?.[1]?.trim() ?? "")
+    .filter((fileName) => fileName.length > 0);
+
+  const uniqueAtlasFileNames = [...new Set(atlasFileNames)];
+  if (uniqueAtlasFileNames.length > 0) {
+    console.info(`[OpenMVS] Publishing referenced texture atlases: ${uniqueAtlasFileNames.join(", ")}`);
+    return uniqueAtlasFileNames;
+  }
+
+  console.warn(
+    `[OpenMVS] No TextureFile comments found in ${meshPath}; falling back to ${fallbackAtlasFileName}`
+  );
+  return [fallbackAtlasFileName];
 }
