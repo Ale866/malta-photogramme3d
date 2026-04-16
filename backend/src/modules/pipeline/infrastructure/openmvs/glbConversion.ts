@@ -16,13 +16,13 @@ export async function runGlbConversion(outputFolder: string): Promise<void> {
   }
 
   try {
-    await runGlbConversion(blenderBin, outputFolder);
+    await runBlenderConversion(blenderBin, outputFolder);
   } catch (error) {
     console.warn("[GLB conversion] Failed to generate model.glb; keeping textured PLY fallback artifacts", error);
   }
 }
 
-async function runGlbConversion(blenderBin: string, outputFolder: string): Promise<void> {
+async function runBlenderConversion(blenderBin: string, outputFolder: string): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
   const texturedFolder = requireExistingDirectory(outputPaths.denseTextured);
   const meshPath = requireExistingFile(path.join(texturedFolder, "mesh.ply"), "Published textured mesh");
