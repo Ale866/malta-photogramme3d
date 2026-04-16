@@ -1,5 +1,5 @@
 import * as T from 'three'
-import { disposeObject3D, loadTexturedPlyModel } from '@/features/model/infrastructure/texturedPlyModel'
+import { disposeObject3D, loadDeliveredModel } from '@/features/model/infrastructure/texturedPlyModel'
 
 type ModelPreviewSceneOptions = {
   interactive?: boolean
@@ -357,7 +357,7 @@ export class ModelPreviewScene {
     const currentToken = ++this.loadToken
 
     try {
-      const previewObject = await loadTexturedPlyModel({
+      const previewObject = await loadDeliveredModel({
         meshUrl: this.meshUrl,
         textureUrl: this.textureUrl,
       })

@@ -1,4 +1,5 @@
 import * as T from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js'
 
 type LoadTexturedPlyModelInput = {
@@ -8,9 +9,22 @@ type LoadTexturedPlyModelInput = {
 
 const SHARED_ASSET_KEY = '__sharedModelAsset'
 const plyLoader = new PLYLoader()
+const gltfLoader = new GLTFLoader()
 const textureLoader = new T.TextureLoader()
 const geometryCache = new Map<string, Promise<T.BufferGeometry>>()
+const gltfCache = new Map<string, Promise<T.Object3D>>()
 const textureCache = new Map<string, Promise<T.Texture | null>>()
+
+export async function loadDeliveredModel(input: LoadTexturedPlyModelInput): Promise<T.Group> {
+  try {
+    const glbScene = await loadCachedGlbScene(input.meshUrl)
+    const instance = createGlbInstance(glbScene)
+    return centerLoadedObject(instance)
+  } catch (error) {
+    console.warn(`Failed to load GLB model from ${input.meshUrl}; falling back to textured PLY`, error)
+    return loadTexturedPlyModel(input)
+  }
+}
 
 export async function loadTexturedPlyModel(input: LoadTexturedPlyModelInput): Promise<T.Group> {
   const geometry = await loadCachedGeometry(input.meshUrl)
@@ -41,17 +55,12 @@ export async function loadTexturedPlyModel(input: LoadTexturedPlyModelInput): Pr
   mesh.castShadow = true
   mesh.receiveShadow = true
 
-  const root = new T.Group()
-  root.add(mesh)
-
-  const box = new T.Box3().setFromObject(mesh)
-  const center = box.getCenter(new T.Vector3())
-  mesh.position.set(-center.x, -box.min.y, -center.z)
-
-  return root
+  return centerLoadedObject(mesh)
 }
 
 export function disposeObject3D(object: T.Object3D) {
+  const disposedTextures = new Set<T.Texture>()
+
   object.traverse((child) => {
     const mesh = child as T.Mesh
     if (!mesh.isMesh) return
@@ -62,20 +71,27 @@ export function disposeObject3D(object: T.Object3D) {
 
     if (Array.isArray(mesh.material)) {
       for (const material of mesh.material) {
-        disposeMaterial(material)
+        disposeMaterial(material, disposedTextures)
       }
       return
     }
 
-    disposeMaterial(mesh.material)
+    disposeMaterial(mesh.material, disposedTextures)
   })
 }
 
-function disposeMaterial(material: T.Material) {
-  const standardMaterial = material as T.MeshStandardMaterial
-  if (!standardMaterial.map?.userData?.[SHARED_ASSET_KEY]) {
-    standardMaterial.map?.dispose()
+function disposeMaterial(material: T.Material, disposedTextures: Set<T.Texture>) {
+  const typedMaterial = material as T.Material & Record<string, unknown>
+
+  for (const value of Object.values(typedMaterial)) {
+    if (!(value instanceof T.Texture)) continue
+    if (value.userData?.[SHARED_ASSET_KEY]) continue
+    if (disposedTextures.has(value)) continue
+
+    disposedTextures.add(value)
+    value.dispose()
   }
+
   material.dispose()
 }
 
@@ -90,6 +106,75 @@ function loadCachedGeometry(meshUrl: string) {
   })
   geometryCache.set(meshUrl, cached)
   return cached
+}
+
+function loadCachedGlbScene(meshUrl: string) {
+  let cached = gltfCache.get(meshUrl)
+  if (cached) return cached
+
+  cached = gltfLoader.loadAsync(meshUrl).then((gltf) => {
+    const root = gltf.scene ?? gltf.scenes[0]
+    if (!root) {
+      throw new Error(`GLB scene is empty for ${meshUrl}`)
+    }
+
+    root.traverse((child) => {
+      const mesh = child as T.Mesh
+      if (!mesh.isMesh) return
+
+      mesh.castShadow = true
+      mesh.receiveShadow = true
+      mesh.geometry?.userData && (mesh.geometry.userData[SHARED_ASSET_KEY] = true)
+
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      for (const material of materials) {
+        markSharedTextures(material)
+      }
+    })
+
+    return root
+  })
+  gltfCache.set(meshUrl, cached)
+  return cached
+}
+
+function markSharedTextures(material: T.Material) {
+  const typedMaterial = material as T.Material & Record<string, unknown>
+
+  for (const value of Object.values(typedMaterial)) {
+    if (value instanceof T.Texture) {
+      value.userData[SHARED_ASSET_KEY] = true
+    }
+  }
+}
+
+function createGlbInstance(source: T.Object3D) {
+  const clone = source.clone(true)
+
+  clone.traverse((child) => {
+    const mesh = child as T.Mesh
+    if (!mesh.isMesh) return
+
+    if (Array.isArray(mesh.material)) {
+      mesh.material = mesh.material.map((material) => material.clone())
+      return
+    }
+
+    mesh.material = mesh.material.clone()
+  })
+
+  return clone
+}
+
+function centerLoadedObject(object: T.Object3D) {
+  const root = new T.Group()
+  root.add(object)
+
+  const box = new T.Box3().setFromObject(object)
+  const center = box.getCenter(new T.Vector3())
+  object.position.set(-center.x, -box.min.y, -center.z)
+
+  return root
 }
 
 function loadCachedTexture(textureUrl: string) {

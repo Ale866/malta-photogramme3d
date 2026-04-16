@@ -1,6 +1,6 @@
 import * as T from 'three'
 import gsap from 'gsap'
-import { disposeObject3D, loadTexturedPlyModel } from '@/features/model/infrastructure/texturedPlyModel'
+import { disposeObject3D, loadDeliveredModel } from '@/features/model/infrastructure/texturedPlyModel'
 
 type IslandModelRenderInput = {
   id: string
@@ -49,7 +49,7 @@ export class IslandModelRenderer {
       if (!model.meshAssetUrl) continue
 
       try {
-        const object = await loadTexturedPlyModel({
+        const object = await loadDeliveredModel({
           meshUrl: model.meshAssetUrl,
           textureUrl: model.textureAssetUrl,
         })

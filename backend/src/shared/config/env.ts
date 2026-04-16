@@ -75,7 +75,6 @@ export const config = {
   OPENMVS_RECONSTRUCT_MESH_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_RECONSTRUCT_MESH_BIN, 'ReconstructMesh'),
   OPENMVS_RECONSTRUCT_MESH_DECIMATE: parsePositiveNumber(process.env.OPENMVS_RECONSTRUCT_MESH_DECIMATE, 1),
   OPENMVS_TEXTURE_MESH_BIN: resolveOpenMvsExecutable(process.env.OPENMVS_TEXTURE_MESH_BIN, 'TextureMesh'),
-  ENABLE_GLB_CONVERSION: parseBoolean(process.env.ENABLE_GLB_CONVERSION, false),
   BLENDER_BIN: resolveOptionalExecutable(process.env.BLENDER_BIN),
   GLB_CONVERSION_TIMEOUT_MS: parsePositiveInteger(process.env.GLB_CONVERSION_TIMEOUT_MS, 5 * 60 * 1000),
   FFMPEG_BIN: resolveFfmpegExecutable(process.env.FFMPEG_BIN),

@@ -3,7 +3,8 @@ import path from "path";
 import { config } from "../../../../shared/config/env";
 import { writeOptimizedModelAssetVariants } from "../../../../shared/infrastructure/modelAssetCompression";
 import type { RunColmapStageHooks } from "../../application/ports";
-import { runOptionalGlbConversion } from "./glbConversion";
+import { runGlbConversion } from "./glbConversion";
+import { readTextureFileComments } from "./texturedMeshHeader";
 import {
   cleanupIntermediatePipelineOutputs,
   ensureDirectory,
@@ -67,7 +68,7 @@ export async function runOpenMvsTexturingWithMesh(
   requireExistingFile(outputPaths.openmvsSceneMeshTextureImage, "OpenMVS textured atlas");
 
   await publishFinalTexturedOutputs(outputPaths);
-  await runOptionalGlbConversion(outputFolder);
+  await runGlbConversion(outputFolder);
   cleanupIntermediatePipelineOutputs(outputFolder);
 }
 
@@ -99,13 +100,7 @@ async function publishFinalTexturedOutputs(outputPaths: ReturnType<typeof resolv
 }
 
 function readReferencedTextureAtlases(meshPath: string, fallbackAtlasFileName: string): string[] {
-  const meshContents = fs.readFileSync(meshPath, "utf8");
-  const atlasFileNames = meshContents
-    .split(/\r?\n/)
-    .map((line) => line.match(/^comment\s+TextureFile\s+(.+)$/u)?.[1]?.trim() ?? "")
-    .filter((fileName) => fileName.length > 0);
-
-  const uniqueAtlasFileNames = [...new Set(atlasFileNames)];
+  const uniqueAtlasFileNames = readTextureFileComments(meshPath);
   if (uniqueAtlasFileNames.length > 0) {
     console.info(`[OpenMVS] Publishing referenced texture atlases: ${uniqueAtlasFileNames.join(", ")}`);
     return uniqueAtlasFileNames;

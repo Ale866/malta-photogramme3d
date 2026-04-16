@@ -1,4 +1,3 @@
-import fs from "fs";
 import path from "path";
 import { spawn } from "child_process";
 import { config } from "../../../../shared/config/env";
@@ -7,65 +6,46 @@ import {
   requireExistingFile,
   resolveOutputPaths,
 } from "../colmapRunner";
+import { readTextureFileComments } from "./texturedMeshHeader";
 
-export async function runOptionalGlbConversion(outputFolder: string): Promise<void> {
-  if (!config.ENABLE_GLB_CONVERSION) {
-    console.info("[GLB conversion] Disabled; skipping optional GLB conversion");
+export async function runGlbConversion(outputFolder: string): Promise<void> {
+  const blenderBin = config.BLENDER_BIN?.trim();
+  if (!blenderBin) {
+    console.warn("[GLB conversion] BLENDER_BIN is not configured; skipping GLB conversion and keeping fallback artifacts");
     return;
   }
 
   try {
-    await runGlbConversion(outputFolder);
+    await runGlbConversion(blenderBin, outputFolder);
   } catch (error) {
-    console.warn("[GLB conversion] Optional GLB conversion failed; continuing with PLY output", error);
+    console.warn("[GLB conversion] Failed to generate model.glb; keeping textured PLY fallback artifacts", error);
   }
 }
 
-async function runGlbConversion(outputFolder: string): Promise<void> {
-  const blenderBin = config.BLENDER_BIN?.trim();
-  if (!blenderBin) {
-    throw new Error("BLENDER_BIN is required when ENABLE_GLB_CONVERSION=true");
-  }
-
+async function runGlbConversion(blenderBin: string, outputFolder: string): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
   const texturedFolder = requireExistingDirectory(outputPaths.denseTextured);
   const meshPath = requireExistingFile(path.join(texturedFolder, "mesh.ply"), "Published textured mesh");
-  const atlasFileNames = readReferencedTextureAtlases(meshPath);
+  const atlasFileNames = readTextureFileComments(meshPath);
   const outputGlbPath = path.join(texturedFolder, "model.glb");
+
+  if (atlasFileNames.length === 0) {
+    throw new Error(`No TextureFile comments found in ${meshPath}`);
+  }
 
   for (const atlasFileName of atlasFileNames) {
     requireExistingFile(path.join(texturedFolder, atlasFileName), `Published textured atlas ${atlasFileName}`);
   }
 
   console.info(
-    `[GLB conversion] Attempting Blender conversion with ${atlasFileNames.length} atlas file(s) from ${texturedFolder}`
+    `[GLB conversion] Converting ${path.basename(meshPath)} with ${atlasFileNames.length} atlas file(s) into ${outputGlbPath}`
   );
 
-  await runBlenderCli(blenderBin, {
-    meshPath,
-    texturedFolder,
-    outputGlbPath,
-  });
+  await runBlenderCli(blenderBin, meshPath, outputGlbPath);
+  requireExistingFile(outputGlbPath, "Converted GLB model");
 }
 
-function readReferencedTextureAtlases(meshPath: string): string[] {
-  const meshContents = fs.readFileSync(meshPath, "utf8");
-  const atlasFileNames = meshContents
-    .split(/\r?\n/)
-    .map((line) => line.match(/^comment\s+TextureFile\s+(.+)$/u)?.[1]?.trim() ?? "")
-    .filter((fileName) => fileName.length > 0);
-
-  return [...new Set(atlasFileNames)];
-}
-
-async function runBlenderCli(
-  blenderBin: string,
-  input: {
-    meshPath: string;
-    texturedFolder: string;
-    outputGlbPath: string;
-  }
-): Promise<void> {
+async function runBlenderCli(blenderBin: string, meshPath: string, outputGlbPath: string): Promise<void> {
   const scriptPath = path.join(config.BACKEND_ROOT, "scripts", "convert_textured_ply_to_glb.py");
   requireExistingFile(scriptPath, "GLB conversion Blender script");
 
@@ -76,12 +56,8 @@ async function runBlenderCli(
       "--python",
       scriptPath,
       "--",
-      "--mesh",
-      input.meshPath,
-      "--textured-folder",
-      input.texturedFolder,
-      "--output",
-      input.outputGlbPath,
+      meshPath,
+      outputGlbPath,
     ];
 
     console.info(`[GLB conversion] Command: ${blenderBin} ${args.join(" ")}`);
@@ -89,6 +65,9 @@ async function runBlenderCli(
     const child = spawn(blenderBin, args, {
       shell: false,
       windowsHide: true,
+      env: {
+        ...process.env,
+      },
     });
 
     const timeout = setTimeout(() => {

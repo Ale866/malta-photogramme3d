@@ -7,13 +7,23 @@ import {
 } from "../../../shared/infrastructure/modelAssetCompression";
 
 const MODEL_MESH_PATH = path.join("dense", "textured", "mesh.ply");
+const MODEL_GLB_PATH = path.join("dense", "textured", "model.glb");
 const MODEL_TEXTURE_PATH = path.join("dense", "textured", "texture.png");
 const MESH_CONTENT_TYPE = "application/octet-stream";
+const GLB_CONTENT_TYPE = "model/gltf-binary";
 const TEXTURE_CONTENT_TYPE = "image/png";
 const WEBP_CONTENT_TYPE = "image/webp";
 
 export const modelAssetStorage: ModelAssetStorage = {
   async resolveMeshDelivery(outputFolder: string, acceptEncodingHeader: string | string[] | undefined) {
+    const glbPath = resolveExistingModelAssetPath(outputFolder, MODEL_GLB_PATH);
+    if (glbPath) {
+      return {
+        path: glbPath,
+        contentType: GLB_CONTENT_TYPE,
+      };
+    }
+
     const meshPath = resolveExistingModelAssetPath(outputFolder, MODEL_MESH_PATH);
     if (!meshPath) return null;
 
