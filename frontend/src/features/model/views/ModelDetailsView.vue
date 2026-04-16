@@ -190,11 +190,8 @@ async function saveOrientation() {
                 </p>
                 <p class="model-viewer-toolbar-text">
                   {{ canEditOrientation
-                    ? 'Drag in the preview to adjust the model orientation, or move around the preview with the joystick.'
-                    : 'Inspect the generated model here with the joystick and pinch or wheel zoom.' }}
-                </p>
-                <p v-if="canEditOrientation" class="model-viewer-toolbar-hint">
-                  On mobile, use the joystick to pan and pinch to zoom. On desktop, use the mouse wheel to zoom, right-drag to pan, and hold Shift while dragging for the third rotation axis.
+                    ? 'Drag in the preview to adjust the saved orientation, or use the joystick to move around the view.'
+                    : 'Inspect the generated model here.' }}
                 </p>
               </div>
 

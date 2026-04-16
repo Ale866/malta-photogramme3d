@@ -60,6 +60,7 @@ export class IslandModelRenderer {
         const height = Math.max(size.y, 1e-6)
         const scale = TARGET_MODEL_HEIGHT / height
         object.scale.setScalar(scale)
+        object.rotation.order = 'YXZ'
         object.rotation.set(model.orientation.x, model.orientation.y, model.orientation.z)
 
         const scaledBox = new T.Box3().setFromObject(object)

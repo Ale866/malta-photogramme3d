@@ -20,6 +20,8 @@ type DragState = {
 }
 
 const DEFAULT_ZOOM_SCALE = 0.72
+const PREVIEW_FOCUS_HEIGHT_RATIO = 0.58
+const CARD_PREVIEW_SPIN_SPEED = 0.01
 
 export class ModelPreviewScene {
   private sceneElement: HTMLElement | null = null
@@ -27,6 +29,7 @@ export class ModelPreviewScene {
   private scene: T.Scene | null = null
   private camera: T.PerspectiveCamera | null = null
   private previewObject: T.Object3D | null = null
+  private previewSpinGroup: T.Group | null = null
   private resizeObserver: ResizeObserver | null = null
   private frameId: number | null = null
   private readonly interactive: boolean
@@ -76,32 +79,8 @@ export class ModelPreviewScene {
     this.dragMode = mode
   }
 
-  zoomIn() {
-    this.setZoomScale(this.zoomScale * 0.88)
-  }
-
-  zoomOut() {
-    this.setZoomScale(this.zoomScale * 1.12)
-  }
-
   resetZoom() {
     this.setZoomScale(DEFAULT_ZOOM_SCALE)
-  }
-
-  panLeft() {
-    this.panByScreenDelta(-30, 0)
-  }
-
-  panRight() {
-    this.panByScreenDelta(30, 0)
-  }
-
-  panUp() {
-    this.panByScreenDelta(0, -30)
-  }
-
-  panDown() {
-    this.panByScreenDelta(0, 30)
   }
 
   resetView() {
@@ -193,9 +172,15 @@ export class ModelPreviewScene {
 
     if (this.previewObject) {
       disposeObject3D(this.previewObject)
-      this.scene?.remove(this.previewObject)
+      if (this.previewSpinGroup) {
+        this.previewSpinGroup.remove(this.previewObject)
+        this.scene?.remove(this.previewSpinGroup)
+      } else {
+        this.scene?.remove(this.previewObject)
+      }
       this.previewObject = null
     }
+    this.previewSpinGroup = null
 
     this.scene = null
     this.camera = null
@@ -224,8 +209,12 @@ export class ModelPreviewScene {
         this.previewObject.rotation.z = this.baseOrientation.z
       } else {
         this.previewObject.rotation.x = this.baseOrientation.x
-        this.previewObject.rotation.y += 0.01
+        this.previewObject.rotation.y = this.baseOrientation.y
         this.previewObject.rotation.z = this.baseOrientation.z
+
+        if (this.previewSpinGroup) {
+          this.previewSpinGroup.rotation.y += CARD_PREVIEW_SPIN_SPEED
+        }
       }
     }
 
@@ -367,11 +356,20 @@ export class ModelPreviewScene {
         return
       }
 
-      this.centerPreviewObject(previewObject)
-      previewObject.rotation.set(this.baseOrientation.x, this.baseOrientation.y, this.baseOrientation.z)
-      this.scene.add(previewObject)
+      previewObject.rotation.order = 'YXZ'
+
+      if (this.interactive) {
+        previewObject.rotation.set(this.baseOrientation.x, this.baseOrientation.y, this.baseOrientation.z)
+        this.scene.add(previewObject)
+      } else {
+        previewObject.rotation.set(this.baseOrientation.x, this.baseOrientation.y, this.baseOrientation.z)
+        const spinGroup = new T.Group()
+        spinGroup.add(previewObject)
+        this.scene.add(spinGroup)
+        this.previewSpinGroup = spinGroup
+      }
       this.previewObject = previewObject
-      this.framePreviewObject(previewObject)
+      this.framePreviewObject(this.previewSpinGroup ?? previewObject)
       this.onLoaded?.()
     } catch (error) {
       console.error('Failed to load model preview asset', error)
@@ -387,15 +385,13 @@ export class ModelPreviewScene {
     const size = box.getSize(new T.Vector3())
     const maxDimension = Math.max(size.x, size.y, size.z, 1)
     const distance = maxDimension / (2 * Math.tan((this.camera.fov * Math.PI) / 360))
-    this.frameCenter = center
+    this.frameCenter = new T.Vector3(
+      center.x,
+      box.min.y + size.y * PREVIEW_FOCUS_HEIGHT_RATIO,
+      center.z,
+    )
     this.baseCameraDistance = distance * 1.16
     this.applyCameraFrame()
-  }
-
-  private centerPreviewObject(object: T.Object3D) {
-    const box = new T.Box3().setFromObject(object)
-    const center = box.getCenter(new T.Vector3())
-    object.position.sub(center)
   }
 
   private setZoomScale(scale: number) {
@@ -467,4 +463,5 @@ export class ModelPreviewScene {
     if (normalized > Math.PI) normalized -= fullTurn
     return normalized
   }
+
 }

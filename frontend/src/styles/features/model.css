@@ -1435,7 +1435,6 @@
 
 .model-viewer-toolbar-eyebrow,
 .model-viewer-toolbar-text,
-.model-viewer-toolbar-hint,
 .model-viewer-toolbar-error {
   margin: 0;
 }
@@ -1453,13 +1452,6 @@
   color: var(--text-secondary);
   line-height: 1.45;
   font-size: 0.95rem;
-}
-
-.model-viewer-toolbar-hint {
-  max-width: 32rem;
-  color: #8ea6c7;
-  line-height: 1.45;
-  font-size: 0.84rem;
 }
 
 .model-viewer-toolbar-actions {
@@ -1527,19 +1519,19 @@
 .model-preview-control-cluster {
   display: grid;
   grid-template-columns: auto;
-  gap: 0.35rem;
+  gap: 0.38rem;
   align-items: end;
-  justify-items: start;
+  justify-items: center;
 }
 
 .model-preview-joystick {
-  width: 78px;
-  height: 78px;
+  width: 62px;
+  height: 62px;
 }
 
 .model-preview-joystick.mobile-joystick {
-  width: 78px;
-  height: 78px;
+  width: 62px;
+  height: 62px;
 }
 
 .model-preview-joystick .mobile-joystick-base {
@@ -1551,8 +1543,8 @@
 }
 
 .model-preview-joystick .mobile-joystick-knob {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
 }
 
 .model-preview-zoom-button {
@@ -1594,21 +1586,23 @@
 }
 
 .model-preview-quick-actions {
-  display: flex;
-  justify-content: flex-start;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
 }
 
 .model-preview-zoom-button--ghost {
   min-width: 0;
-  min-height: 1.85rem;
-  padding: 0.28rem 0.62rem;
+  min-height: 1.72rem;
+  padding: 0.22rem 0.4rem;
   border-radius: calc(var(--radius-lg) - 4px);
   background: rgb(255 255 255 / 0.03);
   color: rgb(214 229 251 / 0.88);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  justify-content: center;
 }
 
 .model-preview-canvas:active {

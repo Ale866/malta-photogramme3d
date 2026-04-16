@@ -11,7 +11,6 @@ const props = withDefaults(defineProps<{
   orientation?: { x: number; y: number; z: number } | null
   dragMode?: 'orbit' | 'roll'
   loadingLabel?: string
-  overlayCaption?: string
 }>(), {
   interactive: true,
   showOverlay: true,
@@ -20,7 +19,6 @@ const props = withDefaults(defineProps<{
   orientation: null,
   dragMode: 'orbit',
   loadingLabel: 'Loading model preview',
-  overlayCaption: 'Drag inside the viewer to inspect the generated model.',
 })
 
 const emit = defineEmits<{
@@ -99,7 +97,6 @@ function handleJoystickMove(input: { x: number; y: number }) {
     </div>
     <div v-if="showOverlay" class="model-preview-overlay">
       <p class="model-preview-label">Preview</p>
-      <p class="model-preview-caption">{{ overlayCaption }}</p>
     </div>
   </div>
 </template>

@@ -20,8 +20,11 @@ export class CameraController {
   private camera: T.PerspectiveCamera
   private mobileMoveInput = new T.Vector2()
   private lastUpdateTs = 0
+  private readonly defaultMaxPolarAngle = Math.PI / 2.35
+  private readonly closeRangeMaxPolarAngle = Math.PI / 3.15
+  private readonly defaultMinZoomDistance = 24
   private maxZoomDistance = 260
-  private minZoomDistance = 18
+  private minZoomDistance = this.defaultMinZoomDistance
   private movementBounds: {
     minX: number
     minZ: number
@@ -46,7 +49,7 @@ export class CameraController {
     this.controls = new OrbitControls(camera, domElement)
     this.controls.minDistance = this.minZoomDistance
     this.controls.maxDistance = this.maxZoomDistance
-    this.controls.maxPolarAngle = Math.PI / 2.35
+    this.controls.maxPolarAngle = this.defaultMaxPolarAngle
     this.controls.enableDamping = true
     this.controls.screenSpacePanning = true
   }
@@ -60,6 +63,7 @@ export class CameraController {
     this.lastUpdateTs = now
 
     this.applyMobileMovement(deltaSeconds)
+    this.applyMainViewConstraints()
     this.controls.update()
     this.restrictMovements()
   }
@@ -97,6 +101,7 @@ export class CameraController {
     this.movementBounds = null
     this.maxZoomDistance = 260
     this.controls.maxDistance = this.maxZoomDistance
+    this.applyMainViewConstraints()
   }
 
   frameObject(object: T.Object3D, yRange?: { min: number; max: number }) {
@@ -329,6 +334,27 @@ export class CameraController {
     this.move.multiplyScalar(movementDistance)
     this.camera.position.add(this.move)
     this.controls.target.add(this.move)
+  }
+
+  private applyMainViewConstraints() {
+    if (this.isFocusModeActive) return
+
+    this.controls.minDistance = this.minZoomDistance
+    this.controls.maxDistance = this.maxZoomDistance
+
+    const distanceToTarget = this.camera.position.distanceTo(this.controls.target)
+    const distanceRange = Math.max(this.maxZoomDistance - this.minZoomDistance, 1)
+    const distanceProgress = T.MathUtils.clamp(
+      (distanceToTarget - this.minZoomDistance) / distanceRange,
+      0,
+      1,
+    )
+
+    this.controls.maxPolarAngle = T.MathUtils.lerp(
+      this.closeRangeMaxPolarAngle,
+      this.defaultMaxPolarAngle,
+      distanceProgress,
+    )
   }
 
   private restrictMovements() {

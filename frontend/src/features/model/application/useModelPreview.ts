@@ -32,32 +32,8 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     scene.setDragMode(mode)
   }
 
-  function zoomIn() {
-    scene.zoomIn()
-  }
-
-  function zoomOut() {
-    scene.zoomOut()
-  }
-
   function resetZoom() {
     scene.resetZoom()
-  }
-
-  function panLeft() {
-    scene.panLeft()
-  }
-
-  function panRight() {
-    scene.panRight()
-  }
-
-  function panUp() {
-    scene.panUp()
-  }
-
-  function panDown() {
-    scene.panDown()
   }
 
   function resetView() {
@@ -77,12 +53,6 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     unmount,
     setOrientation,
     setDragMode,
-    panLeft,
-    panRight,
-    panUp,
-    panDown,
-    zoomIn,
-    zoomOut,
     resetZoom,
     resetView,
     setPanInput,
