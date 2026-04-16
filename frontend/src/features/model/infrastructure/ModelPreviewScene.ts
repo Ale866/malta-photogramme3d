@@ -16,6 +16,7 @@ type DragState = {
   pointerId: number | null
   lastX: number
   lastY: number
+  mode: 'rotate' | 'pan' | 'pinch'
 }
 
 const DEFAULT_ZOOM_SCALE = 0.72
@@ -38,12 +39,20 @@ export class ModelPreviewScene {
   private dragMode: 'orbit' | 'roll'
   private loadToken = 0
   private frameCenter: T.Vector3 | null = null
+  private frameOffset = new T.Vector3()
+  private panInput = new T.Vector2()
+  private activeTouchPoints = new Map<number, { x: number; y: number }>()
+  private pinchDistance: number | null = null
+  private cameraUp = new T.Vector3(0, 1, 0)
+  private cameraForward = new T.Vector3()
+  private cameraRight = new T.Vector3()
   private baseCameraDistance = 5.2
   private zoomScale = DEFAULT_ZOOM_SCALE
   private dragState: DragState = {
     pointerId: null,
     lastX: 0,
     lastY: 0,
+    mode: 'rotate',
   }
 
   constructor(options: ModelPreviewSceneOptions = {}) {
@@ -77,6 +86,31 @@ export class ModelPreviewScene {
 
   resetZoom() {
     this.setZoomScale(DEFAULT_ZOOM_SCALE)
+  }
+
+  panLeft() {
+    this.panByScreenDelta(-30, 0)
+  }
+
+  panRight() {
+    this.panByScreenDelta(30, 0)
+  }
+
+  panUp() {
+    this.panByScreenDelta(0, -30)
+  }
+
+  panDown() {
+    this.panByScreenDelta(0, 30)
+  }
+
+  resetView() {
+    this.frameOffset.set(0, 0, 0)
+    this.setZoomScale(DEFAULT_ZOOM_SCALE)
+  }
+
+  setPanInput(input: { x: number; y: number }) {
+    this.panInput.set(input.x, input.y)
   }
 
   mount(sceneElement: HTMLElement) {
@@ -128,7 +162,8 @@ export class ModelPreviewScene {
       sceneElement.addEventListener('pointerup', this.handlePointerUp)
       sceneElement.addEventListener('pointerleave', this.handlePointerUp)
       sceneElement.addEventListener('pointercancel', this.handlePointerUp)
-      sceneElement.addEventListener('wheel', this.handleWheel, { passive: false })
+      sceneElement.addEventListener('contextmenu', this.handleContextMenu)
+      sceneElement.addEventListener('wheel', this.handleWheel)
     }
 
     void this.loadPreviewObject()
@@ -142,6 +177,7 @@ export class ModelPreviewScene {
       this.sceneElement.removeEventListener('pointerup', this.handlePointerUp)
       this.sceneElement.removeEventListener('pointerleave', this.handlePointerUp)
       this.sceneElement.removeEventListener('pointercancel', this.handlePointerUp)
+      this.sceneElement.removeEventListener('contextmenu', this.handleContextMenu)
       this.sceneElement.removeEventListener('wheel', this.handleWheel)
     }
 
@@ -171,6 +207,10 @@ export class ModelPreviewScene {
     }
 
     this.dragState.pointerId = null
+    this.dragState.mode = 'rotate'
+    this.panInput.set(0, 0)
+    this.activeTouchPoints.clear()
+    this.pinchDistance = null
     this.sceneElement = null
   }
 
@@ -188,6 +228,8 @@ export class ModelPreviewScene {
         this.previewObject.rotation.z = this.baseOrientation.z
       }
     }
+
+    this.applyPanInput()
 
     this.renderer.render(this.scene, this.camera)
     this.frameId = requestAnimationFrame(this.animate)
@@ -207,45 +249,92 @@ export class ModelPreviewScene {
   private handlePointerDown = (event: PointerEvent) => {
     if (!this.sceneElement) return
 
+    if (event.pointerType === 'touch') {
+      this.activeTouchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+      if (this.activeTouchPoints.size === 2) {
+        this.dragState.pointerId = null
+        this.dragState.mode = 'pinch'
+        this.pinchDistance = this.getTouchDistance()
+        return
+      }
+    }
+
     this.dragState.pointerId = event.pointerId
     this.dragState.lastX = event.clientX
     this.dragState.lastY = event.clientY
+    this.dragState.mode =
+      event.pointerType === 'mouse' && (event.button === 1 || event.button === 2 || event.ctrlKey || event.metaKey)
+        ? 'pan'
+        : 'rotate'
     this.sceneElement.setPointerCapture(event.pointerId)
   }
 
   private handlePointerMove = (event: PointerEvent) => {
+    if (event.pointerType === 'touch' && this.activeTouchPoints.has(event.pointerId)) {
+      this.activeTouchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+      if (this.activeTouchPoints.size === 2) {
+        const nextDistance = this.getTouchDistance()
+        if (this.pinchDistance !== null && nextDistance !== null && this.pinchDistance > 0) {
+          this.setZoomScale(this.zoomScale * (this.pinchDistance / nextDistance))
+        }
+        this.pinchDistance = nextDistance
+        this.dragState.mode = 'pinch'
+        return
+      }
+    }
+
     if (this.dragState.pointerId !== event.pointerId) return
 
     const deltaX = event.clientX - this.dragState.lastX
     const deltaY = event.clientY - this.dragState.lastY
 
-    const rotateRoll = this.dragMode === 'roll' || event.shiftKey
-
-    if (rotateRoll) {
-      this.baseOrientation = {
-        ...this.baseOrientation,
-        z: this.normalizeAngle(this.baseOrientation.z + deltaX * 0.006),
-      }
+    if (this.dragState.mode === 'pan') {
+      this.panByScreenDelta(deltaX, deltaY)
     } else {
-      this.baseOrientation = {
-        ...this.baseOrientation,
-        x: this.normalizeAngle(this.baseOrientation.x + deltaY * 0.005),
-        y: this.normalizeAngle(this.baseOrientation.y + deltaX * 0.006),
+      const rotateRoll = this.dragMode === 'roll' || event.shiftKey
+
+      if (rotateRoll) {
+        this.baseOrientation = {
+          ...this.baseOrientation,
+          z: this.normalizeAngle(this.baseOrientation.z + deltaX * 0.006),
+        }
+      } else {
+        this.baseOrientation = {
+          ...this.baseOrientation,
+          x: this.normalizeAngle(this.baseOrientation.x + deltaY * 0.005),
+          y: this.normalizeAngle(this.baseOrientation.y + deltaX * 0.006),
+        }
       }
+      this.onOrientationChange?.({ ...this.baseOrientation })
     }
     this.dragState.lastX = event.clientX
     this.dragState.lastY = event.clientY
-    this.onOrientationChange?.({ ...this.baseOrientation })
   }
 
   private handlePointerUp = (event: PointerEvent) => {
-    if (!this.sceneElement || this.dragState.pointerId !== event.pointerId) return
+    if (!this.sceneElement) return
+
+    if (event.pointerType === 'touch') {
+      this.activeTouchPoints.delete(event.pointerId)
+
+      if (this.activeTouchPoints.size < 2) {
+        this.pinchDistance = null
+        if (this.dragState.mode === 'pinch') {
+          this.dragState.mode = 'rotate'
+        }
+      }
+    }
+
+    if (this.dragState.pointerId !== event.pointerId) return
 
     if (this.sceneElement.hasPointerCapture(event.pointerId)) {
       this.sceneElement.releasePointerCapture(event.pointerId)
     }
 
     this.dragState.pointerId = null
+    this.dragState.mode = 'rotate'
   }
 
   private handleWheel = (event: WheelEvent) => {
@@ -253,6 +342,10 @@ export class ModelPreviewScene {
 
     const direction = event.deltaY > 0 ? 1.08 : 0.92
     this.setZoomScale(this.zoomScale * direction)
+  }
+
+  private handleContextMenu = (event: MouseEvent) => {
+    event.preventDefault()
   }
 
   private async loadPreviewObject() {
@@ -314,14 +407,49 @@ export class ModelPreviewScene {
     if (!this.camera || !this.frameCenter) return
 
     const framedDistance = this.baseCameraDistance * this.zoomScale
+    const target = this.frameCenter.clone().add(this.frameOffset)
 
     this.camera.position.set(
-      this.frameCenter.x + framedDistance * 0.18,
-      this.frameCenter.y + framedDistance * 0.12,
-      this.frameCenter.z + framedDistance * 1.42,
+      target.x + framedDistance * 0.18,
+      target.y + framedDistance * 0.12,
+      target.z + framedDistance * 1.42,
     )
-    this.camera.lookAt(this.frameCenter)
+    this.camera.lookAt(target)
     this.camera.updateProjectionMatrix()
+  }
+
+  private panByScreenDelta(deltaX: number, deltaY: number) {
+    if (!this.camera || !this.frameCenter) return
+
+    const target = this.frameCenter.clone().add(this.frameOffset)
+    const distance = this.camera.position.distanceTo(target)
+    const panScale = Math.max(distance * 0.0018, 0.0025)
+
+    this.cameraForward.copy(target).sub(this.camera.position).normalize()
+    this.cameraRight.crossVectors(this.cameraForward, this.cameraUp).normalize()
+
+    this.frameOffset
+      .addScaledVector(this.cameraRight, -deltaX * panScale)
+      .addScaledVector(this.cameraUp, deltaY * panScale)
+
+    this.applyCameraFrame()
+  }
+
+  private applyPanInput() {
+    if (this.panInput.lengthSq() < 1e-4) return
+
+    this.panByScreenDelta(this.panInput.x * 10, -this.panInput.y * 10)
+  }
+
+  private getTouchDistance() {
+    if (this.activeTouchPoints.size < 2) return null
+
+    const points = Array.from(this.activeTouchPoints.values())
+    const first = points[0]
+    const second = points[1]
+    if (!first || !second) return null
+
+    return Math.hypot(second.x - first.x, second.y - first.y)
   }
 
   private normalizeOrientation(orientation: { x: number; y: number; z: number }) {

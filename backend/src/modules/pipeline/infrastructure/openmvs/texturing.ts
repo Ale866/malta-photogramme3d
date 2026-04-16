@@ -18,7 +18,6 @@ import {
 function buildOpenMvsTexturingCommand(outputFolder: string, meshPath?: string): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
-  // DensifyPointCloud disabled: use the base scene + mesh from ReconstructMesh.
   requireExistingFile(outputPaths.openmvsScene, "OpenMVS scene");
   const meshToTexture = requireExistingFile(meshPath ?? outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
 

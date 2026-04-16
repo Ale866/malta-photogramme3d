@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useModelPreview } from '@/features/model/application/useModelPreview'
+import MobileJoystick from '@/features/island/components/MobileJoystick.vue'
 
 const props = withDefaults(defineProps<{
   interactive?: boolean
@@ -29,7 +30,7 @@ const emit = defineEmits<{
 const isLoading = ref(Boolean(props.meshUrl))
 const hasError = ref(false)
 const element = useTemplateRef<HTMLElement>('scene-element-container')
-const { mount, setOrientation, setDragMode, zoomIn, zoomOut, resetZoom } = useModelPreview({
+const { mount, setOrientation, setDragMode, resetZoom, resetView, setPanInput } = useModelPreview({
   interactive: props.interactive,
   meshUrl: props.meshUrl,
   textureUrl: props.textureUrl,
@@ -66,21 +67,28 @@ watch(
     setDragMode(dragMode)
   }
 )
+
+function handleJoystickMove(input: { x: number; y: number }) {
+  setPanInput(input)
+}
 </script>
 
 <template>
   <div class="model-preview">
     <div ref="scene-element-container" class="model-preview-canvas" aria-label="Interactive model preview"></div>
     <div v-if="interactive && !hasError" class="model-preview-zoom-controls" aria-label="Preview zoom controls">
-      <button class="btn model-preview-zoom-button" type="button" @click="zoomIn">
-        +
-      </button>
-      <button class="btn model-preview-zoom-button" type="button" @click="zoomOut">
-        -
-      </button>
-      <button class="btn model-preview-zoom-button model-preview-zoom-button--reset" type="button" @click="resetZoom">
-        100%
-      </button>
+      <div class="model-preview-control-cluster">
+        <mobile-joystick class="model-preview-joystick" @move="handleJoystickMove" />
+
+        <div class="model-preview-quick-actions">
+          <button class="btn model-preview-zoom-button model-preview-zoom-button--ghost" type="button" @click="resetZoom">
+            100%
+          </button>
+          <button class="btn model-preview-zoom-button model-preview-zoom-button--ghost" type="button" @click="resetView">
+            Center
+          </button>
+        </div>
+      </div>
     </div>
     <div v-if="isLoading" class="model-preview-loader" aria-live="polite">
       <div class="model-preview-loader-spinner" aria-hidden="true"></div>

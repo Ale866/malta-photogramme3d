@@ -44,6 +44,30 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     scene.resetZoom()
   }
 
+  function panLeft() {
+    scene.panLeft()
+  }
+
+  function panRight() {
+    scene.panRight()
+  }
+
+  function panUp() {
+    scene.panUp()
+  }
+
+  function panDown() {
+    scene.panDown()
+  }
+
+  function resetView() {
+    scene.resetView()
+  }
+
+  function setPanInput(input: { x: number; y: number }) {
+    scene.setPanInput(input)
+  }
+
   onBeforeUnmount(() => {
     unmount()
   })
@@ -53,8 +77,14 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     unmount,
     setOrientation,
     setDragMode,
+    panLeft,
+    panRight,
+    panUp,
+    panDown,
     zoomIn,
     zoomOut,
     resetZoom,
+    resetView,
+    setPanInput,
   }
 }

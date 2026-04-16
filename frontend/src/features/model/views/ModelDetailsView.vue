@@ -91,8 +91,6 @@ const islandButtonTitle = computed(() => {
 })
 
 const orientationDraft = ref({ x: 0, y: 0, z: 0 })
-const orientationDragMode = ref<'orbit' | 'roll'>('orbit')
-
 const showModelRerunPanel = computed(() => {
   const model = modelDetails.value
   if (!model) return false
@@ -142,7 +140,6 @@ function resetOrientation() {
   const model = modelDetails.value
   if (!model) return
   orientationDraft.value = { ...model.orientation }
-  orientationDragMode.value = 'orbit'
 }
 
 async function saveOrientation() {
@@ -181,7 +178,6 @@ async function saveOrientation() {
                 :texture-url="modelDetails.textureAssetUrl"
                 :orientation="previewOrientation"
                 :show-overlay="false"
-                :drag-mode="orientationDragMode"
                 loading-label="Loading 3D model"
                 @orientation-change="handlePreviewOrientationChange"
               />
@@ -190,47 +186,25 @@ async function saveOrientation() {
             <div class="model-viewer-toolbar">
               <div class="model-viewer-toolbar-copy">
                 <p class="model-viewer-toolbar-eyebrow">
-                  {{ canEditOrientation ? 'Set model position' : 'Preview' }}
+                  {{ canEditOrientation ? 'Set model orientation' : 'Preview' }}
                 </p>
                 <p class="model-viewer-toolbar-text">
                   {{ canEditOrientation
-                    ? orientationDragMode === 'roll'
-                      ? 'Drag in the preview to rotate the model sideways.'
-                      : 'Drag in the preview to turn and tilt the model.'
-                    : 'Inspect the generated model here.' }}
+                    ? 'Drag in the preview to adjust the model orientation, or move around the preview with the joystick.'
+                    : 'Inspect the generated model here with the joystick and pinch or wheel zoom.' }}
                 </p>
                 <p v-if="canEditOrientation" class="model-viewer-toolbar-hint">
-                  On mobile, use the sideways mode for the third axis. On desktop, you can also hold Shift while dragging.
+                  On mobile, use the joystick to pan and pinch to zoom. On desktop, use the mouse wheel to zoom, right-drag to pan, and hold Shift while dragging for the third rotation axis.
                 </p>
               </div>
 
               <div v-if="canEditOrientation" class="model-viewer-toolbar-actions">
-                <div class="model-viewer-mode-toggle" role="group" aria-label="Model drag mode">
-                  <button
-                    class="btn model-viewer-mode-button"
-                    :class="{ 'model-viewer-mode-button--active': orientationDragMode === 'orbit' }"
-                    type="button"
-                    :disabled="isSavingOrientation"
-                    @click="orientationDragMode = 'orbit'"
-                  >
-                    Turn & tilt
-                  </button>
-                  <button
-                    class="btn model-viewer-mode-button"
-                    :class="{ 'model-viewer-mode-button--active': orientationDragMode === 'roll' }"
-                    type="button"
-                    :disabled="isSavingOrientation"
-                    @click="orientationDragMode = 'roll'"
-                  >
-                    Rotate sideways
-                  </button>
-                </div>
                 <div class="model-viewer-toolbar-buttons">
                   <button class="btn model-summary-orientation-reset" type="button" :disabled="isSavingOrientation || !hasOrientationChanges" @click="resetOrientation">
                     Reset
                   </button>
                   <button class="btn btn-primary model-summary-orientation-save" type="button" :disabled="isSavingOrientation || !hasOrientationChanges" @click="saveOrientation">
-                    {{ isSavingOrientation ? 'Saving...' : 'Save position' }}
+                    {{ isSavingOrientation ? 'Saving...' : 'Save orientation' }}
                   </button>
                 </div>
               </div>
