@@ -8,7 +8,14 @@ import {
   type StageCommand,
 } from "../colmapRunner";
 
-function buildStrictDenseStereoCommand(outputFolder: string): StageCommand {
+type DenseStereoOptions = {
+  maxImageSize: string;
+  numThreads: string;
+  geomConsistency: string;
+  filter: string;
+};
+
+function buildDenseStereoCommand(outputFolder: string, options: DenseStereoOptions): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.denseWorkspace);
   requireExistingDirectory(outputPaths.denseImages);
@@ -22,29 +29,30 @@ function buildStrictDenseStereoCommand(outputFolder: string): StageCommand {
       "patch_match_stereo",
       "--workspace_path", outputPaths.denseWorkspace,
       "--workspace_format", "COLMAP",
-      "--PatchMatchStereo.max_image_size", "2000",
-      "--PatchMatchStereo.num_threads", "4",
-      "--PatchMatchStereo.geom_consistency", "true",
-      "--PatchMatchStereo.filter", "true",
+      "--PatchMatchStereo.max_image_size", options.maxImageSize,
+      "--PatchMatchStereo.num_threads", options.numThreads,
+      "--PatchMatchStereo.geom_consistency", options.geomConsistency,
+      "--PatchMatchStereo.filter", options.filter,
     ],
   };
 }
 
-function buildRelaxedDenseStereoCommand(outputFolder: string): StageCommand {
-  const command = buildStrictDenseStereoCommand(outputFolder);
+function buildStrictDenseStereoCommand(outputFolder: string): StageCommand {
+  return buildDenseStereoCommand(outputFolder, {
+    maxImageSize: "2000",
+    numThreads: "4",
+    geomConsistency: "true",
+    filter: "true",
+  });
+}
 
-  return {
-    ...command,
-    args: [
-      "patch_match_stereo",
-      "--workspace_path", resolveOutputPaths(outputFolder).denseWorkspace,
-      "--workspace_format", "COLMAP",
-      "--PatchMatchStereo.max_image_size", "2000",
-      "--PatchMatchStereo.num_threads", "4",
-      "--PatchMatchStereo.geom_consistency", "true",
-      "--PatchMatchStereo.filter", "true",
-    ],
-  };
+function buildRelaxedDenseStereoCommand(outputFolder: string): StageCommand {
+  return buildDenseStereoCommand(outputFolder, {
+    maxImageSize: "2000",
+    numThreads: "4",
+    geomConsistency: "true",
+    filter: "true",
+  });
 }
 
 export function runDenseStereo(outputFolder: string, hooks?: RunColmapStageHooks, profile: PipelineProfile = "strict"

@@ -9,7 +9,14 @@ import {
   type StageCommand,
 } from "../colmapRunner";
 
-function buildStrictFusionCommand(outputFolder: string): StageCommand {
+type FusionOptions = {
+  inputType: "geometric" | "photometric";
+  minNumPixels: string;
+  maxDepthError: string;
+  maxReprojError: string;
+};
+
+function buildFusionCommand(outputFolder: string, options: FusionOptions): StageCommand {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.denseWorkspace);
   requireExistingDirectory(outputPaths.denseImages);
@@ -24,29 +31,31 @@ function buildStrictFusionCommand(outputFolder: string): StageCommand {
       "stereo_fusion",
       "--workspace_path", outputPaths.denseWorkspace,
       "--workspace_format", "COLMAP",
-      "--input_type", "geometric",
+      "--input_type", options.inputType,
       "--output_path", outputPaths.denseFused,
-      "--StereoFusion.min_num_pixels", "6",
-      "--StereoFusion.max_depth_error", "0.01",
-      "--StereoFusion.max_reproj_error", "2",
+      "--StereoFusion.min_num_pixels", options.minNumPixels,
+      "--StereoFusion.max_depth_error", options.maxDepthError,
+      "--StereoFusion.max_reproj_error", options.maxReprojError,
     ],
   };
 }
 
-function buildRelaxedFusionCommand(outputFolder: string): StageCommand {
-  const command = buildStrictFusionCommand(outputFolder);
+function buildStrictFusionCommand(outputFolder: string): StageCommand {
+  return buildFusionCommand(outputFolder, {
+    inputType: "geometric",
+    minNumPixels: "6",
+    maxDepthError: "0.01",
+    maxReprojError: "2",
+  });
+}
 
-  return {
-    ...command,
-    args: [
-      ...command.args.slice(0, 5),
-      "--input_type", "photometric",
-      "--output_path", resolveOutputPaths(outputFolder).denseFused,
-      "--StereoFusion.min_num_pixels", "3",
-      "--StereoFusion.max_depth_error", "0.02",
-      "--StereoFusion.max_reproj_error", "4",
-    ],
-  };
+function buildRelaxedFusionCommand(outputFolder: string): StageCommand {
+  return buildFusionCommand(outputFolder, {
+    inputType: "photometric",
+    minNumPixels: "3",
+    maxDepthError: "0.02",
+    maxReprojError: "4",
+  });
 }
 
 export function runFusion(outputFolder: string, hooks?: RunColmapStageHooks, profile: PipelineProfile = "strict"

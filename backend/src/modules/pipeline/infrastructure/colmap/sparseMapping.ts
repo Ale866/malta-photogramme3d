@@ -10,7 +10,19 @@ import {
   type StageCommand,
 } from "../colmapRunner";
 
-function buildStrictSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
+type SparseMappingOptions = {
+  initMinNumInliers: string;
+  initMinTriAngle: string;
+  absPoseMinNumInliers: string;
+  absPoseMinInlierRatio: string;
+  filterMinTriAngle: string;
+};
+
+function buildSparseMappingCommand(
+  inputFolder: string,
+  outputFolder: string,
+  options: SparseMappingOptions,
+): StageCommand {
   const imagePath = resolveImagePath(inputFolder);
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingFile(outputPaths.database, "COLMAP database_path");
@@ -26,29 +38,33 @@ function buildStrictSparseMappingCommand(inputFolder: string, outputFolder: stri
       "--database_path", outputPaths.database,
       "--image_path", imagePath,
       "--output_path", outputPaths.sparseRoot,
-      "--Mapper.init_min_num_inliers", "120",
-      "--Mapper.init_min_tri_angle", "12",
-      "--Mapper.abs_pose_min_num_inliers", "40",
-      "--Mapper.abs_pose_min_inlier_ratio", "0.25",
-      "--Mapper.filter_min_tri_angle", "2.5",
+      "--Mapper.init_min_num_inliers", options.initMinNumInliers,
+      "--Mapper.init_min_tri_angle", options.initMinTriAngle,
+      "--Mapper.abs_pose_min_num_inliers", options.absPoseMinNumInliers,
+      "--Mapper.abs_pose_min_inlier_ratio", options.absPoseMinInlierRatio,
+      "--Mapper.filter_min_tri_angle", options.filterMinTriAngle,
     ],
   };
 }
 
-function buildRelaxedSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
-  const command = buildStrictSparseMappingCommand(inputFolder, outputFolder);
+function buildStrictSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
+  return buildSparseMappingCommand(inputFolder, outputFolder, {
+    initMinNumInliers: "120",
+    initMinTriAngle: "12",
+    absPoseMinNumInliers: "40",
+    absPoseMinInlierRatio: "0.25",
+    filterMinTriAngle: "2.5",
+  });
+}
 
-  return {
-    ...command,
-    args: [
-      ...command.args,
-      "--Mapper.init_min_num_inliers", "50",
-      "--Mapper.init_min_tri_angle", "8",
-      "--Mapper.abs_pose_min_num_inliers", "20",
-      "--Mapper.abs_pose_min_inlier_ratio", "0.15",
-      "--Mapper.filter_min_tri_angle", "1.0",
-    ],
-  };
+function buildRelaxedSparseMappingCommand(inputFolder: string, outputFolder: string): StageCommand {
+  return buildSparseMappingCommand(inputFolder, outputFolder, {
+    initMinNumInliers: "50",
+    initMinTriAngle: "8",
+    absPoseMinNumInliers: "20",
+    absPoseMinInlierRatio: "0.15",
+    filterMinTriAngle: "1.0",
+  });
 }
 
 export function runSparseMapping(inputFolder: string, outputFolder: string, hooks?: RunColmapStageHooks, profile: PipelineProfile = "strict"
