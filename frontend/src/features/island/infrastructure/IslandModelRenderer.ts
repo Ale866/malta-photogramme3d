@@ -17,6 +17,11 @@ const SELECTED_SCALE = 1.06
 const DEEMPHASIZED_SCALE = 0.97
 const DEEMPHASIZED_OPACITY = 0.38
 const INTERACTION_TARGET_MIN_SIZE = 1.5
+const DEFAULT_INTERACTION_SIZE = new T.Vector3(2.2, TARGET_MODEL_HEIGHT, 2.2)
+const INITIAL_PRIORITY_LOAD_COUNT = 8
+const MAX_CONCURRENT_LOADS = 2
+const PRIORITY_LOAD_DISTANCE = 110
+let loadingSpinnerTexture: T.CanvasTexture | null = null
 
 type ObjectFocusState = {
   position: T.Vector3
@@ -25,68 +30,86 @@ type ObjectFocusState = {
   opacity: number
 }
 
+type ModelRenderEntry = {
+  model: IslandModelRenderInput
+  root: T.Group
+  modelGroup: T.Group
+  loadingMarker: T.Group
+  interactionTarget: T.Mesh
+  meshObject: T.Object3D | null
+  loadState: 'idle' | 'loading' | 'loaded' | 'failed'
+}
+
 export class IslandModelRenderer {
   private readonly scene: T.Scene
+  private readonly camera: T.PerspectiveCamera
   private readonly group = new T.Group()
   private readonly objectsByModelId = new Map<string, T.Object3D>()
   private readonly interactionTargetsByModelId = new Map<string, T.Object3D>()
   private readonly coordinatesByModelId = new Map<string, { x: number; y: number; z: number }>()
   private readonly originalStatesByModelId = new Map<string, ObjectFocusState>()
+  private readonly entriesByModelId = new Map<string, ModelRenderEntry>()
   private hoveredModelId: string | null = null
   private selectedModelId: string | null = null
   private focusTimeline: gsap.core.Timeline | null = null
+  private loadToken = 0
+  private pendingLoadOrder: string[] = []
+  private activeLoads = 0
 
-  constructor(scene: T.Scene) {
+  constructor(scene: T.Scene, camera: T.PerspectiveCamera) {
     this.scene = scene
+    this.camera = camera
     this.group.name = 'island-models'
     this.scene.add(this.group)
   }
 
   async setModels(models: readonly IslandModelRenderInput[]) {
     this.clear()
+    const currentToken = ++this.loadToken
 
-    for (const model of models) {
-      if (!model.meshAssetUrl) continue
+    const loadableModels = models.filter((model) => Boolean(model.meshAssetUrl))
+    const sortedModels = [...loadableModels].sort((left, right) =>
+      this.getDistanceToCamera(left.coordinates) - this.getDistanceToCamera(right.coordinates),
+    )
 
-      try {
-        const object = await loadDeliveredModel({
-          meshUrl: model.meshAssetUrl,
-          textureUrl: model.textureAssetUrl,
-        })
+    for (const model of sortedModels) {
+      const entry = this.createEntry(model)
+      this.entriesByModelId.set(model.id, entry)
+      this.objectsByModelId.set(model.id, entry.root)
+      this.interactionTargetsByModelId.set(model.id, entry.interactionTarget)
+      this.coordinatesByModelId.set(model.id, model.coordinates)
+      this.originalStatesByModelId.set(model.id, {
+        position: entry.root.position.clone(),
+        scale: entry.root.scale.clone(),
+        rotation: entry.root.rotation.clone(),
+        opacity: 1,
+      })
+      this.group.add(entry.root)
+      this.alignLoadingMarkerToCamera(entry.loadingMarker)
+    }
 
-        const box = new T.Box3().setFromObject(object)
-        const size = box.getSize(new T.Vector3())
-        const center = box.getCenter(new T.Vector3())
-        const height = Math.max(size.y, 1e-6)
-        const scale = TARGET_MODEL_HEIGHT / height
-        object.scale.setScalar(scale)
-        object.rotation.order = 'YXZ'
-        object.rotation.set(model.orientation.x, model.orientation.y, model.orientation.z)
+    this.pendingLoadOrder = sortedModels.map((model) => model.id)
 
-        const scaledBox = new T.Box3().setFromObject(object)
-        object.position.set(
-          model.coordinates.x,
-          model.coordinates.y - scaledBox.min.y,
-          model.coordinates.z,
-        )
-
-        object.userData.modelId = model.id
-        object.add(this.createInteractionTarget(model.id, size, center))
-        this.setObjectOpacity(object, 1)
-        this.group.add(object)
-        this.objectsByModelId.set(model.id, object)
-        this.interactionTargetsByModelId.set(model.id, object.children[object.children.length - 1]!)
-        this.coordinatesByModelId.set(model.id, model.coordinates)
-        this.originalStatesByModelId.set(model.id, {
-          position: object.position.clone(),
-          scale: object.scale.clone(),
-          rotation: object.rotation.clone(),
-          opacity: 1,
-        })
-      } catch (error) {
-        console.error(`Failed to load island model asset for ${model.id}`, error)
+    for (let index = 0; index < Math.min(INITIAL_PRIORITY_LOAD_COUNT, this.pendingLoadOrder.length); index += 1) {
+      const modelId = this.pendingLoadOrder[index]
+      if (modelId) {
+        void this.ensureModelLoaded(modelId, currentToken)
       }
     }
+
+    this.refreshLoadingPriorities()
+  }
+
+  refreshLoadingPriorities() {
+    this.orientLoadingMarkersToCamera()
+
+    const prioritizedModelIds = Array.from(this.entriesByModelId.values())
+      .filter((entry) => entry.loadState === 'idle')
+      .sort((left, right) => this.getLoadPriority(left) - this.getLoadPriority(right))
+      .map((entry) => entry.model.id)
+
+    this.pendingLoadOrder = prioritizedModelIds
+    this.processLoadQueue(this.loadToken)
   }
 
   getInteractiveObjects(): T.Object3D[] {
@@ -126,8 +149,11 @@ export class IslandModelRenderer {
     if (this.hoveredModelId) {
       this.setObjectHighlight(this.hoveredModelId, false)
     }
+
     this.selectedModelId = modelId
     this.hoveredModelId = null
+    void this.ensureModelLoaded(modelId, this.loadToken, true)
+    this.refreshLoadingPriorities()
     this.animateFocusState()
   }
 
@@ -135,6 +161,7 @@ export class IslandModelRenderer {
     if (!this.selectedModelId) return
 
     this.selectedModelId = null
+    this.refreshLoadingPriorities()
     this.animateFocusState()
   }
 
@@ -180,12 +207,28 @@ export class IslandModelRenderer {
     this.stopFocusAnimation()
     this.setHoveredModel(null)
     this.selectedModelId = null
+    this.loadToken += 1
+    this.pendingLoadOrder = []
+    this.activeLoads = 0
 
-    for (const object of this.objectsByModelId.values()) {
-      disposeObject3D(object)
+    for (const entry of this.entriesByModelId.values()) {
+      if (entry.meshObject) {
+        disposeObject3D(entry.meshObject)
+      }
+      this.stopLoadingMarkerAnimation(entry.loadingMarker)
+      entry.interactionTarget.geometry.dispose()
+      const interactionTargetMaterial = entry.interactionTarget.material
+      if (Array.isArray(interactionTargetMaterial)) {
+        for (const material of interactionTargetMaterial) {
+          material.dispose()
+        }
+      } else {
+        interactionTargetMaterial.dispose()
+      }
     }
 
     this.group.clear()
+    this.entriesByModelId.clear()
     this.objectsByModelId.clear()
     this.interactionTargetsByModelId.clear()
     this.coordinatesByModelId.clear()
@@ -195,6 +238,242 @@ export class IslandModelRenderer {
   dispose() {
     this.clear()
     this.scene.remove(this.group)
+  }
+
+  private createEntry(model: IslandModelRenderInput): ModelRenderEntry {
+    const root = new T.Group()
+    root.userData.modelId = model.id
+    root.rotation.order = 'YXZ'
+    root.position.set(model.coordinates.x, model.coordinates.y, model.coordinates.z)
+
+    const modelGroup = new T.Group()
+    modelGroup.rotation.order = 'YXZ'
+    modelGroup.rotation.set(model.orientation.x, model.orientation.y, model.orientation.z)
+
+    const loadingMarker = this.createLoadingMarker(model.id)
+    const interactionTarget = this.createInteractionTarget(
+      model.id,
+      DEFAULT_INTERACTION_SIZE,
+      new T.Vector3(0, TARGET_MODEL_HEIGHT * 0.5, 0),
+    )
+
+    root.add(loadingMarker, modelGroup, interactionTarget)
+
+    return {
+      model,
+      root,
+      modelGroup,
+      loadingMarker,
+      interactionTarget,
+      meshObject: null,
+      loadState: 'idle',
+    }
+  }
+
+  private createLoadingMarker(modelId: string) {
+    const marker = new T.Group()
+    marker.userData.modelId = modelId
+
+    const spinner = new T.Sprite(
+      new T.SpriteMaterial({
+        map: getLoadingSpinnerTexture(),
+        color: 0x5f98ff,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false,
+        sizeAttenuation: true,
+      }),
+    )
+    spinner.position.y = 0.96
+    spinner.scale.set(1.42, 1.42, 1)
+
+    const pulse = new T.Mesh(
+      new T.RingGeometry(0.18, 0.3, 28),
+      new T.MeshStandardMaterial({
+        color: 0xd8e7ff,
+        emissive: new T.Color(0x4f8dff),
+        emissiveIntensity: 0.22,
+        roughness: 0.34,
+        metalness: 0.02,
+        transparent: true,
+        opacity: 0.18,
+        side: T.DoubleSide,
+      }),
+    )
+    pulse.position.y = -0.02
+
+    marker.add(spinner, pulse)
+    marker.userData.spinner = spinner
+    marker.userData.pulse = pulse
+    this.startLoadingMarkerAnimation(marker)
+    return marker
+  }
+
+  private startLoadingMarkerAnimation(marker: T.Group) {
+    const spinner = marker.userData.spinner as T.Object3D | undefined
+    const pulse = marker.userData.pulse as T.Object3D | undefined
+    if (!spinner || !pulse) return
+
+    const spinnerMaterial = (spinner as T.Sprite).material
+    gsap.to(spinnerMaterial, {
+      rotation: Math.PI * 2,
+      duration: 1.1,
+      repeat: -1,
+      ease: 'none',
+    })
+
+    gsap.to(pulse.scale, {
+      x: 1.35,
+      y: 1.35,
+      z: 1.35,
+      duration: 0.9,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
+    })
+
+    gsap.to((pulse as T.Mesh).material as T.MeshStandardMaterial, {
+      opacity: 0.05,
+      duration: 0.9,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
+    })
+  }
+
+  private stopLoadingMarkerAnimation(marker: T.Group) {
+    const spinner = marker.userData.spinner as T.Object3D | undefined
+    const pulse = marker.userData.pulse as T.Object3D | undefined
+
+    if (spinner) {
+      gsap.killTweensOf((spinner as T.Sprite).material)
+    }
+    if (pulse) {
+      gsap.killTweensOf(pulse.scale)
+      const pulseMaterial = (pulse as T.Mesh).material
+      if (pulseMaterial instanceof T.Material) {
+        gsap.killTweensOf(pulseMaterial)
+      }
+    }
+  }
+
+  private orientLoadingMarkersToCamera() {
+    for (const entry of this.entriesByModelId.values()) {
+      if (entry.loadState !== 'loaded') {
+        this.alignLoadingMarkerToCamera(entry.loadingMarker)
+      }
+    }
+  }
+
+  private alignLoadingMarkerToCamera(marker: T.Group) {
+    const spinner = marker.userData.spinner as T.Object3D | undefined
+    if (!spinner) return
+    if ((spinner as T.Sprite).isSprite) return
+
+    const cameraPosition = this.camera.getWorldPosition(new T.Vector3())
+    spinner.lookAt(cameraPosition)
+  }
+
+  private async ensureModelLoaded(modelId: string, token: number, prioritize = false) {
+    const entry = this.entriesByModelId.get(modelId)
+    if (!entry || !entry.model.meshAssetUrl) return
+    if (entry.loadState === 'loaded' || entry.loadState === 'loading') return
+
+    if (prioritize) {
+      this.pendingLoadOrder = [
+        modelId,
+        ...this.pendingLoadOrder.filter((queuedModelId) => queuedModelId !== modelId),
+      ]
+    }
+
+    if (this.activeLoads >= MAX_CONCURRENT_LOADS) return
+
+    this.activeLoads += 1
+    entry.loadState = 'loading'
+
+    try {
+      const meshObject = await loadDeliveredModel({
+        meshUrl: entry.model.meshAssetUrl,
+        textureUrl: entry.model.textureAssetUrl,
+      })
+
+      if (token !== this.loadToken || !this.entriesByModelId.has(modelId)) {
+        disposeObject3D(meshObject)
+        return
+      }
+
+      meshObject.rotation.order = 'YXZ'
+      entry.modelGroup.add(meshObject)
+      entry.meshObject = meshObject
+      entry.loadState = 'loaded'
+      entry.loadingMarker.visible = false
+
+      const box = new T.Box3().setFromObject(meshObject)
+      const size = box.getSize(new T.Vector3())
+      const height = Math.max(size.y, 1e-6)
+      const scale = TARGET_MODEL_HEIGHT / height
+      entry.modelGroup.scale.setScalar(scale)
+      entry.root.position.copy(this.getGroundedPosition(entry.model.coordinates, entry.modelGroup))
+
+      entry.interactionTarget.geometry.dispose()
+      entry.interactionTarget.geometry = new T.BoxGeometry(
+        Math.max(size.x * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(size.y * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(size.z * 1.08, INTERACTION_TARGET_MIN_SIZE),
+      )
+      entry.interactionTarget.position.set(0, size.y * 0.5, 0)
+
+      this.originalStatesByModelId.set(modelId, {
+        position: entry.root.position.clone(),
+        scale: entry.root.scale.clone(),
+        rotation: entry.root.rotation.clone(),
+        opacity: 1,
+      })
+    } catch (error) {
+      entry.loadState = 'failed'
+      console.error(`Failed to load island model asset for ${modelId}`, error)
+    } finally {
+      this.activeLoads = Math.max(0, this.activeLoads - 1)
+      this.pendingLoadOrder = this.pendingLoadOrder.filter((queuedModelId) => queuedModelId !== modelId)
+      this.processLoadQueue(token)
+    }
+  }
+
+  private processLoadQueue(token: number) {
+    if (token !== this.loadToken) return
+
+    while (this.activeLoads < MAX_CONCURRENT_LOADS) {
+      const nextModelId = this.pendingLoadOrder[0]
+      if (!nextModelId) break
+      void this.ensureModelLoaded(nextModelId, token)
+      this.pendingLoadOrder = this.pendingLoadOrder.filter((queuedModelId) => queuedModelId !== nextModelId)
+    }
+  }
+
+  private getLoadPriority(entry: ModelRenderEntry) {
+    if (this.selectedModelId === entry.model.id) return -10_000
+
+    const distance = this.getDistanceToCamera(entry.model.coordinates)
+    if (distance <= PRIORITY_LOAD_DISTANCE) return distance
+    return PRIORITY_LOAD_DISTANCE + distance
+  }
+
+  private getDistanceToCamera(coordinates: { x: number; y: number; z: number }) {
+    return this.camera.position.distanceTo(new T.Vector3(coordinates.x, coordinates.y, coordinates.z))
+  }
+
+  private getGroundedPosition(
+    coordinates: { x: number; y: number; z: number },
+    content: T.Object3D,
+  ) {
+    const position = new T.Vector3(coordinates.x, coordinates.y, coordinates.z)
+    const box = new T.Box3().setFromObject(content)
+    if (box.isEmpty()) {
+      return position
+    }
+
+    position.y -= box.min.y
+    return position
   }
 
   private setObjectHighlight(modelId: string, highlighted: boolean) {
@@ -209,6 +488,7 @@ export class IslandModelRenderer {
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
       for (const material of materials) {
         const standardMaterial = material as T.MeshStandardMaterial
+        if (!standardMaterial.emissive) continue
         standardMaterial.emissive.setHex(highlighted ? HOVER_EMISSIVE : 0x000000)
         standardMaterial.emissiveIntensity = highlighted ? 0.16 : 0
       }
@@ -237,9 +517,9 @@ export class IslandModelRenderer {
       const isSelected = this.selectedModelId === modelId
       const hasFocusedModel = this.selectedModelId !== null
       const targetScale = isSelected
-        ? SELECTED_SCALE
+        ? originalState.scale.x * SELECTED_SCALE
         : hasFocusedModel
-          ? DEEMPHASIZED_SCALE
+          ? originalState.scale.x * DEEMPHASIZED_SCALE
           : originalState.scale.x
       const targetOpacity = hasFocusedModel
         ? (isSelected ? originalState.opacity : DEEMPHASIZED_OPACITY)
@@ -337,4 +617,41 @@ export class IslandModelRenderer {
     target.userData.isInteractionTarget = true
     return target
   }
+}
+
+function getLoadingSpinnerTexture() {
+  if (loadingSpinnerTexture) return loadingSpinnerTexture
+
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+
+  const context = canvas.getContext('2d')
+  if (!context) {
+    throw new Error('Unable to create loading spinner texture context.')
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height)
+  context.translate(canvas.width / 2, canvas.height / 2)
+  context.lineCap = 'round'
+  context.lineWidth = 18
+
+  const radius = 68
+  const segmentLength = 34
+  for (let index = 0; index < 12; index += 1) {
+    const alpha = 0.18 + (index / 11) * 0.82
+    context.save()
+    context.rotate((index / 12) * Math.PI * 2)
+    context.strokeStyle = `rgba(255, 255, 255, ${alpha})`
+    context.beginPath()
+    context.moveTo(0, -radius)
+    context.lineTo(0, -(radius + segmentLength))
+    context.stroke()
+    context.restore()
+  }
+
+  loadingSpinnerTexture = new T.CanvasTexture(canvas)
+  loadingSpinnerTexture.colorSpace = T.SRGBColorSpace
+  loadingSpinnerTexture.needsUpdate = true
+  return loadingSpinnerTexture
 }

@@ -1,5 +1,17 @@
 import * as T from 'three'
 
+function getPreferredPixelRatio() {
+  if (typeof window === 'undefined') return 1
+
+  const devicePixelRatio = window.devicePixelRatio || 1
+  const isCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  if (isCoarsePointer) {
+    return Math.min(devicePixelRatio, 1.1)
+  }
+
+  return Math.min(devicePixelRatio, 2)
+}
+
 export class SceneRenderer {
   private scene: T.Scene
   private camera: T.PerspectiveCamera
@@ -22,7 +34,7 @@ export class SceneRenderer {
     )
 
     this.renderer = new T.WebGLRenderer({ antialias: true })
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setPixelRatio(getPreferredPixelRatio())
     this.renderer.shadowMap.enabled = false
     this.renderer.outputColorSpace = T.SRGBColorSpace
     this.renderer.toneMapping = T.ACESFilmicToneMapping

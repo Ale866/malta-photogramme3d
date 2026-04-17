@@ -21,14 +21,23 @@ export function useIslandModelLayer() {
   function ensureRenderer(orchestrator: IslandOrchestrator): IslandModelRenderer {
     if (renderer.value) return renderer.value
 
-    renderer.value = new IslandModelRenderer(orchestrator.getSceneRenderer().getScene())
+    renderer.value = new IslandModelRenderer(
+      orchestrator.getSceneRenderer().getScene(),
+      orchestrator.getSceneRenderer().getCamera(),
+    )
     return renderer.value
   }
 
   async function renderModels(orchestrator: IslandOrchestrator, models: PositionedModel[]) {
     focusedModelId.value = null
     orchestrator.setTerrainClickEnabled(true)
-    await ensureRenderer(orchestrator).setModels(models)
+    const currentRenderer = ensureRenderer(orchestrator)
+    await currentRenderer.setModels(models)
+    currentRenderer.refreshLoadingPriorities()
+  }
+
+  function refreshLoadingPriorities(orchestrator: IslandOrchestrator) {
+    ensureRenderer(orchestrator).refreshLoadingPriorities()
   }
 
   function attachInteractions(
@@ -95,10 +104,11 @@ export function useIslandModelLayer() {
     renderer.value = null
   }
 
-  return {
-    attachInteractions,
-    renderModels,
-    focusModel,
+    return {
+      attachInteractions,
+      renderModels,
+      refreshLoadingPriorities,
+      focusModel,
     exitFocusMode,
     focusedModelId: computed(() => focusedModelId.value),
     isFocusModeActive: computed(() => focusedModelId.value !== null),

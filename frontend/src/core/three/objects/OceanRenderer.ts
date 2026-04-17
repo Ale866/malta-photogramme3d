@@ -2,10 +2,17 @@ import * as T from 'three'
 import vertexShader from '../shaders/ocean/vertex.glsl?raw'
 import fragmentShader from '../shaders/ocean/fragment.glsl?raw'
 
+function isLowPowerDevice() {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia?.('(pointer: coarse)').matches ?? false
+}
+
 export class OceanRenderer {
   private oceanMesh: T.Mesh<T.PlaneGeometry, T.ShaderMaterial> | null = null
   private depthColor = new T.Color(6 / 255, 66 / 255, 115 / 255)
   private surfaceColor = new T.Color(143 / 255, 210 / 255, 242 / 255)
+  private readonly lowPowerMode = isLowPowerDevice()
+  private lastAnimatedElapsed = -Infinity
 
   createOcean(bboxLocalXZ: {
     minX: number
@@ -23,24 +30,25 @@ export class OceanRenderer {
     const visualWidth = terrainWidth * visualScale
     const visualHeight = terrainHeight * visualScale
     const visualMaxDim = Math.max(visualWidth, visualHeight)
+    const segments = this.lowPowerMode ? 192 : 512
     const uniforms = {
       fogNear: { value: 1 },
       fogFar: { value: 2000 },
       fogColor: { value: new T.Color(230 / 255, 240 / 255, 255 / 255) },
       uTime: { value: 0 },
-      uBigWavesElevation: { value: 0.15 },
+      uBigWavesElevation: { value: this.lowPowerMode ? 0.125 : 0.15 },
       uBigWavesFrequency: {
         value: new T.Vector2(
           8.0 / visualWidth,
           3.0 / visualHeight
         ),
       },
-      uBigWavesSpeed: { value: 0.2 },
-      uSmallWavesElevation: { value: 0.35 },
-      uSmallWavesFrequency: { value: 6.0 / visualMaxDim },
-      uSmallWavesSpeed: { value: 0.1 },
-      uSmallIterations: { value: 4.0 },
-      uDisplacementScale: { value: 25 },
+      uBigWavesSpeed: { value: this.lowPowerMode ? 0.16 : 0.2 },
+      uSmallWavesElevation: { value: this.lowPowerMode ? 0.27 : 0.35 },
+      uSmallWavesFrequency: { value: (this.lowPowerMode ? 5.0 : 6.0) / visualMaxDim },
+      uSmallWavesSpeed: { value: this.lowPowerMode ? 0.082 : 0.1 },
+      uSmallIterations: { value: this.lowPowerMode ? 3.0 : 4.0 },
+      uDisplacementScale: { value: this.lowPowerMode ? 21 : 25 },
       uDepthColor: { value: this.depthColor },
       uSurfaceColor: { value: this.surfaceColor },
       uColorOffset: { value: 0.1 },
@@ -59,7 +67,7 @@ export class OceanRenderer {
     })
 
     this.oceanMesh = new T.Mesh(
-      new T.PlaneGeometry(width, height, 512, 512),
+      new T.PlaneGeometry(width, height, segments, segments),
       oceanMaterial
     )
 
@@ -73,6 +81,10 @@ export class OceanRenderer {
   update(elapsed: number) {
     const material = this.oceanMesh?.material
     if (material instanceof T.ShaderMaterial && material.uniforms.uTime) {
+      if (this.lowPowerMode && elapsed - this.lastAnimatedElapsed < 1 / 30) {
+        return
+      }
+      this.lastAnimatedElapsed = elapsed
       material.uniforms.uTime.value = elapsed
     }
   }
@@ -91,5 +103,6 @@ export class OceanRenderer {
       }
       this.oceanMesh = null
     }
+    this.lastAnimatedElapsed = -Infinity
   }
 }

@@ -19,6 +19,7 @@ const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
 const {
   attachInteractions,
   renderModels,
+  refreshLoadingPriorities,
   focusModel,
   exitFocusMode,
   isFocusModeActive,
@@ -121,6 +122,7 @@ onMounted(async () => {
         clearTerrainSelection()
       },
     })
+    refreshLoadingPriorities(islandOrchestrator)
 
     const focusedModelId = typeof route.query.modelId === 'string' ? route.query.modelId : null
     if (focusedModelId) {
@@ -128,6 +130,9 @@ onMounted(async () => {
     }
 
     stopCameraChangeListener = viewportProjectionPort.onViewportChange(() => {
+      if (islandOrchestrator) {
+        refreshLoadingPriorities(islandOrchestrator)
+      }
       updateMarkerButtonPosition()
     })
   } catch (error) {
