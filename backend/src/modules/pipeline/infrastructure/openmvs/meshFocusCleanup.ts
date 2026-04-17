@@ -17,7 +17,7 @@ const MESH_CLEANUP_REQUIREMENTS = ["numpy", "scipy", "trimesh", "PIL"];
 
 let meshCleanupPythonPromise: Promise<string> | null = null;
 
-export async function runStrictMeshFocusCleanup(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
+export async function runMeshFocusCleanup(outputFolder: string, hooks?: RunColmapStageHooks): Promise<void> {
   const outputPaths = resolveOutputPaths(outputFolder);
   requireExistingDirectory(outputPaths.openmvsWorkspace);
   requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
@@ -32,13 +32,13 @@ export async function runStrictMeshFocusCleanup(outputFolder: string, hooks?: Ru
   requireExistingFile(outputPaths.openmvsSceneMeshCleanedPly, "OpenMVS cleaned mesh");
 }
 
-export function resolveStrictMeshForTexturing(outputFolder: string): string {
+export function resolveMeshForTexturing(outputFolder: string): string {
   const outputPaths = resolveOutputPaths(outputFolder);
   const rawMeshPath = requireExistingFile(outputPaths.openmvsSceneMeshPly, "OpenMVS mesh");
   const cleanedMeshPath = outputPaths.openmvsSceneMeshCleanedPly;
 
   if (!fs.existsSync(cleanedMeshPath)) {
-    console.warn("[OpenMVS focus_cleanup] Cleaned mesh not found; falling back to raw mesh for texturing");
+    console.warn(`[OpenMVS focus_cleanup] Cleaned mesh not found; texturing will use ${path.basename(rawMeshPath)}`);
     return rawMeshPath;
   }
 
@@ -49,18 +49,18 @@ export function resolveStrictMeshForTexturing(outputFolder: string): string {
     const shouldFallback = cleanedVertexCount <= 0 || cleanedFaceCount <= 0 || cleanedFaceCount < originalFaceCount * 0.2;
 
     console.info(
-      `[OpenMVS focus_cleanup] Mesh fallback check: raw_faces=${originalFaceCount}, cleaned_faces=${cleanedFaceCount}, cleaned_vertices=${cleanedVertexCount}, fallback=${shouldFallback}`
+      `[OpenMVS focus_cleanup] Fallback check: raw_faces=${originalFaceCount}, cleaned_faces=${cleanedFaceCount}, cleaned_vertices=${cleanedVertexCount}, fallback=${shouldFallback}`
     );
 
     if (shouldFallback) {
-      console.warn("[OpenMVS focus_cleanup] Cleaned mesh is too aggressive; using raw mesh for texturing");
+      console.warn(`[OpenMVS focus_cleanup] Cleaned mesh is too aggressive; texturing will use ${path.basename(rawMeshPath)}`);
       return rawMeshPath;
     }
 
-    console.info(`[OpenMVS focus_cleanup] Using cleaned mesh for texturing: ${cleanedMeshPath}`);
+    console.info(`[OpenMVS focus_cleanup] Texturing will use ${path.basename(cleanedMeshPath)}`);
     return cleanedMeshPath;
   } catch (error) {
-    console.warn("[OpenMVS focus_cleanup] Failed to validate cleaned mesh; falling back to raw mesh", error);
+    console.warn(`[OpenMVS focus_cleanup] Failed to validate cleaned mesh; texturing will use ${path.basename(rawMeshPath)}`, error);
     return rawMeshPath;
   }
 }
@@ -113,25 +113,6 @@ function getVenvPythonPath(venvDir: string): string {
   return process.platform === "win32"
     ? path.join(venvDir, "Scripts", "python.exe")
     : path.join(venvDir, "bin", "python");
-}
-
-function runCheckedCommand(command: string, args: string[], label: string): void {
-  const result = spawnSync(command, args, {
-    shell: false,
-    windowsHide: true,
-    encoding: "utf8",
-    timeout: 10 * 60 * 1000,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-
-  if (result.error) {
-    throw new Error(`Failed to ${label}: ${result.error.message}`);
-  }
-
-  if (result.status !== 0) {
-    const details = result.stderr?.trim() || result.stdout?.trim() || `exit code ${result.status}`;
-    throw new Error(`Failed to ${label}: ${details}`);
-  }
 }
 
 function buildMeshFocusCleanupCommand(outputFolder: string, pythonExecutable: string): StageCommand {

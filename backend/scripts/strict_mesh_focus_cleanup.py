@@ -15,7 +15,7 @@ def log(message: str) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Strict mesh focus cleanup")
+    parser = argparse.ArgumentParser(description="Mesh focus cleanup")
     parser.add_argument("--input", required=True, help="Path to the raw mesh")
     parser.add_argument("--output", required=True, help="Path to the cleaned mesh")
     return parser.parse_args()
