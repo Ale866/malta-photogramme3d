@@ -4,6 +4,8 @@ import { IslandModelRenderer } from './IslandModelRenderer'
 type IslandModelInteractorOptions = {
   onModelClick?: (modelId: string) => void;
   onEmptyClick?: () => void;
+  onRotationStart?: () => void;
+  onRotationEnd?: () => void;
 }
 
 export class IslandModelInteractor {
@@ -12,6 +14,8 @@ export class IslandModelInteractor {
   private readonly renderer: IslandModelRenderer
   private readonly onModelClick: ((modelId: string) => void) | null
   private readonly onEmptyClick: (() => void) | null
+  private readonly onRotationStart: (() => void) | null
+  private readonly onRotationEnd: (() => void) | null
   private readonly raycaster = new T.Raycaster()
   private readonly pointer = new T.Vector2()
   private pointerDownClient: { x: number; y: number } | null = null
@@ -30,6 +34,8 @@ export class IslandModelInteractor {
     this.renderer = renderer
     this.onModelClick = options?.onModelClick ?? null
     this.onEmptyClick = options?.onEmptyClick ?? null
+    this.onRotationStart = options?.onRotationStart ?? null
+    this.onRotationEnd = options?.onRotationEnd ?? null
 
     this.canvas.addEventListener('pointerdown', this.handlePointerDown, { capture: true })
     this.canvas.addEventListener('pointermove', this.handlePointerMove, { capture: true })
@@ -50,6 +56,7 @@ export class IslandModelInteractor {
     this.rotatePointerId = null
     this.isDragging = false
     this.renderer.setHoveredModel(null)
+    this.onRotationEnd?.()
   }
 
   private readonly handlePointerDown = (event: PointerEvent) => {
@@ -62,8 +69,10 @@ export class IslandModelInteractor {
 
     if (this.renderer.hasFocusedModel() && this.pointerDownModelId === this.renderer.getSelectedModelId()) {
       event.stopPropagation()
+      event.preventDefault()
       this.rotatePointerId = event.pointerId
       this.canvas.setPointerCapture(event.pointerId)
+      this.onRotationStart?.()
     }
   }
 
@@ -81,6 +90,7 @@ export class IslandModelInteractor {
         this.pointerDownModelId === this.renderer.getSelectedModelId()
       ) {
         event.stopPropagation()
+        event.preventDefault()
         this.renderer.rotateFocusedModel(dx, dy)
         this.pointerDownClient = { x: event.clientX, y: event.clientY }
         return
@@ -105,6 +115,7 @@ export class IslandModelInteractor {
 
     if (wasFocusedRotationInteraction) {
       event.stopPropagation()
+      event.preventDefault()
       this.releaseRotatePointer(event.pointerId)
       this.pointerDownClient = null
       this.pointerDownModelId = null
@@ -159,5 +170,6 @@ export class IslandModelInteractor {
     }
 
     this.rotatePointerId = null
+    this.onRotationEnd?.()
   }
 }

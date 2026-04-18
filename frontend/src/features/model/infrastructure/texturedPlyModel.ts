@@ -1,6 +1,4 @@
 import * as T from 'three'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js'
 
 type LoadTexturedPlyModelInput = {
   meshUrl: string
@@ -8,12 +6,12 @@ type LoadTexturedPlyModelInput = {
 }
 
 const SHARED_ASSET_KEY = '__sharedModelAsset'
-const plyLoader = new PLYLoader()
-const gltfLoader = new GLTFLoader()
 const textureLoader = new T.TextureLoader()
 const geometryCache = new Map<string, Promise<T.BufferGeometry>>()
 const gltfCache = new Map<string, Promise<T.Object3D>>()
 const textureCache = new Map<string, Promise<T.Texture | null>>()
+let plyLoaderPromise: Promise<{ loadAsync(url: string): Promise<T.BufferGeometry> }> | null = null
+let gltfLoaderPromise: Promise<{ loadAsync(url: string): Promise<{ scene?: T.Object3D; scenes: T.Object3D[] }> }> | null = null
 
 export async function loadDeliveredModel(input: LoadTexturedPlyModelInput): Promise<T.Group> {
   try {
@@ -99,11 +97,13 @@ function loadCachedGeometry(meshUrl: string) {
   let cached = geometryCache.get(meshUrl)
   if (cached) return cached
 
-  cached = plyLoader.loadAsync(meshUrl).then((geometry) => {
-    geometry.computeVertexNormals()
-    geometry.userData[SHARED_ASSET_KEY] = true
-    return geometry
-  })
+  cached = getPlyLoader().then((loader) =>
+    loader.loadAsync(meshUrl).then((geometry) => {
+      geometry.computeVertexNormals()
+      geometry.userData[SHARED_ASSET_KEY] = true
+      return geometry
+    }),
+  )
   geometryCache.set(meshUrl, cached)
   return cached
 }
@@ -112,28 +112,30 @@ function loadCachedGlbScene(meshUrl: string) {
   let cached = gltfCache.get(meshUrl)
   if (cached) return cached
 
-  cached = gltfLoader.loadAsync(meshUrl).then((gltf) => {
-    const root = gltf.scene ?? gltf.scenes[0]
-    if (!root) {
-      throw new Error(`GLB scene is empty for ${meshUrl}`)
-    }
-
-    root.traverse((child) => {
-      const mesh = child as T.Mesh
-      if (!mesh.isMesh) return
-
-      mesh.castShadow = true
-      mesh.receiveShadow = true
-      mesh.geometry?.userData && (mesh.geometry.userData[SHARED_ASSET_KEY] = true)
-
-      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-      for (const material of materials) {
-        markSharedTextures(material)
+  cached = getGltfLoader().then((loader) =>
+    loader.loadAsync(meshUrl).then((gltf) => {
+      const root = gltf.scene ?? gltf.scenes[0]
+      if (!root) {
+        throw new Error(`GLB scene is empty for ${meshUrl}`)
       }
-    })
 
-    return root
-  })
+      root.traverse((child) => {
+        const mesh = child as T.Mesh
+        if (!mesh.isMesh) return
+
+        mesh.castShadow = true
+        mesh.receiveShadow = true
+        mesh.geometry?.userData && (mesh.geometry.userData[SHARED_ASSET_KEY] = true)
+
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        for (const material of materials) {
+          markSharedTextures(material)
+        }
+      })
+
+      return root
+    }),
+  )
   gltfCache.set(meshUrl, cached)
   return cached
 }
@@ -188,4 +190,14 @@ function loadCachedTexture(textureUrl: string) {
   })
   textureCache.set(textureUrl, cached)
   return cached
+}
+
+function getPlyLoader() {
+  plyLoaderPromise ??= import('three/examples/jsm/loaders/PLYLoader.js').then(({ PLYLoader }) => new PLYLoader())
+  return plyLoaderPromise
+}
+
+function getGltfLoader() {
+  gltfLoaderPromise ??= import('three/examples/jsm/loaders/GLTFLoader.js').then(({ GLTFLoader }) => new GLTFLoader())
+  return gltfLoaderPromise
 }

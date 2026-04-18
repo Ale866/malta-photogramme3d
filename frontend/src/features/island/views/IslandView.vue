@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, onUnmounted } from 'vue'
+import { defineAsyncComponent, inject, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MALTA_TERRAIN_UTM_BBOX } from '@/core/config/maltaTerrainBounds'
 import { useScene } from '@/features/island/composables/useScene'
@@ -7,7 +7,7 @@ import { useIslandModelLayer } from '@/features/island/composables/useIslandMode
 import { useIslandSelectionFlow } from '@/features/island/composables/useIslandSelectionFlow'
 import SearchBar from '@/components/SearchBar.vue'
 import ModelCreationModal from '@/features/model/components/ModelCreationModal.vue'
-import MobileJoystick from '@/features/island/components/MobileJoystick.vue'
+const MobileJoystick = defineAsyncComponent(() => import('@/features/island/components/MobileJoystick.vue'))
 import type { ViewportProjectionPort } from '@/features/island/domain/ViewportProjectionPort'
 import type { CameraController } from '@/core/three/controls/CameraController'
 import type { IslandOrchestrator } from '@/features/island/application/IslandOrchestrator'

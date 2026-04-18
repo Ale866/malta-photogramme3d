@@ -275,6 +275,10 @@ export class CameraController {
     return this.controls
   }
 
+  setOrbitInteractionEnabled(enabled: boolean) {
+    this.controls.enabled = enabled
+  }
+
   hasFocusView() {
     return this.focusRestoreState !== null
   }

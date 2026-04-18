@@ -63,6 +63,12 @@ export function useIslandModelLayer() {
         onEmptyClick: () => {
           exitFocusMode(orchestrator)
         },
+        onRotationStart: () => {
+          orchestrator.getCameraController().setOrbitInteractionEnabled(false)
+        },
+        onRotationEnd: () => {
+          orchestrator.getCameraController().setOrbitInteractionEnabled(true)
+        },
       }
     )
   }
@@ -90,6 +96,7 @@ export function useIslandModelLayer() {
     focusedModelId.value = null
     renderer.value?.clearFocus()
     orchestrator.getCameraController().restoreFocusView()
+    orchestrator.getCameraController().setOrbitInteractionEnabled(true)
     orchestrator.setTerrainClickEnabled(true)
     onModelBlur?.()
   }
@@ -104,11 +111,11 @@ export function useIslandModelLayer() {
     renderer.value = null
   }
 
-    return {
-      attachInteractions,
-      renderModels,
-      refreshLoadingPriorities,
-      focusModel,
+  return {
+    attachInteractions,
+    renderModels,
+    refreshLoadingPriorities,
+    focusModel,
     exitFocusMode,
     focusedModelId: computed(() => focusedModelId.value),
     isFocusModeActive: computed(() => focusedModelId.value !== null),

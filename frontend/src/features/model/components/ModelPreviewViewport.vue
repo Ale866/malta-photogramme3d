@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { defineAsyncComponent, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useModelPreview } from '@/features/model/application/useModelPreview'
-import MobileJoystick from '@/features/island/components/MobileJoystick.vue'
+
+const MobileJoystick = defineAsyncComponent(() => import('@/features/island/components/MobileJoystick.vue'))
 
 const props = withDefaults(defineProps<{
   interactive?: boolean
