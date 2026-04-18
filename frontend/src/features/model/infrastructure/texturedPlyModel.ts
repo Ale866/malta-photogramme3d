@@ -11,7 +11,8 @@ const geometryCache = new Map<string, Promise<T.BufferGeometry>>()
 const gltfCache = new Map<string, Promise<T.Object3D>>()
 const textureCache = new Map<string, Promise<T.Texture | null>>()
 let plyLoaderPromise: Promise<{ loadAsync(url: string): Promise<T.BufferGeometry> }> | null = null
-let gltfLoaderPromise: Promise<{ loadAsync(url: string): Promise<{ scene?: T.Object3D; scenes: T.Object3D[] }> }> | null = null
+let dracoLoaderPromise: Promise<{ dispose(): void }> | null = null
+let fallbackGltfLoaderPromise: Promise<{ loadAsync(url: string): Promise<{ scene?: T.Object3D; scenes: T.Object3D[] }> }> | null = null
 
 export async function loadDeliveredModel(input: LoadTexturedPlyModelInput): Promise<T.Group> {
   try {
@@ -198,6 +199,21 @@ function getPlyLoader() {
 }
 
 function getGltfLoader() {
-  gltfLoaderPromise ??= import('three/examples/jsm/loaders/GLTFLoader.js').then(({ GLTFLoader }) => new GLTFLoader())
-  return gltfLoaderPromise
+  fallbackGltfLoaderPromise ??= import('three/examples/jsm/loaders/GLTFLoader.js').then(({ GLTFLoader }) => {
+    const loader = new GLTFLoader()
+    return getDracoLoader().then((dracoLoader) => {
+      loader.setDRACOLoader(dracoLoader as never)
+      return loader
+    })
+  })
+  return fallbackGltfLoaderPromise
+}
+
+function getDracoLoader() {
+  dracoLoaderPromise ??= import('three/examples/jsm/loaders/DRACOLoader.js').then(({ DRACOLoader }) => {
+    const loader = new DRACOLoader()
+    loader.setDecoderPath('/draco/')
+    return loader
+  })
+  return dracoLoaderPromise
 }

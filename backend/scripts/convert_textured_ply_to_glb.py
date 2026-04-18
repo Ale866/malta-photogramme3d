@@ -192,16 +192,37 @@ def main():
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
-    bpy.ops.export_scene.gltf(
-        filepath=str(output_glb),
-        export_format="GLB",
-        export_draco_mesh_compression_enable=False,
-        export_materials="EXPORT",
-        export_texcoords=True,
-        export_normals=True,
-    )
+    export_glb(output_glb)
 
     print(f"Wrote GLB to {output_glb}")
+
+
+def export_glb(output_glb: Path):
+    export_kwargs = {
+        "filepath": str(output_glb),
+        "export_format": "GLB",
+        "export_materials": "EXPORT",
+        "export_texcoords": True,
+        "export_normals": True,
+    }
+
+    try:
+        bpy.ops.export_scene.gltf(
+            **export_kwargs,
+            export_draco_mesh_compression_enable=True,
+            export_draco_mesh_compression_level=6,
+            export_draco_position_quantization=14,
+            export_draco_normal_quantization=10,
+            export_draco_texcoord_quantization=12,
+            export_draco_generic_quantization=12,
+        )
+        print("Exported GLB with Draco compression enabled")
+    except Exception as exc:
+        print(f"Draco export failed, retrying without Draco compression: {exc}")
+        bpy.ops.export_scene.gltf(
+            **export_kwargs,
+            export_draco_mesh_compression_enable=False,
+        )
 
 
 if __name__ == "__main__":
