@@ -42,6 +42,7 @@ export class CameraController {
   private focusForward = new T.Vector3()
   private focusQuaternion = new T.Quaternion()
   private focusSphere = new T.Sphere()
+  private focusChildBox = new T.Box3()
   private isFocusModeActive = false
 
   constructor(camera: T.PerspectiveCamera, domElement: HTMLElement) {
@@ -137,7 +138,7 @@ export class CameraController {
   ) {
     object.updateWorldMatrix(true, true)
 
-    const box = this.focusBox.setFromObject(object)
+    const box = this.measureFocusableBounds(object)
     if (box.isEmpty()) return
 
     const isEnteringFocusMode = !this.focusRestoreState
@@ -157,7 +158,7 @@ export class CameraController {
     const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * this.camera.aspect)
     const distanceForHeight = radius / Math.sin(verticalFov / 2)
     const distanceForWidth = radius / Math.sin(horizontalFov / 2)
-    const distance = Math.max(distanceForHeight, distanceForWidth) * 1.18
+    const distance = Math.max(distanceForHeight, distanceForWidth) * 1.02
     const lift = Math.max(this.focusSize.y * 0.12, radius * 0.18)
 
     object.getWorldQuaternion(this.focusQuaternion)
@@ -442,6 +443,24 @@ export class CameraController {
     this.cameraInterpolation.kill()
     this.cameraInterpolation = null
     this.controls.enabled = true
+  }
+
+  private measureFocusableBounds(object: T.Object3D) {
+    this.focusBox.makeEmpty()
+
+    object.traverse((child) => {
+      if (child.userData?.excludeFromFocusBounds) return
+
+      const isMeshLike = (child as T.Mesh).isMesh || (child as T.Sprite).isSprite
+      if (!isMeshLike) return
+
+      this.focusChildBox.setFromObject(child)
+      if (!this.focusChildBox.isEmpty()) {
+        this.focusBox.union(this.focusChildBox)
+      }
+    })
+
+    return this.focusBox
   }
 
 }

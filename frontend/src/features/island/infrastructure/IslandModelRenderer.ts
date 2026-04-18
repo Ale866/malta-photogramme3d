@@ -13,7 +13,7 @@ type IslandModelRenderInput = {
 const HOVER_EMISSIVE = 0xffffff
 const TARGET_MODEL_HEIGHT = 4
 const SELECTED_LIFT = 0.45
-const SELECTED_SCALE = 1.06
+const SELECTED_SCALE = 1.14
 const DEEMPHASIZED_SCALE = 0.97
 const DEEMPHASIZED_OPACITY = 0.38
 const INTERACTION_TARGET_MIN_SIZE = 1.5
@@ -85,7 +85,6 @@ export class IslandModelRenderer {
         opacity: 1,
       })
       this.group.add(entry.root)
-      this.alignLoadingMarkerToCamera(entry.loadingMarker)
     }
 
     this.pendingLoadOrder = sortedModels.map((model) => model.id)
@@ -101,8 +100,6 @@ export class IslandModelRenderer {
   }
 
   refreshLoadingPriorities() {
-    this.orientLoadingMarkersToCamera()
-
     const prioritizedModelIds = Array.from(this.entriesByModelId.values())
       .filter((entry) => entry.loadState === 'idle')
       .sort((left, right) => this.getLoadPriority(left) - this.getLoadPriority(right))
@@ -357,23 +354,6 @@ export class IslandModelRenderer {
     }
   }
 
-  private orientLoadingMarkersToCamera() {
-    for (const entry of this.entriesByModelId.values()) {
-      if (entry.loadState !== 'loaded') {
-        this.alignLoadingMarkerToCamera(entry.loadingMarker)
-      }
-    }
-  }
-
-  private alignLoadingMarkerToCamera(marker: T.Group) {
-    const spinner = marker.userData.spinner as T.Object3D | undefined
-    if (!spinner) return
-    if ((spinner as T.Sprite).isSprite) return
-
-    const cameraPosition = this.camera.getWorldPosition(new T.Vector3())
-    spinner.lookAt(cameraPosition)
-  }
-
   private async ensureModelLoaded(modelId: string, token: number, prioritize = false) {
     const entry = this.entriesByModelId.get(modelId)
     if (!entry || !entry.model.meshAssetUrl) return
@@ -615,6 +595,7 @@ export class IslandModelRenderer {
     target.position.copy(center)
     target.userData.modelId = modelId
     target.userData.isInteractionTarget = true
+    target.userData.excludeFromFocusBounds = true
     return target
   }
 }

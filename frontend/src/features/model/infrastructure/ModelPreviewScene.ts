@@ -6,7 +6,6 @@ type ModelPreviewSceneOptions = {
   meshUrl?: string | null
   textureUrl?: string | null
   orientation?: { x: number; y: number; z: number } | null
-  dragMode?: 'orbit' | 'roll'
   onOrientationChange?: (orientation: { x: number; y: number; z: number }) => void
   onLoaded?: () => void
   onError?: () => void
@@ -39,7 +38,6 @@ export class ModelPreviewScene {
   private readonly onLoaded?: () => void
   private readonly onError?: () => void
   private baseOrientation = { x: 0.3, y: 0.45, z: 0.08 }
-  private dragMode: 'orbit' | 'roll'
   private loadToken = 0
   private frameCenter: T.Vector3 | null = null
   private frameOffset = new T.Vector3()
@@ -62,7 +60,6 @@ export class ModelPreviewScene {
     this.interactive = options.interactive ?? true
     this.meshUrl = options.meshUrl ?? null
     this.textureUrl = options.textureUrl ?? null
-    this.dragMode = options.dragMode ?? 'orbit'
     if (options.orientation) {
       this.baseOrientation = { ...options.orientation }
     }
@@ -73,19 +70,6 @@ export class ModelPreviewScene {
 
   setOrientation(orientation: { x: number; y: number; z: number }) {
     this.baseOrientation = this.normalizeOrientation(orientation)
-  }
-
-  setDragMode(mode: 'orbit' | 'roll') {
-    this.dragMode = mode
-  }
-
-  resetZoom() {
-    this.setZoomScale(DEFAULT_ZOOM_SCALE)
-  }
-
-  resetView() {
-    this.frameOffset.set(0, 0, 0)
-    this.setZoomScale(DEFAULT_ZOOM_SCALE)
   }
 
   setPanInput(input: { x: number; y: number }) {
@@ -282,7 +266,7 @@ export class ModelPreviewScene {
     if (this.dragState.mode === 'pan') {
       this.panByScreenDelta(deltaX, deltaY)
     } else {
-      const rotateRoll = this.dragMode === 'roll' || event.shiftKey
+      const rotateRoll = event.shiftKey
 
       if (rotateRoll) {
         this.baseOrientation = {

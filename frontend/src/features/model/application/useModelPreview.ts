@@ -6,7 +6,6 @@ type UseModelPreviewOptions = {
   meshUrl?: string | null
   textureUrl?: string | null
   orientation?: { x: number; y: number; z: number } | null
-  dragMode?: 'orbit' | 'roll'
   onOrientationChange?: (orientation: { x: number; y: number; z: number }) => void
   onLoaded?: () => void
   onError?: () => void
@@ -28,18 +27,6 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     scene.setOrientation(orientation)
   }
 
-  function setDragMode(mode: 'orbit' | 'roll') {
-    scene.setDragMode(mode)
-  }
-
-  function resetZoom() {
-    scene.resetZoom()
-  }
-
-  function resetView() {
-    scene.resetView()
-  }
-
   function setPanInput(input: { x: number; y: number }) {
     scene.setPanInput(input)
   }
@@ -52,9 +39,6 @@ export function useModelPreview(options: UseModelPreviewOptions = {}) {
     mount,
     unmount,
     setOrientation,
-    setDragMode,
-    resetZoom,
-    resetView,
     setPanInput,
   }
 }

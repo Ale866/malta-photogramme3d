@@ -9,7 +9,6 @@ const props = withDefaults(defineProps<{
   meshUrl?: string | null
   textureUrl?: string | null
   orientation?: { x: number; y: number; z: number } | null
-  dragMode?: 'orbit' | 'roll'
   loadingLabel?: string
 }>(), {
   interactive: true,
@@ -17,7 +16,6 @@ const props = withDefaults(defineProps<{
   meshUrl: null,
   textureUrl: null,
   orientation: null,
-  dragMode: 'orbit',
   loadingLabel: 'Loading model preview',
 })
 
@@ -28,12 +26,11 @@ const emit = defineEmits<{
 const isLoading = ref(Boolean(props.meshUrl))
 const hasError = ref(false)
 const element = useTemplateRef<HTMLElement>('scene-element-container')
-const { mount, setOrientation, setDragMode, resetZoom, resetView, setPanInput } = useModelPreview({
+const { mount, setOrientation, setPanInput } = useModelPreview({
   interactive: props.interactive,
   meshUrl: props.meshUrl,
   textureUrl: props.textureUrl,
   orientation: props.orientation,
-  dragMode: props.dragMode,
   onOrientationChange: (orientation) => emit('orientation-change', orientation),
   onLoaded: () => {
     isLoading.value = false
@@ -59,13 +56,6 @@ watch(
   { deep: true }
 )
 
-watch(
-  () => props.dragMode,
-  (dragMode) => {
-    setDragMode(dragMode)
-  }
-)
-
 function handleJoystickMove(input: { x: number; y: number }) {
   setPanInput(input)
 }
@@ -76,16 +66,7 @@ function handleJoystickMove(input: { x: number; y: number }) {
     <div ref="scene-element-container" class="model-preview-canvas" aria-label="Interactive model preview"></div>
     <div v-if="interactive && !hasError" class="model-preview-zoom-controls" aria-label="Preview zoom controls">
       <div class="model-preview-control-cluster">
-        <mobile-joystick class="model-preview-joystick" @move="handleJoystickMove" />
-
-        <div class="model-preview-quick-actions">
-          <button class="btn model-preview-zoom-button model-preview-zoom-button--ghost" type="button" @click="resetZoom">
-            100%
-          </button>
-          <button class="btn model-preview-zoom-button model-preview-zoom-button--ghost" type="button" @click="resetView">
-            Center
-          </button>
-        </div>
+        <mobile-joystick class="model-preview-joystick" @move="handleJoystickMove"></mobile-joystick>
       </div>
     </div>
     <div v-if="isLoading" class="model-preview-loader" aria-live="polite">
