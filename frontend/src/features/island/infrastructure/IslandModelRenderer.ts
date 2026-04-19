@@ -395,13 +395,17 @@ export class IslandModelRenderer {
       entry.modelGroup.scale.setScalar(scale)
       entry.root.position.copy(this.getGroundedPosition(entry.model.coordinates, entry.modelGroup))
 
+      const scaledBounds = new T.Box3().setFromObject(entry.modelGroup)
+      const scaledSize = scaledBounds.getSize(new T.Vector3())
+      const scaledCenter = scaledBounds.getCenter(new T.Vector3()).sub(entry.root.position)
+
       entry.interactionTarget.geometry.dispose()
       entry.interactionTarget.geometry = new T.BoxGeometry(
-        Math.max(size.x * 1.08, INTERACTION_TARGET_MIN_SIZE),
-        Math.max(size.y * 1.08, INTERACTION_TARGET_MIN_SIZE),
-        Math.max(size.z * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(scaledSize.x * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(scaledSize.y * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(scaledSize.z * 1.08, INTERACTION_TARGET_MIN_SIZE),
       )
-      entry.interactionTarget.position.set(0, size.y * 0.5, 0)
+      entry.interactionTarget.position.copy(scaledCenter)
 
       this.originalStatesByModelId.set(modelId, {
         position: entry.root.position.clone(),
