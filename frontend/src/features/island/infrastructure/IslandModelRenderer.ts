@@ -21,6 +21,8 @@ const DEFAULT_INTERACTION_SIZE = new T.Vector3(2.2, TARGET_MODEL_HEIGHT, 2.2)
 const INITIAL_PRIORITY_LOAD_COUNT = 8
 const MAX_CONCURRENT_LOADS = 2
 const PRIORITY_LOAD_DISTANCE = 110
+const MIN_MODEL_SCALE = 0.45
+const MAX_MODEL_SCALE = 2.4
 let loadingSpinnerTexture: T.CanvasTexture | null = null
 
 type ObjectFocusState = {
@@ -388,10 +390,7 @@ export class IslandModelRenderer {
       entry.loadState = 'loaded'
       entry.loadingMarker.visible = false
 
-      const box = new T.Box3().setFromObject(meshObject)
-      const size = box.getSize(new T.Vector3())
-      const height = Math.max(size.y, 1e-6)
-      const scale = TARGET_MODEL_HEIGHT / height
+      const scale = this.computeNormalizedModelScale(meshObject)
       entry.modelGroup.scale.setScalar(scale)
       entry.root.position.copy(this.getGroundedPosition(entry.model.coordinates, entry.modelGroup))
 
@@ -458,6 +457,16 @@ export class IslandModelRenderer {
 
     position.y -= box.min.y
     return position
+  }
+
+  private computeNormalizedModelScale(content: T.Object3D) {
+    const bounds = new T.Box3().setFromObject(content)
+    const size = bounds.getSize(new T.Vector3())
+    const sphere = bounds.getBoundingSphere(new T.Sphere())
+    const footprint = Math.max(size.x, size.z, 1e-6)
+    const overallSize = Math.max(size.y, sphere.radius * 2, footprint * 1.35, 1e-6)
+    const scale = TARGET_MODEL_HEIGHT / overallSize
+    return T.MathUtils.clamp(scale, MIN_MODEL_SCALE, MAX_MODEL_SCALE)
   }
 
   private setObjectHighlight(modelId: string, highlighted: boolean) {

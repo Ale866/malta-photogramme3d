@@ -266,20 +266,7 @@ export class ModelPreviewScene {
     if (this.dragState.mode === 'pan') {
       this.panByScreenDelta(deltaX, deltaY)
     } else {
-      const rotateRoll = event.shiftKey
-
-      if (rotateRoll) {
-        this.baseOrientation = {
-          ...this.baseOrientation,
-          z: this.normalizeAngle(this.baseOrientation.z + deltaX * 0.006),
-        }
-      } else {
-        this.baseOrientation = {
-          ...this.baseOrientation,
-          x: this.normalizeAngle(this.baseOrientation.x + deltaY * 0.005),
-          y: this.normalizeAngle(this.baseOrientation.y + deltaX * 0.006),
-        }
-      }
+      this.applyRotationDelta(deltaX, deltaY, event.shiftKey)
       this.onOrientationChange?.({ ...this.baseOrientation })
     }
     this.dragState.lastX = event.clientX
@@ -413,6 +400,46 @@ export class ModelPreviewScene {
       .addScaledVector(this.cameraUp, deltaY * panScale)
 
     this.applyCameraFrame()
+  }
+
+  private applyRotationDelta(deltaX: number, deltaY: number, rotateRoll: boolean) {
+    const orientationEuler = new T.Euler(
+      this.baseOrientation.x,
+      this.baseOrientation.y,
+      this.baseOrientation.z,
+      'YXZ',
+    )
+    const orientationQuaternion = new T.Quaternion().setFromEuler(orientationEuler)
+
+    if (rotateRoll) {
+      const rollQuaternion = new T.Quaternion().setFromAxisAngle(
+        new T.Vector3(0, 0, 1),
+        deltaX * 0.006,
+      )
+      orientationQuaternion.multiply(rollQuaternion)
+    } else {
+      const yawQuaternion = new T.Quaternion().setFromAxisAngle(
+        new T.Vector3(0, 1, 0),
+        deltaX * 0.006,
+      )
+      const pitchAxis = this.camera
+        ? new T.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion).normalize()
+        : new T.Vector3(1, 0, 0)
+      const pitchQuaternion = new T.Quaternion().setFromAxisAngle(
+        pitchAxis,
+        deltaY * 0.005,
+      )
+
+      orientationQuaternion.premultiply(yawQuaternion)
+      orientationQuaternion.premultiply(pitchQuaternion)
+    }
+
+    const nextOrientation = new T.Euler().setFromQuaternion(orientationQuaternion, 'YXZ')
+    this.baseOrientation = this.normalizeOrientation({
+      x: nextOrientation.x,
+      y: nextOrientation.y,
+      z: nextOrientation.z,
+    })
   }
 
   private applyPanInput() {
