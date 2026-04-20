@@ -15,7 +15,6 @@ import {
   runOpenMvsMeshing,
   runOpenMvsTexturing,
   runOpenMvsTexturingWithMesh,
-  simplifyMeshForTexturing,
 } from "./openmvs";
 
 function createColmapPipelineServices(profile: PipelineProfile): PipelineServices {
@@ -31,8 +30,8 @@ function createColmapPipelineServices(profile: PipelineProfile): PipelineService
 
   const runProfiledOpenMvsTexturing: PipelineServices["runOpenMvsTexturing"] = async (outputFolder, hooks) => {
     const meshPath = resolveMeshForTexturing(outputFolder);
-    const meshForTexturing = await simplifyMeshForTexturing(outputFolder, meshPath, hooks);
-    await runOpenMvsTexturingWithMesh(outputFolder, meshForTexturing, hooks);
+    // const meshForTexturing = await simplifyMeshForTexturing(outputFolder, meshPath, hooks);
+    await runOpenMvsTexturingWithMesh(outputFolder, meshPath, hooks);
   };
 
   return {
