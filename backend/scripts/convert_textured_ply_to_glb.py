@@ -55,31 +55,37 @@ def read_faces(handle, fmt, face_count):
     face_uvs = []
     face_texnums = []
     skipped_faces = 0
+    incomplete_face_index = None
 
     for face_index in range(face_count):
         raw = handle.read(1)
         if len(raw) != 1:
-            raise RuntimeError("Unexpected EOF while reading face index count")
+            incomplete_face_index = face_index
+            break
         n_idx = struct.unpack(fmt + "B", raw)[0]
 
         raw = handle.read(4 * n_idx)
         if len(raw) != 4 * n_idx:
-            raise RuntimeError("Unexpected EOF while reading face indices")
+            incomplete_face_index = face_index
+            break
         indices = list(struct.unpack(fmt + ("I" * n_idx), raw))
 
         raw = handle.read(1)
         if len(raw) != 1:
-            raise RuntimeError("Unexpected EOF while reading texcoord count")
+            incomplete_face_index = face_index
+            break
         n_tc = struct.unpack(fmt + "B", raw)[0]
 
         raw = handle.read(4 * n_tc)
         if len(raw) != 4 * n_tc:
-            raise RuntimeError("Unexpected EOF while reading texcoords")
+            incomplete_face_index = face_index
+            break
         texcoords = list(struct.unpack(fmt + ("f" * n_tc), raw))
 
         raw = handle.read(4)
         if len(raw) != 4:
-            raise RuntimeError("Unexpected EOF while reading texnumber")
+            incomplete_face_index = face_index
+            break
         texnumber = struct.unpack(fmt + "i", raw)[0]
 
         if n_tc % 2 != 0:
@@ -97,6 +103,17 @@ def read_faces(handle, fmt, face_count):
 
     if skipped_faces:
         print(f"Skipped invalid textured faces: {skipped_faces} / {face_count}")
+
+    if incomplete_face_index is not None:
+        recovered_ratio = len(faces) / max(face_count, 1)
+        print(
+            f"Stopped at incomplete face record {incomplete_face_index + 1} / {face_count}; "
+            f"recovered valid faces: {len(faces)} ({recovered_ratio:.2%})"
+        )
+        if recovered_ratio < 0.9:
+            raise RuntimeError(
+                f"PLY face data ended too early: recovered {len(faces)} valid faces out of {face_count}"
+            )
 
     if not faces:
         raise RuntimeError("No valid textured faces found in PLY")
