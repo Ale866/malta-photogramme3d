@@ -9,7 +9,6 @@ type IslandModelInteractorOptions = {
 }
 
 export class IslandModelInteractor {
-  private static readonly MODEL_POINTER_CAPTURE_KEY = 'islandModelPointerCapture'
   private readonly camera: T.PerspectiveCamera
   private readonly canvas: HTMLCanvasElement
   private readonly renderer: IslandModelRenderer
@@ -69,9 +68,8 @@ export class IslandModelInteractor {
     this.isDragging = false
 
     if (this.pointerDownModelId) {
-      this.canvas.dataset[IslandModelInteractor.MODEL_POINTER_CAPTURE_KEY] = '1'
-    } else {
-      delete this.canvas.dataset[IslandModelInteractor.MODEL_POINTER_CAPTURE_KEY]
+      event.stopImmediatePropagation()
+      event.preventDefault()
     }
 
     if (this.renderer.hasFocusedModel() && this.pointerDownModelId === this.renderer.getSelectedModelId()) {
@@ -133,7 +131,7 @@ export class IslandModelInteractor {
     if (!this.isDragging) {
       const modelId = this.pickModelId(event.clientX, event.clientY)
       if (modelId) {
-        event.stopPropagation()
+        event.stopImmediatePropagation()
         event.preventDefault()
         this.onModelClick?.(modelId)
       } else {
@@ -145,7 +143,6 @@ export class IslandModelInteractor {
     this.pointerDownClient = null
     this.pointerDownModelId = null
     this.isDragging = false
-    delete this.canvas.dataset[IslandModelInteractor.MODEL_POINTER_CAPTURE_KEY]
   }
 
   private readonly handlePointerLeave = () => {
@@ -156,7 +153,6 @@ export class IslandModelInteractor {
     this.pointerDownClient = null
     this.pointerDownModelId = null
     this.isDragging = false
-    delete this.canvas.dataset[IslandModelInteractor.MODEL_POINTER_CAPTURE_KEY]
     this.renderer.setHoveredModel(null)
   }
 

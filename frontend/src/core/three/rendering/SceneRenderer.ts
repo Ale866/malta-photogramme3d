@@ -46,6 +46,7 @@ export class SceneRenderer {
     const canvas = this.renderer.domElement
     container.appendChild(canvas)
     this.resize()
+    requestAnimationFrame(() => this.resize())
   }
 
   add(object: T.Object3D) {

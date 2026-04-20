@@ -1,7 +1,6 @@
 import * as T from 'three'
 
 export class InteractionHandler {
-  private static readonly MODEL_POINTER_CAPTURE_KEY = 'islandModelPointerCapture'
   private camera: T.PerspectiveCamera
   private canvas: HTMLCanvasElement
   private isDragging = false
@@ -38,11 +37,6 @@ export class InteractionHandler {
 
     this.canvas.addEventListener('pointerup', (event) => {
       if (!event.isPrimary) return
-      if (this.canvas.dataset[InteractionHandler.MODEL_POINTER_CAPTURE_KEY] === '1') {
-        this.pointerDownClient = null
-        this.isDragging = false
-        return
-      }
       if (!this.isDragging && this.pointerDownClient) {
         const point = this.raycastClick(event.clientX, event.clientY, scene, terrainObject)
         if (point) {
