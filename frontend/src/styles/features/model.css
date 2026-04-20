@@ -2862,8 +2862,11 @@
   letter-spacing: -0.05em;
 }
 
-.evaluation-title-index {
-  color: #8fbfff;
+.evaluation-subtitle {
+  margin: 0;
+  color: rgba(235, 245, 255, 0.74);
+  font-size: clamp(0.95rem, 1.6vw, 1.25rem);
+  font-weight: var(--font-weight-medium);
 }
 
 .evaluation-stage {

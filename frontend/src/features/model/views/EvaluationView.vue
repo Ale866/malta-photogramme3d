@@ -7,9 +7,9 @@ import { ModelApi, type ModelOrientationInput } from '@/features/model/infrastru
 type EvaluationSlide = {
   id: string
   title: string
+  subtitle?: string | null
   meshUrl?: string | null
   textureUrl?: string | null
-  placeholder?: 'cube' | null
   orientation?: ModelOrientationInput | null
 }
 
@@ -26,10 +26,10 @@ const initialSlides: EvaluationSlide[] = [
   createEvaluationSlide('69e63c0a080892e9a0b9d43a', 10),
 ]
 
-const fallbackSlide: EvaluationSlide = createEvaluationSlide('evaluation-fallback', 1, 'cube')
+const defaultSlide = initialSlides[0] as EvaluationSlide
 const slides = ref<EvaluationSlide[]>(initialSlides)
 const currentIndex = ref(0)
-const currentSlide = computed(() => slides.value[currentIndex.value] ?? fallbackSlide)
+const currentSlide = computed<EvaluationSlide>(() => slides.value[currentIndex.value] ?? defaultSlide)
 const totalSlides = computed(() => slides.value.length)
 
 function goToPrevious() {
@@ -40,15 +40,7 @@ function goToNext() {
   currentIndex.value = (currentIndex.value + 1) % totalSlides.value
 }
 
-function createEvaluationSlide(modelId: string, index: number, placeholder: 'cube' | null = null): EvaluationSlide {
-  if (placeholder) {
-    return {
-      id: modelId,
-      title: `Model ${index}`,
-      placeholder,
-    }
-  }
-
+function createEvaluationSlide(modelId: string, index: number): EvaluationSlide {
   return {
     id: modelId,
     title: `Model ${index}`,
@@ -79,7 +71,7 @@ onMounted(async () => {
         const model = await ModelApi.getPublicModelById(slide.id)
         return {
           ...slide,
-          title: model.title || slide.title,
+          subtitle: model.title || null,
           orientation: model.orientation,
         }
       } catch {
@@ -100,7 +92,8 @@ onMounted(async () => {
 
       <header class="evaluation-header">
         <p class="evaluation-eyebrow">Evaluation</p>
-        <h1 class="evaluation-title">{{ currentSlide.title }} <span class="evaluation-title-index">#{{ currentIndex + 1 }}</span></h1>
+        <h1 class="evaluation-title">{{ currentSlide.title }}</h1>
+        <p v-if="currentSlide.subtitle" class="evaluation-subtitle">{{ currentSlide.subtitle }}</p>
       </header>
 
       <section class="evaluation-stage">
@@ -117,7 +110,6 @@ onMounted(async () => {
             :show-overlay="false"
             :mesh-url="currentSlide.meshUrl ?? null"
             :texture-url="currentSlide.textureUrl ?? null"
-            :placeholder="currentSlide.placeholder ?? null"
             :orientation="currentSlide.orientation ?? null"
             loading-label="Loading evaluation model"
           />
