@@ -32,6 +32,7 @@ const OUTPUT_DIRECTORIES = {
   openmvsSceneMesh: path.join("openmvs", "scene_mesh.mvs"),
   openmvsSceneMeshPly: path.join("openmvs", "scene_mesh.ply"),
   openmvsSceneMeshCleanedPly: path.join("openmvs", "scene_mesh_cleaned.ply"),
+  openmvsSceneMeshSimplifiedPly: path.join("openmvs", "scene_mesh_simplified.ply"),
   openmvsSceneMeshTexture: path.join("openmvs", "scene_mesh_texture.mvs"),
   openmvsSceneMeshTexturePly: path.join("openmvs", "scene_mesh_texture.ply"),
   openmvsSceneMeshTextureImage: path.join("openmvs", "scene_mesh_texture0.png"),
@@ -72,6 +73,7 @@ export type OutputPaths = {
   openmvsSceneMesh: string;
   openmvsSceneMeshPly: string;
   openmvsSceneMeshCleanedPly: string;
+  openmvsSceneMeshSimplifiedPly: string;
   openmvsSceneMeshTexture: string;
   openmvsSceneMeshTexturePly: string;
   openmvsSceneMeshTextureImage: string;
@@ -183,6 +185,7 @@ export function resolveOutputPaths(outputFolder: string): OutputPaths {
     openmvsSceneMesh: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMesh),
     openmvsSceneMeshPly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshPly),
     openmvsSceneMeshCleanedPly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshCleanedPly),
+    openmvsSceneMeshSimplifiedPly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshSimplifiedPly),
     openmvsSceneMeshTexture: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTexture),
     openmvsSceneMeshTexturePly: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTexturePly),
     openmvsSceneMeshTextureImage: path.join(root, OUTPUT_DIRECTORIES.openmvsSceneMeshTextureImage),
