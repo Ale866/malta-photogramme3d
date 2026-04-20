@@ -5,6 +5,7 @@ type UseModelPreviewOptions = {
   interactive?: boolean
   meshUrl?: string | null
   textureUrl?: string | null
+  placeholder?: 'cube' | null
   orientation?: { x: number; y: number; z: number } | null
   onOrientationChange?: (orientation: { x: number; y: number; z: number }) => void
   onLoaded?: () => void

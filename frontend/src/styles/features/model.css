@@ -2816,8 +2816,127 @@
     font-size: 0.84rem;
   }
 
-  .model-form-coordinates {
+.model-form-coordinates {
+  grid-template-columns: 1fr;
+}
+}
+
+.evaluation-page {
+  min-height: 100vh;
+  padding: 0;
+}
+
+.evaluation-shell {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0;
+}
+
+.evaluation-header {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: center;
+  text-align: center;
+  padding: 0 clamp(1rem, 3vw, 2.4rem) var(--space-2);
+  position: relative;
+  z-index: 2;
+}
+
+.evaluation-eyebrow,
+.evaluation-page-indicator {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9ec8ff;
+}
+
+.evaluation-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+}
+
+.evaluation-title-index {
+  color: #8fbfff;
+}
+
+.evaluation-stage {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 0;
+  padding: 0 clamp(0.55rem, 1.6vw, 1.2rem) clamp(0.75rem, 2vw, 1.2rem);
+  position: relative;
+}
+
+.evaluation-arrow {
+  width: 3.3rem;
+  height: 3.3rem;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  border-color: rgb(121 177 245 / 0.18);
+  background: rgb(14 20 31 / 0.78);
+  color: #dbeeff;
+  backdrop-filter: blur(14px);
+}
+
+.evaluation-preview-frame {
+  min-height: 0;
+  height: 100%;
+  background: transparent;
+  position: relative;
+}
+
+.evaluation-preview-frame .model-preview {
+  height: 100%;
+}
+
+.evaluation-preview-frame .model-preview-overlay {
+  display: none;
+}
+
+.evaluation-page-indicator {
+  justify-self: center;
+  padding: clamp(1rem, 2vw, 1.35rem) 0 var(--space-2);
+  color: var(--text-secondary);
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 700px) {
+  .evaluation-shell {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .evaluation-stage {
     grid-template-columns: 1fr;
+    padding: 0 0 0.9rem;
+  }
+
+  .evaluation-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    transform: translateY(-50%);
+  }
+
+  .evaluation-arrow--left {
+    left: 0.25rem;
+  }
+
+  .evaluation-arrow--right {
+    right: 0.25rem;
+  }
+
+  .evaluation-preview-frame {
+    min-height: 0;
   }
 }
 

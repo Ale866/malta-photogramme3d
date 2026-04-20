@@ -9,6 +9,7 @@ const props = withDefaults(defineProps<{
   showOverlay?: boolean
   meshUrl?: string | null
   textureUrl?: string | null
+  placeholder?: 'cube' | null
   orientation?: { x: number; y: number; z: number } | null
   loadingLabel?: string
 }>(), {
@@ -16,6 +17,7 @@ const props = withDefaults(defineProps<{
   showOverlay: true,
   meshUrl: null,
   textureUrl: null,
+  placeholder: null,
   orientation: null,
   loadingLabel: 'Loading model preview',
 })
@@ -24,13 +26,14 @@ const emit = defineEmits<{
   (event: 'orientation-change', orientation: { x: number; y: number; z: number }): void
 }>()
 
-const isLoading = ref(Boolean(props.meshUrl))
+const isLoading = ref(Boolean(props.meshUrl || props.placeholder))
 const hasError = ref(false)
 const element = useTemplateRef<HTMLElement>('scene-element-container')
 const { mount, setOrientation, setPanInput } = useModelPreview({
   interactive: props.interactive,
   meshUrl: props.meshUrl,
   textureUrl: props.textureUrl,
+  placeholder: props.placeholder,
   orientation: props.orientation,
   onOrientationChange: (orientation) => emit('orientation-change', orientation),
   onLoaded: () => {

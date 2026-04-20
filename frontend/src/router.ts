@@ -8,6 +8,7 @@ const ResetPasswordView = () => import('@/features/auth/views/ResetPasswordView.
 
 const ListModelView = () => import('@/features/model/views/ListModelView.vue')
 const ModelDetailsView = () => import('@/features/model/views/ModelDetailsView.vue')
+const EvaluationView = () => import('@/features/model/views/EvaluationView.vue')
 
 const routes = [
   { path: '/', name: "Island", component: IslandView },
@@ -38,6 +39,7 @@ const routes = [
   { path: '/login', name: "Login", component: LoginView },
   { path: '/forgot-password', name: 'ForgotPassword', component: ForgotPasswordView },
   { path: '/reset-password', name: 'ResetPassword', component: ResetPasswordView },
+  { path: '/evaluation', name: 'Evaluation', meta: { hideAppMenu: true }, component: EvaluationView },
 ]
 
 export const router = createRouter({

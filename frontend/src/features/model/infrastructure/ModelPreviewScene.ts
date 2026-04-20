@@ -5,6 +5,7 @@ type ModelPreviewSceneOptions = {
   interactive?: boolean
   meshUrl?: string | null
   textureUrl?: string | null
+  placeholder?: 'cube' | null
   orientation?: { x: number; y: number; z: number } | null
   onOrientationChange?: (orientation: { x: number; y: number; z: number }) => void
   onLoaded?: () => void
@@ -34,6 +35,7 @@ export class ModelPreviewScene {
   private readonly interactive: boolean
   private readonly meshUrl: string | null
   private readonly textureUrl: string | null
+  private readonly placeholder: 'cube' | null
   private readonly onOrientationChange?: (orientation: { x: number; y: number; z: number }) => void
   private readonly onLoaded?: () => void
   private readonly onError?: () => void
@@ -60,6 +62,7 @@ export class ModelPreviewScene {
     this.interactive = options.interactive ?? true
     this.meshUrl = options.meshUrl ?? null
     this.textureUrl = options.textureUrl ?? null
+    this.placeholder = options.placeholder ?? null
     if (options.orientation) {
       this.baseOrientation = { ...options.orientation }
     }
@@ -309,7 +312,12 @@ export class ModelPreviewScene {
   }
 
   private async loadPreviewObject() {
-    if (!this.scene || !this.camera || !this.meshUrl) {
+    if (!this.scene || !this.camera) {
+      this.onError?.()
+      return
+    }
+
+    if (!this.meshUrl && !this.placeholder) {
       this.onError?.()
       return
     }
@@ -317,10 +325,12 @@ export class ModelPreviewScene {
     const currentToken = ++this.loadToken
 
     try {
-      const previewObject = await loadDeliveredModel({
-        meshUrl: this.meshUrl,
-        textureUrl: this.textureUrl,
-      })
+      const previewObject = this.meshUrl
+        ? await loadDeliveredModel({
+            meshUrl: this.meshUrl,
+            textureUrl: this.textureUrl,
+          })
+        : this.createPlaceholderObject()
 
       if (currentToken !== this.loadToken || !this.scene || !this.camera) {
         disposeObject3D(previewObject)
@@ -346,6 +356,25 @@ export class ModelPreviewScene {
       console.error('Failed to load model preview asset', error)
       this.onError?.()
     }
+  }
+
+  private createPlaceholderObject() {
+    const root = new T.Group()
+
+    if (this.placeholder === 'cube') {
+      const geometry = new T.BoxGeometry(1.65, 1.65, 1.65)
+      const material = new T.MeshStandardMaterial({
+        color: '#77aef7',
+        roughness: 0.42,
+        metalness: 0.08,
+      })
+      const mesh = new T.Mesh(geometry, material)
+      mesh.castShadow = true
+      mesh.receiveShadow = true
+      root.add(mesh)
+    }
+
+    return root
   }
 
   private framePreviewObject(object: T.Object3D) {
