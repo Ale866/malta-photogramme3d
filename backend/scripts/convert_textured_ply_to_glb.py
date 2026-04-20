@@ -54,8 +54,9 @@ def read_faces(handle, fmt, face_count):
     faces = []
     face_uvs = []
     face_texnums = []
+    skipped_faces = 0
 
-    for _ in range(face_count):
+    for face_index in range(face_count):
         raw = handle.read(1)
         if len(raw) != 1:
             raise RuntimeError("Unexpected EOF while reading face index count")
@@ -82,17 +83,23 @@ def read_faces(handle, fmt, face_count):
         texnumber = struct.unpack(fmt + "i", raw)[0]
 
         if n_tc % 2 != 0:
-            raise RuntimeError(f"Face texcoord list has odd length: {n_tc}")
+            skipped_faces += 1
+            continue
 
         uv_pairs = [(texcoords[i], texcoords[i + 1]) for i in range(0, n_tc, 2)]
-        if len(uv_pairs) != len(indices):
-            raise RuntimeError(
-                f"Face has {len(indices)} indices but {len(uv_pairs)} UV pairs"
-            )
+        if n_idx < 3 or len(set(indices)) < 3 or len(uv_pairs) != len(indices):
+            skipped_faces += 1
+            continue
 
         faces.append(indices)
         face_uvs.append(uv_pairs)
         face_texnums.append(texnumber)
+
+    if skipped_faces:
+        print(f"Skipped invalid textured faces: {skipped_faces} / {face_count}")
+
+    if not faces:
+        raise RuntimeError("No valid textured faces found in PLY")
 
     return faces, face_uvs, face_texnums
 
