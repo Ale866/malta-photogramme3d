@@ -3,12 +3,53 @@ import struct
 import sys
 from pathlib import Path
 
+SCALAR_FORMATS = {
+    "char": "b",
+    "int8": "b",
+    "uchar": "B",
+    "uint8": "B",
+    "short": "h",
+    "int16": "h",
+    "ushort": "H",
+    "uint16": "H",
+    "int": "i",
+    "int32": "i",
+    "uint": "I",
+    "uint32": "I",
+    "float": "f",
+    "float32": "f",
+    "double": "d",
+    "float64": "d",
+}
+
+SCALAR_SIZES = {
+    "char": 1,
+    "int8": 1,
+    "uchar": 1,
+    "uint8": 1,
+    "short": 2,
+    "int16": 2,
+    "ushort": 2,
+    "uint16": 2,
+    "int": 4,
+    "int32": 4,
+    "uint": 4,
+    "uint32": 4,
+    "float": 4,
+    "float32": 4,
+    "double": 8,
+    "float64": 8,
+}
+
 
 def parse_header(handle):
     texture_files = []
     vertex_count = None
     face_count = None
     fmt = None
+    current_element = None
+    vertex_properties = []
+    face_properties = []
 
     while True:
         line = handle.readline()
@@ -27,8 +68,34 @@ def parse_header(handle):
             texture_files.append(s[len("comment TextureFile "):].strip())
         elif s.startswith("element vertex "):
             vertex_count = int(s.split()[-1])
+            current_element = "vertex"
         elif s.startswith("element face "):
             face_count = int(s.split()[-1])
+            current_element = "face"
+        elif s.startswith("element "):
+            current_element = s.split()[1] if len(s.split()) > 1 else None
+        elif s.startswith("property ") and current_element == "vertex":
+            parts = s.split()
+            if len(parts) < 3 or parts[1] == "list":
+                raise RuntimeError(f"Unsupported vertex property declaration: {s}")
+            vertex_properties.append((parts[2], parts[1]))
+        elif s.startswith("property ") and current_element == "face":
+            parts = s.split()
+            if len(parts) >= 5 and parts[1] == "list":
+                face_properties.append({
+                    "kind": "list",
+                    "name": parts[4],
+                    "count_type": parts[2],
+                    "value_type": parts[3],
+                })
+            elif len(parts) >= 3:
+                face_properties.append({
+                    "kind": "scalar",
+                    "name": parts[2],
+                    "value_type": parts[1],
+                })
+            else:
+                raise RuntimeError(f"Unsupported face property declaration: {s}")
         elif s == "end_header":
             break
 
@@ -36,21 +103,39 @@ def parse_header(handle):
         raise RuntimeError("PLY format not found")
     if vertex_count is None or face_count is None:
         raise RuntimeError("Vertex/face counts missing from header")
+    if not vertex_properties:
+        raise RuntimeError("Vertex properties missing from header")
+    if not face_properties:
+        raise RuntimeError("Face properties missing from header")
 
-    return fmt, texture_files, vertex_count, face_count
+    return fmt, texture_files, vertex_count, face_count, vertex_properties, face_properties
 
 
-def read_vertices(handle, fmt, vertex_count):
+def read_vertices(handle, fmt, vertex_count, vertex_properties):
     verts = []
+    property_formats = []
+    for name, value_type in vertex_properties:
+        scalar_format = SCALAR_FORMATS.get(value_type)
+        if scalar_format is None:
+            raise RuntimeError(f"Unsupported vertex property type: {value_type}")
+        property_formats.append((name, scalar_format, SCALAR_SIZES[value_type]))
+
     for _ in range(vertex_count):
-        data = handle.read(12)
-        if len(data) != 12:
-            raise RuntimeError("Unexpected EOF while reading vertices")
-        verts.append(struct.unpack(fmt + "fff", data))
+        values = {}
+        for name, scalar_format, size in property_formats:
+            data = handle.read(size)
+            if len(data) != size:
+                raise RuntimeError("Unexpected EOF while reading vertices")
+            values[name] = struct.unpack(fmt + scalar_format, data)[0]
+
+        try:
+            verts.append((float(values["x"]), float(values["y"]), float(values["z"])))
+        except KeyError as exc:
+            raise RuntimeError(f"Required vertex coordinate property missing: {exc}") from exc
     return verts
 
 
-def read_faces(handle, fmt, face_count):
+def read_faces(handle, fmt, face_count, face_properties):
     faces = []
     face_uvs = []
     face_texnums = []
@@ -58,36 +143,37 @@ def read_faces(handle, fmt, face_count):
     incomplete_face_index = None
 
     for face_index in range(face_count):
-        raw = handle.read(1)
-        if len(raw) != 1:
+        try:
+            values = read_face_property_values(handle, fmt, face_properties)
+        except EOFError:
             incomplete_face_index = face_index
             break
-        n_idx = struct.unpack(fmt + "B", raw)[0]
 
-        raw = handle.read(4 * n_idx)
-        if len(raw) != 4 * n_idx:
-            incomplete_face_index = face_index
-            break
-        indices = list(struct.unpack(fmt + ("I" * n_idx), raw))
+        indices = get_first_property(values, [
+            "vertex_indices",
+            "vertex_index",
+            "vertex_indexes",
+            "vertex_indices0",
+        ])
+        texcoords = get_first_property(values, [
+            "texcoord",
+            "texcoords",
+            "texture_coordinates",
+            "texture_uv",
+        ])
+        texnumber = get_first_property(values, [
+            "texnumber",
+            "tex_number",
+            "texture_number",
+            "tex_index",
+        ], default=0)
 
-        raw = handle.read(1)
-        if len(raw) != 1:
-            incomplete_face_index = face_index
-            break
-        n_tc = struct.unpack(fmt + "B", raw)[0]
+        if not isinstance(indices, list) or not isinstance(texcoords, list):
+            skipped_faces += 1
+            continue
 
-        raw = handle.read(4 * n_tc)
-        if len(raw) != 4 * n_tc:
-            incomplete_face_index = face_index
-            break
-        texcoords = list(struct.unpack(fmt + ("f" * n_tc), raw))
-
-        raw = handle.read(4)
-        if len(raw) != 4:
-            incomplete_face_index = face_index
-            break
-        texnumber = struct.unpack(fmt + "i", raw)[0]
-
+        n_idx = len(indices)
+        n_tc = len(texcoords)
         if n_tc % 2 != 0:
             skipped_faces += 1
             continue
@@ -119,6 +205,39 @@ def read_faces(handle, fmt, face_count):
         raise RuntimeError("No valid textured faces found in PLY")
 
     return faces, face_uvs, face_texnums
+
+
+def read_face_property_values(handle, fmt, face_properties):
+    values = {}
+    for prop in face_properties:
+        if prop["kind"] == "list":
+            count = read_scalar(handle, fmt, prop["count_type"])
+            values[prop["name"]] = [
+                read_scalar(handle, fmt, prop["value_type"])
+                for _ in range(count)
+            ]
+        else:
+            values[prop["name"]] = read_scalar(handle, fmt, prop["value_type"])
+    return values
+
+
+def get_first_property(values, names, default=None):
+    for name in names:
+        if name in values:
+            return values[name]
+    return default
+
+
+def read_scalar(handle, fmt, value_type):
+    scalar_format = SCALAR_FORMATS.get(value_type)
+    size = SCALAR_SIZES.get(value_type)
+    if scalar_format is None or size is None:
+        raise RuntimeError(f"Unsupported PLY scalar type: {value_type}")
+
+    data = handle.read(size)
+    if len(data) != size:
+        raise EOFError
+    return struct.unpack(fmt + scalar_format, data)[0]
 
 
 def make_materials(base_dir: Path, texture_files):
@@ -199,13 +318,15 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
     with open(input_ply, "rb") as handle:
-        fmt, texture_files, vertex_count, face_count = parse_header(handle)
+        fmt, texture_files, vertex_count, face_count, vertex_properties, face_properties = parse_header(handle)
         print("Texture files:", texture_files)
         print("Vertices:", vertex_count)
         print("Faces:", face_count)
+        print("Vertex properties:", [name for name, _ in vertex_properties])
+        print("Face properties:", [prop["name"] for prop in face_properties])
 
-        verts = read_vertices(handle, fmt, vertex_count)
-        faces, face_uvs, face_texnums = read_faces(handle, fmt, face_count)
+        verts = read_vertices(handle, fmt, vertex_count, vertex_properties)
+        faces, face_uvs, face_texnums = read_faces(handle, fmt, face_count, face_properties)
 
     if not texture_files:
         raise RuntimeError("No TextureFile comments found in PLY header")
@@ -231,7 +352,7 @@ def export_glb(output_glb: Path):
     }
 
     try:
-        bpy.ops.export_scene.gltf(
+        result = bpy.ops.export_scene.gltf(
             **export_kwargs,
             export_draco_mesh_compression_enable=True,
             export_draco_mesh_compression_level=6,
@@ -240,13 +361,24 @@ def export_glb(output_glb: Path):
             export_draco_texcoord_quantization=12,
             export_draco_generic_quantization=12,
         )
+        ensure_export_finished(result, output_glb, "Draco")
         print("Exported GLB with Draco compression enabled")
     except Exception as exc:
         print(f"Draco export failed, retrying without Draco compression: {exc}")
-        bpy.ops.export_scene.gltf(
+        result = bpy.ops.export_scene.gltf(
             **export_kwargs,
             export_draco_mesh_compression_enable=False,
         )
+        ensure_export_finished(result, output_glb, "uncompressed")
+
+
+def ensure_export_finished(result, output_glb: Path, label: str):
+    if "FINISHED" not in result:
+        raise RuntimeError(f"{label} GLB export did not finish: {result}")
+    if not output_glb.exists():
+        raise RuntimeError(f"{label} GLB export finished but did not create {output_glb}")
+    if output_glb.stat().st_size <= 0:
+        raise RuntimeError(f"{label} GLB export created an empty file: {output_glb}")
 
 
 if __name__ == "__main__":
