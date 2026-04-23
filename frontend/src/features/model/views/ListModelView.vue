@@ -29,7 +29,13 @@ const {
   toggleVote,
   updateSelectedSort,
   isVoteDisabled,
+  canShowMore,
+  canShowLess,
+  pagedCards,
+  showLess,
+  showMore,
   visibleCards,
+  visibleCardCount,
   viewOnIsland,
 } = useModelListPage()
 </script>
@@ -104,9 +110,20 @@ const {
       </div>
 
       <div v-else class="model-list-grid">
-        <model-list-card v-for="card in visibleCards" :key="`${card.type}:${card.id}`" :card="card"
+        <model-list-card v-for="card in pagedCards" :key="`${card.type}:${card.id}`" :card="card"
           :show-voting="showVoting" :vote-disabled="isVoteDisabled(card)" @open-details="openDetails"
           @view-on-island="viewOnIsland" @toggle-vote="toggleVote" @request-delete="requestDelete"></model-list-card>
+        <div v-if="canShowMore || canShowLess" class="model-list-pagination">
+          <button v-if="canShowLess" class="btn model-list-show-more-button" type="button" @click="showLess">
+            Show less
+          </button>
+          <span v-else aria-hidden="true"></span>
+          <p class="model-list-pagination-count">{{ pagedCards.length }} of {{ visibleCardCount }}</p>
+          <button v-if="canShowMore" class="btn model-list-show-more-button" type="button" @click="showMore">
+            Show more
+          </button>
+          <span v-else aria-hidden="true"></span>
+        </div>
       </div>
     </div>
 

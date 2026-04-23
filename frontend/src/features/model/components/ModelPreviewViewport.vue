@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useModelPreview } from '@/features/model/application/useModelPreview'
 
 const MobileJoystick = defineAsyncComponent(() => import('@/features/island/components/MobileJoystick.vue'))
@@ -29,6 +29,8 @@ const emit = defineEmits<{
 const isLoading = ref(Boolean(props.meshUrl || props.placeholder))
 const hasError = ref(false)
 const element = useTemplateRef<HTMLElement>('scene-element-container')
+let observer: IntersectionObserver | null = null
+let hasMountedScene = false
 const { mount, setOrientation, setPanInput } = useModelPreview({
   interactive: props.interactive,
   meshUrl: props.meshUrl,
@@ -48,7 +50,27 @@ const { mount, setOrientation, setPanInput } = useModelPreview({
 
 onMounted(async () => {
   await nextTick()
-  mount(element.value ?? null)
+  const sceneElement = element.value
+  if (!sceneElement) return
+
+  if (!('IntersectionObserver' in window)) {
+    mountScene(sceneElement)
+    return
+  }
+
+  observer = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      mountScene(sceneElement)
+      observer?.disconnect()
+      observer = null
+    }
+  }, { rootMargin: '160px' })
+  observer.observe(sceneElement)
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  observer = null
 })
 
 watch(
@@ -63,6 +85,12 @@ watch(
 function handleJoystickMove(input: { x: number; y: number }) {
   setPanInput(input)
 }
+
+function mountScene(sceneElement: HTMLElement) {
+  if (hasMountedScene) return
+  hasMountedScene = true
+  mount(sceneElement)
+}
 </script>
 
 <template>
@@ -70,7 +98,7 @@ function handleJoystickMove(input: { x: number; y: number }) {
     <div ref="scene-element-container" class="model-preview-canvas" aria-label="Interactive model preview"></div>
     <div v-if="interactive && !hasError" class="model-preview-zoom-controls" aria-label="Preview zoom controls">
       <div class="model-preview-control-cluster">
-        <mobile-joystick class="model-preview-joystick" @move="handleJoystickMove"></mobile-joystick>
+        <mobile-joystick class="model-preview-joystick" :output-sensitivity="0.18" @move="handleJoystickMove"></mobile-joystick>
       </div>
     </div>
     <div v-if="isLoading" class="model-preview-loader" aria-live="polite">

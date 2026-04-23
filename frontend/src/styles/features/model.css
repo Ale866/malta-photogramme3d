@@ -861,6 +861,42 @@
   gap: var(--space-4);
 }
 
+.model-list-pagination {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 8.5rem auto 8.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 0.75rem 0 0.25rem;
+}
+
+.model-list-pagination-count {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.model-list-show-more-button {
+  min-width: 8.5rem;
+  justify-self: end;
+  border-radius: 6px;
+  border-color: rgb(121 177 245 / 0.22);
+  background: linear-gradient(180deg, rgb(18 30 48 / 0.96), rgb(10 17 28 / 0.98));
+  color: #dcecff;
+}
+
+.model-list-pagination .model-list-show-more-button:first-child {
+  justify-self: start;
+}
+
+.model-list-show-more-button:hover,
+.model-list-show-more-button:focus-visible {
+  border-color: rgb(121 177 245 / 0.36);
+  background: linear-gradient(180deg, rgb(24 39 62 / 0.98), rgb(13 23 38 / 0.98));
+}
+
 .model-list-state-shell {
   min-height: min(52vh, 34rem);
   display: grid;
@@ -1294,7 +1330,7 @@
   }
 
   .model-list-card-actions {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     display: grid;
   }
 
@@ -1302,6 +1338,7 @@
   .model-list-card-island-button {
     width: 100%;
   }
+
 }
 
 .model-details-page {

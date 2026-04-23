@@ -12,6 +12,8 @@ import { canRenderModelOnIsland } from '@/features/model/domain/ModelSummary'
 export type ModelListFilterKey = 'all' | 'models' | 'jobs' | 'needs-votes' | 'on-island'
 export type ModelListSortKey = 'newest' | 'oldest' | 'title' | 'votes'
 
+const PAGE_SIZE = 4
+
 type FilterOption = {
   key: ModelListFilterKey
   label: string
@@ -32,6 +34,7 @@ export function useModelListPage() {
   const errorMessage = ref<string | null>(null)
   const selectedFilter = ref<ModelListFilterKey>('all')
   const selectedSort = ref<ModelListSortKey>('newest')
+  const currentPage = ref(1)
 
   const modelSource = computed(() => route.meta.modelSource as 'private' | 'public' | undefined)
   const cards = computed(() => toModelLibraryCardViewModels(library.value))
@@ -103,6 +106,11 @@ export function useModelListPage() {
       }
     })
   })
+  const visibleCardCount = computed(() => visibleCards.value.length)
+  const totalPages = computed(() => Math.max(1, Math.ceil(visibleCardCount.value / PAGE_SIZE)))
+  const pagedCards = computed(() => visibleCards.value.slice(0, currentPage.value * PAGE_SIZE))
+  const canShowMore = computed(() => pagedCards.value.length < visibleCardCount.value)
+  const canShowLess = computed(() => currentPage.value > 1)
   const pendingJobIds = computed(() => {
     if (modelSource.value !== 'private' || !library.value) return []
 
@@ -125,6 +133,7 @@ export function useModelListPage() {
       library.value = modelSource.value === 'private'
         ? await getModelLibrary()
         : await getPublicModelCatalog()
+      currentPage.value = 1
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : 'Failed to load models'
     } finally {
@@ -169,21 +178,33 @@ export function useModelListPage() {
 
   function setSelectedFilter(filterKey: ModelListFilterKey) {
     selectedFilter.value = filterKey
+    currentPage.value = 1
   }
 
   function setSelectedSort(sortKey: ModelListSortKey) {
     selectedSort.value = sortKey
+    currentPage.value = 1
   }
 
   function updateSelectedSort(value: string) {
     if (!sortOptions.value.some((option) => option.key === value)) return
 
     selectedSort.value = value as ModelListSortKey
+    currentPage.value = 1
+  }
+
+  function showMore() {
+    currentPage.value = Math.min(currentPage.value + 1, totalPages.value)
+  }
+
+  function showLess() {
+    currentPage.value = 1
   }
 
   watch(() => modelSource.value, async () => {
     selectedFilter.value = 'all'
     selectedSort.value = 'newest'
+    currentPage.value = 1
     deletion.closeDeleteDialog()
     await loadModels()
   }, { immediate: true })
@@ -220,6 +241,12 @@ export function useModelListPage() {
     toggleVote: voting.toggleVote,
     updateSelectedSort,
     isVoteDisabled: voting.isVoteDisabled,
+    canShowMore,
+    canShowLess,
+    pagedCards,
+    showLess,
+    showMore,
+    visibleCardCount,
     viewOnIsland,
     visibleCards,
     ...deletion,
