@@ -14,6 +14,7 @@ type PositionedModel = {
 const renderer = shallowRef<IslandModelRenderer | null>(null)
 const interactor = shallowRef<IslandModelInteractor | null>(null)
 const focusedModelId = shallowRef<string | null>(null)
+const loadingModelCount = shallowRef(0)
 let onModelFocus: ((modelId: string) => void) | null = null
 let onModelBlur: (() => void) | null = null
 
@@ -24,12 +25,18 @@ export function useIslandModelLayer() {
     renderer.value = new IslandModelRenderer(
       orchestrator.getSceneRenderer().getScene(),
       orchestrator.getSceneRenderer().getCamera(),
+      {
+        onLoadingStateChange: ({ pending, loading }) => {
+          loadingModelCount.value = pending + loading
+        },
+      },
     )
     return renderer.value
   }
 
   async function renderModels(orchestrator: IslandOrchestrator, models: PositionedModel[]) {
     focusedModelId.value = null
+    loadingModelCount.value = 0
     orchestrator.setTerrainClickEnabled(true)
     const currentRenderer = ensureRenderer(orchestrator)
     await currentRenderer.setModels(models)
@@ -119,6 +126,7 @@ export function useIslandModelLayer() {
     exitFocusMode,
     focusedModelId: computed(() => focusedModelId.value),
     isFocusModeActive: computed(() => focusedModelId.value !== null),
+    isLoadingModels: computed(() => loadingModelCount.value > 0),
     dispose,
   }
 }

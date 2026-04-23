@@ -1,5 +1,8 @@
 import * as T from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+
+let terrainLoader: GLTFLoader | null = null
 
 function clamp(v: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, v))
@@ -44,6 +47,7 @@ export async function loadTerrainModelGLB(options: {
   scale?: number
   verticalExaggeration?: number
   altitudeColors?: boolean
+  computeNormals?: boolean
   rotateY?: number
 }): Promise<TerrainModelResult> {
   const {
@@ -52,10 +56,11 @@ export async function loadTerrainModelGLB(options: {
     scale = 1,
     verticalExaggeration = 1,
     altitudeColors = true,
+    computeNormals = true,
     rotateY = 0,
   } = options
 
-  const loader = new GLTFLoader()
+  const loader = getTerrainGltfLoader()
   const gltf = await loader.loadAsync(url)
   const root = gltf.scene
 
@@ -117,11 +122,24 @@ export async function loadTerrainModelGLB(options: {
       geom.setAttribute('color', colAttr)
     }
 
-    geom.computeVertexNormals()
+    if (computeNormals) {
+      geom.computeVertexNormals()
+    }
 
     mesh.castShadow = true
     mesh.receiveShadow = true
   })
 
   return { root, bboxLocalXZ, yRange }
+}
+
+function getTerrainGltfLoader() {
+  if (terrainLoader) return terrainLoader
+
+  const loader = new GLTFLoader()
+  const dracoLoader = new DRACOLoader()
+  dracoLoader.setDecoderPath('/draco/')
+  loader.setDRACOLoader(dracoLoader)
+  terrainLoader = loader
+  return terrainLoader
 }

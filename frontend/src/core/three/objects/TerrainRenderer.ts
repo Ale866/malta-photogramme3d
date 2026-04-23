@@ -14,6 +14,7 @@ export class TerrainRenderer {
     scale?: number
     verticalExaggeration?: number
     altitudeColors?: boolean
+    computeNormals?: boolean
     rotateY?: number
   }): Promise<TerrainModelResult> {
     const result = await loadTerrainModelGLB({

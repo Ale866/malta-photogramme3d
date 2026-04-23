@@ -1,6 +1,7 @@
 import * as T from 'three'
 import gsap from 'gsap'
 import { disposeObject3D, loadDeliveredModel } from '@/features/model/infrastructure/texturedPlyModel'
+import { isConservativeGraphicsDevice } from '@/core/device/performance'
 
 type IslandModelRenderInput = {
   id: string
@@ -8,6 +9,10 @@ type IslandModelRenderInput = {
   orientation: { x: number; y: number; z: number }
   meshAssetUrl: string | null
   textureAssetUrl: string | null
+}
+
+type IslandModelRendererOptions = {
+  onLoadingStateChange?: (state: { pending: number; loading: number }) => void
 }
 
 const HOVER_EMISSIVE = 0xffffff
@@ -18,8 +23,8 @@ const DEEMPHASIZED_SCALE = 0.97
 const DEEMPHASIZED_OPACITY = 0.38
 const INTERACTION_TARGET_MIN_SIZE = 1.5
 const DEFAULT_INTERACTION_SIZE = new T.Vector3(2.2, TARGET_MODEL_HEIGHT, 2.2)
-const INITIAL_PRIORITY_LOAD_COUNT = 8
-const MAX_CONCURRENT_LOADS = 2
+const INITIAL_PRIORITY_LOAD_COUNT = isConservativeGraphicsDevice() ? 2 : 8
+const MAX_CONCURRENT_LOADS = isConservativeGraphicsDevice() ? 1 : 2
 const PRIORITY_LOAD_DISTANCE = 110
 const MIN_MODEL_SCALE = 0.45
 const MAX_MODEL_SCALE = 2.4
@@ -58,9 +63,12 @@ export class IslandModelRenderer {
   private pendingLoadOrder: string[] = []
   private activeLoads = 0
 
-  constructor(scene: T.Scene, camera: T.PerspectiveCamera) {
+  private readonly onLoadingStateChange?: (state: { pending: number; loading: number }) => void
+
+  constructor(scene: T.Scene, camera: T.PerspectiveCamera, options: IslandModelRendererOptions = {}) {
     this.scene = scene
     this.camera = camera
+    this.onLoadingStateChange = options.onLoadingStateChange
     this.group.name = 'island-models'
     this.scene.add(this.group)
   }
@@ -90,6 +98,7 @@ export class IslandModelRenderer {
     }
 
     this.pendingLoadOrder = sortedModels.map((model) => model.id)
+    this.emitLoadingState()
 
     for (let index = 0; index < Math.min(INITIAL_PRIORITY_LOAD_COUNT, this.pendingLoadOrder.length); index += 1) {
       const modelId = this.pendingLoadOrder[index]
@@ -108,6 +117,7 @@ export class IslandModelRenderer {
       .map((entry) => entry.model.id)
 
     this.pendingLoadOrder = prioritizedModelIds
+    this.emitLoadingState()
     this.processLoadQueue(this.loadToken)
   }
 
@@ -209,6 +219,7 @@ export class IslandModelRenderer {
     this.loadToken += 1
     this.pendingLoadOrder = []
     this.activeLoads = 0
+    this.emitLoadingState()
 
     for (const entry of this.entriesByModelId.values()) {
       if (entry.meshObject) {
@@ -372,6 +383,7 @@ export class IslandModelRenderer {
 
     this.activeLoads += 1
     entry.loadState = 'loading'
+    this.emitLoadingState()
 
     try {
       const meshObject = await loadDeliveredModel({
@@ -418,6 +430,7 @@ export class IslandModelRenderer {
     } finally {
       this.activeLoads = Math.max(0, this.activeLoads - 1)
       this.pendingLoadOrder = this.pendingLoadOrder.filter((queuedModelId) => queuedModelId !== modelId)
+      this.emitLoadingState()
       this.processLoadQueue(token)
     }
   }
@@ -431,6 +444,14 @@ export class IslandModelRenderer {
       void this.ensureModelLoaded(nextModelId, token)
       this.pendingLoadOrder = this.pendingLoadOrder.filter((queuedModelId) => queuedModelId !== nextModelId)
     }
+    this.emitLoadingState()
+  }
+
+  private emitLoadingState() {
+    this.onLoadingStateChange?.({
+      pending: this.pendingLoadOrder.length,
+      loading: this.activeLoads,
+    })
   }
 
   private getLoadPriority(entry: ModelRenderEntry) {

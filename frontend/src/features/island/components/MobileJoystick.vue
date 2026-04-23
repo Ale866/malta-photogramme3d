@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+const props = withDefaults(defineProps<{
+  outputSensitivity?: number
+}>(), {
+  outputSensitivity: 0.38,
+})
+
 const emit = defineEmits<{
   move: [{ x: number; y: number }]
 }>()
@@ -19,6 +25,13 @@ const isActive = computed(() => activePointerId.value !== null)
 
 function emitMove(x: number, y: number) {
   emit('move', { x, y })
+}
+
+function softenInput(value: number) {
+  const magnitude = Math.abs(value)
+  if (magnitude < 0.08) return 0
+
+  return Math.sign(value) * magnitude * magnitude * props.outputSensitivity
 }
 
 function resetJoystick() {
@@ -46,7 +59,7 @@ function updateKnobFromPointer(clientX: number, clientY: number) {
   }
 
   knobOffset.value = { x: dx, y: dy }
-  emitMove(dx / MAX_RADIUS_PX, -dy / MAX_RADIUS_PX)
+  emitMove(softenInput(dx / MAX_RADIUS_PX), softenInput(-dy / MAX_RADIUS_PX))
 }
 
 function onPointerDown(event: PointerEvent) {

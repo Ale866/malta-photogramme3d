@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, inject, onMounted, onUnmounted } from 'vue'
+import { computed, defineAsyncComponent, inject, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MALTA_TERRAIN_UTM_BBOX } from '@/core/config/maltaTerrainBounds'
 import { useScene } from '@/features/island/composables/useScene'
@@ -14,6 +14,10 @@ import type { IslandOrchestrator } from '@/features/island/application/IslandOrc
 import LoginModal from '@/features/auth/components/LoginModal.vue'
 import ProfileDock from '@/features/auth/components/ProfileDock.vue'
 import { islandModelCatalogStore } from '@/features/model/application/composables/useIslandModelCatalog'
+import { isConservativeGraphicsDevice } from '@/core/device/performance'
+
+const FULL_TERRAIN_URL = '/terrain/malta.glb'
+const MOBILE_TERRAIN_URL = '/terrain/malta.mobile.glb'
 
 const { initScene, getOrchestrator, getViewportProjectionPort } = useScene()
 const {
@@ -23,6 +27,7 @@ const {
   focusModel,
   exitFocusMode,
   isFocusModeActive,
+  isLoadingModels,
   dispose: disposeIslandModelLayer,
 } = useIslandModelLayer()
 let stopCameraChangeListener: (() => void) | null = null
@@ -30,6 +35,8 @@ let viewportProjectionPort: ViewportProjectionPort | null = null
 let cameraController: CameraController | null = null
 let islandOrchestrator: IslandOrchestrator | null = null
 let isViewActive = true
+const isLoadingModelCatalog = ref(false)
+const showModelLoadingHint = computed(() => isLoadingModelCatalog.value || isLoadingModels.value)
 const sceneRoot = inject('sceneRoot') as { value: HTMLElement | null } | null
 const route = useRoute()
 const router = useRouter()
@@ -95,8 +102,9 @@ onMounted(async () => {
   }
 
   try {
+    const terrainUrl = await resolveIslandTerrainUrl()
     islandOrchestrator = await initScene(container, {
-      terrainUrl: '/terrain/malta.glb',
+      terrainUrl,
       utmBbox: MALTA_TERRAIN_UTM_BBOX,
     })
 
@@ -115,7 +123,9 @@ onMounted(async () => {
       setTerrainSelection(coordinates.local)
     })
 
+    isLoadingModelCatalog.value = true
     await refresh()
+    isLoadingModelCatalog.value = false
     await renderModels(islandOrchestrator, placements.value)
     attachInteractions(islandOrchestrator, {
       onModelFocus: () => {
@@ -136,9 +146,23 @@ onMounted(async () => {
       updateMarkerButtonPosition()
     })
   } catch (error) {
+    isLoadingModelCatalog.value = false
     console.error('Failed to initialize island view:', error)
   }
 })
+
+async function resolveIslandTerrainUrl() {
+  if (!isConservativeGraphicsDevice()) return FULL_TERRAIN_URL
+
+  try {
+    const response = await fetch(MOBILE_TERRAIN_URL, { method: 'HEAD' })
+    if (response.ok) return MOBILE_TERRAIN_URL
+  } catch {
+    return FULL_TERRAIN_URL
+  }
+
+  return FULL_TERRAIN_URL
+}
 
 function onMobileJoystickMove(input: { x: number; y: number }) {
   cameraController?.setMobileMoveInput(input)
@@ -169,6 +193,9 @@ onUnmounted(() => {
       :style="markerButtonStyle" @click.stop="openCreateModel">
       Add model
     </button>
+    <div v-if="showModelLoadingHint" class="island-model-loading-hint" aria-live="polite">
+      Models are loading
+    </div>
     <button
       v-if="isFocusModeActive"
       class="btn island-focus-exit"

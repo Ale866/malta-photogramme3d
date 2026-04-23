@@ -44,6 +44,7 @@ export class CameraController {
   private focusSphere = new T.Sphere()
   private focusChildBox = new T.Box3()
   private isFocusModeActive = false
+  private readonly mobileMovementMultiplier = 0.26
 
   constructor(camera: T.PerspectiveCamera, domElement: HTMLElement) {
     this.camera = camera
@@ -332,7 +333,7 @@ export class CameraController {
     this.move.normalize()
 
     const distanceToTarget = this.camera.position.distanceTo(this.controls.target)
-    const movementSpeed = Math.max(4, distanceToTarget * 0.6)
+    const movementSpeed = Math.max(1.4, distanceToTarget * this.mobileMovementMultiplier)
     const movementDistance =
       movementSpeed * deltaSeconds * Math.min(1, inputMagnitude)
 

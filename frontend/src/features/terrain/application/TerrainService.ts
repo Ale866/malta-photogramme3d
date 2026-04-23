@@ -37,6 +37,7 @@ export class TerrainService {
       scale: options.scale || 1,
       verticalExaggeration: options.verticalExaggeration || 1.0,
       altitudeColors: true,
+      computeNormals: true,
       rotateY: 0,
     })
 

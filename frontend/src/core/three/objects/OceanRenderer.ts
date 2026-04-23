@@ -1,17 +1,13 @@
 import * as T from 'three'
 import vertexShader from '../shaders/ocean/vertex.glsl?raw'
 import fragmentShader from '../shaders/ocean/fragment.glsl?raw'
-
-function isLowPowerDevice() {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia?.('(pointer: coarse)').matches ?? false
-}
+import { isConservativeGraphicsDevice } from '@/core/device/performance'
 
 export class OceanRenderer {
   private oceanMesh: T.Mesh<T.PlaneGeometry, T.ShaderMaterial> | null = null
   private depthColor = new T.Color(6 / 255, 66 / 255, 115 / 255)
   private surfaceColor = new T.Color(143 / 255, 210 / 255, 242 / 255)
-  private readonly lowPowerMode = isLowPowerDevice()
+  private readonly lowPowerMode = isConservativeGraphicsDevice()
   private lastAnimatedElapsed = -Infinity
 
   createOcean(bboxLocalXZ: {
@@ -30,7 +26,7 @@ export class OceanRenderer {
     const visualWidth = terrainWidth * visualScale
     const visualHeight = terrainHeight * visualScale
     const visualMaxDim = Math.max(visualWidth, visualHeight)
-    const segments = this.lowPowerMode ? 192 : 512
+    const segments = this.lowPowerMode ? 64 : 512
     const uniforms = {
       fogNear: { value: 1 },
       fogFar: { value: 2000 },
