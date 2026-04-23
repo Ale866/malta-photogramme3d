@@ -54,6 +54,9 @@ import { createCoordinateSearchEntry, toCoordinateSearchEntry } from '@/utils/se
 
 type SearchResult = SearchEntry & { score: number }
 
+const MAX_SEARCH_RESULTS = 8
+const MAX_FUZZY_CANDIDATES = 240
+
 const emit = defineEmits<{
   'search-selected': [entry: SearchEntry]
 }>()
@@ -134,6 +137,14 @@ function rankResults(entries: SearchEntry[], query: string): SearchResult[] {
   if (normalizedQuery.length < 2) return []
 
   const queryTokens = normalizedQuery.split(/\s+/)
+  const fuzzyCandidates: Array<{
+    entry: SearchEntry
+    normalizedName: string
+    normalizedCity: string
+    nameTokens: string[]
+    cityTokens: string[]
+    directScore: number
+  }> = []
 
   function scoreTokens(candidateTokens: string[]) {
     let score = 0
@@ -161,29 +172,51 @@ function rankResults(entries: SearchEntry[], query: string): SearchResult[] {
     return score
   }
 
-  return entries
-    .map((entry) => {
-      const normalizedName = normalize(entry.name)
-      const normalizedCity = normalize(entry.city)
-      const nameTokens = normalizedName.split(/\s+/)
-      const cityTokens = normalizedCity.split(/\s+/)
-      let score = 0
+  function scoreDirectMatches(normalizedName: string, normalizedCity: string) {
+    let score = 0
 
-      if (normalizedName === normalizedQuery) {
-        score += 500
-      } else if (normalizedName.startsWith(normalizedQuery)) {
-        score += 300
-      } else if (normalizedName.includes(normalizedQuery)) {
-        score += 150
-      }
+    if (normalizedName === normalizedQuery) {
+      score += 500
+    } else if (normalizedName.startsWith(normalizedQuery)) {
+      score += 300
+    } else if (normalizedName.includes(normalizedQuery)) {
+      score += 150
+    }
 
-      if (normalizedCity === normalizedQuery) {
-        score += 700
-      } else if (normalizedCity.startsWith(normalizedQuery)) {
-        score += 120
-      } else if (normalizedCity.includes(normalizedQuery)) {
-        score += 60
-      }
+    if (normalizedCity === normalizedQuery) {
+      score += 700
+    } else if (normalizedCity.startsWith(normalizedQuery)) {
+      score += 120
+    } else if (normalizedCity.includes(normalizedQuery)) {
+      score += 60
+    }
+
+    return score
+  }
+
+  for (const entry of entries) {
+    const normalizedName = normalize(entry.name)
+    const normalizedCity = normalize(entry.city)
+    const directScore = scoreDirectMatches(normalizedName, normalizedCity)
+
+    if (directScore <= 0 && fuzzyCandidates.length >= MAX_FUZZY_CANDIDATES) {
+      continue
+    }
+
+    fuzzyCandidates.push({
+      entry,
+      normalizedName,
+      normalizedCity,
+      nameTokens: normalizedName.split(/\s+/),
+      cityTokens: normalizedCity.split(/\s+/),
+      directScore,
+    })
+  }
+
+  return fuzzyCandidates
+    .map((candidate) => {
+      const { entry, directScore, nameTokens, cityTokens } = candidate
+      let score = directScore
 
       score += scoreTokens(nameTokens)
       score += Math.round(scoreTokens(cityTokens) * 0.45)
@@ -201,7 +234,7 @@ function rankResults(entries: SearchEntry[], query: string): SearchResult[] {
       left.name.length - right.name.length ||
       left.name.localeCompare(right.name)
     )
-    .slice(0, 8)
+    .slice(0, MAX_SEARCH_RESULTS)
 }
 
 function buildResults(entries: SearchEntry[], query: string): SearchResult[] {
@@ -212,7 +245,7 @@ function buildResults(entries: SearchEntry[], query: string): SearchResult[] {
     return placeResults
   }
 
-  return [{ ...coordinateResult, score: Number.MAX_SAFE_INTEGER }, ...placeResults].slice(0, 8)
+  return [{ ...coordinateResult, score: Number.MAX_SAFE_INTEGER }, ...placeResults].slice(0, MAX_SEARCH_RESULTS)
 }
 
 function getResultInputValue(entry: SearchEntry) {
