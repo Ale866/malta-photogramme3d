@@ -2,11 +2,20 @@ import type {
   ModelJobRepository,
   CreateModelJobInput,
   ModelJob,
+  ModelJobStatus,
   UpdateModelJobStateInput,
 } from '../domain/modelJobRepository';
 import { MODEL_JOB_STATUS } from '../domain/modelJobRepository';
+import { MODEL_JOB_STATUSES } from '../domain/modelJobState';
 import { ModelJobSchema } from './db/ModelJobSchema';
 import { toModelJobDomain } from './modelJobMapper';
+
+const NON_RESUMABLE_JOB_STATUSES = new Set<ModelJobStatus>([
+  MODEL_JOB_STATUS.QUEUED,
+  MODEL_JOB_STATUS.QUEUED_TO_RERUN,
+  MODEL_JOB_STATUS.COMPLETED,
+  MODEL_JOB_STATUS.FAILED,
+]);
 
 export const modelJobRepo: ModelJobRepository = {
   async create(input: CreateModelJobInput): Promise<ModelJob> {
@@ -36,26 +45,40 @@ export const modelJobRepo: ModelJobRepository = {
     return toModelJobDomain(doc);
   },
 
-  async claimNextQueued(): Promise<ModelJob | null> {
-    const startedAt = new Date();
-    const doc = await ModelJobSchema.findOneAndUpdate(
-      { status: { $in: [MODEL_JOB_STATUS.QUEUED, MODEL_JOB_STATUS.QUEUED_TO_RERUN] } },
+  async claimNextProcessable(): Promise<ModelJob | null> {
+    const claimJob = async (filter: Record<string, unknown>, sort: Record<string, 1 | -1>) => {
+      const doc = await ModelJobSchema.findOneAndUpdate(
+        filter,
+        {
+          $set: {
+            error: null,
+            modelId: null,
+            finishedAt: null,
+          },
+        },
+        {
+          sort,
+          returnDocument: 'after',
+        }
+      ).lean();
+
+      return doc ? toModelJobDomain(doc) : null;
+    };
+
+    const resumableJob = await claimJob(
       {
-        $set: {
-          error: null,
-          modelId: null,
-          startedAt,
-          finishedAt: null,
+        status: {
+          $in: MODEL_JOB_STATUSES.filter((status) => !NON_RESUMABLE_JOB_STATUSES.has(status)),
         },
       },
-      {
-        sort: { createdAt: 1, _id: 1 },
-        returnDocument: 'after',
-      }
-    ).lean();
+      { startedAt: 1, createdAt: 1, _id: 1 }
+    );
+    if (resumableJob) return resumableJob;
 
-    if (!doc) return null;
-    return toModelJobDomain(doc);
+    return claimJob(
+      { status: { $in: [MODEL_JOB_STATUS.QUEUED, MODEL_JOB_STATUS.QUEUED_TO_RERUN] } },
+      { createdAt: 1, _id: 1 }
+    );
   },
 
   async updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null> {

@@ -40,7 +40,7 @@ function buildDenseStereoCommand(outputFolder: string, options: DenseStereoOptio
 function buildStrictDenseStereoCommand(outputFolder: string): StageCommand {
   return buildDenseStereoCommand(outputFolder, {
     maxImageSize: "2000",
-    numThreads: "4",
+    numThreads: "6",
     geomConsistency: "true",
     filter: "true",
   });
@@ -49,7 +49,7 @@ function buildStrictDenseStereoCommand(outputFolder: string): StageCommand {
 function buildRelaxedDenseStereoCommand(outputFolder: string): StageCommand {
   return buildDenseStereoCommand(outputFolder, {
     maxImageSize: "2000",
-    numThreads: "4",
+    numThreads: "6",
     geomConsistency: "true",
     filter: "true",
   });

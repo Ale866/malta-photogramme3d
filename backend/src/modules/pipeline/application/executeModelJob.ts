@@ -103,6 +103,8 @@ const PIPELINE_STAGES: readonly PipelineExecutionStage[] = [
   },
 ];
 
+const RESUMABLE_STAGE_KEYS = new Set(PIPELINE_STAGES.map((pipelineStage) => pipelineStage.key));
+
 export async function executeModelJob(services: ExecuteModelJobServices, input: ExecuteModelJobInput): Promise<void> {
   const jobId = requireJobId(input.jobId);
   const job = await services.modelJobs.findById(jobId);
@@ -127,7 +129,7 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
   };
 
   try {
-    for (const pipelineStage of PIPELINE_STAGES) {
+    for (const pipelineStage of resolvePipelineStagesToRun(job.stage)) {
       await setModelJobStageActive(
         { modelJobs: services.modelJobs },
         job.id,
@@ -192,6 +194,27 @@ export async function executeModelJob(services: ExecuteModelJobServices, input: 
   } finally {
     clearInterval(interval);
   }
+}
+
+function resolvePipelineStagesToRun(stage: string): readonly PipelineExecutionStage[] {
+  const normalizedStage = typeof stage === "string" ? stage.trim() : "";
+  if (!normalizedStage || normalizedStage === MODEL_JOB_STATUS.QUEUED || normalizedStage === MODEL_JOB_STATUS.QUEUED_TO_RERUN) {
+    return PIPELINE_STAGES;
+  }
+
+  const resumableStage = normalizedStage.endsWith("_failed")
+    ? normalizedStage.slice(0, -"_failed".length)
+    : normalizedStage;
+  if (!RESUMABLE_STAGE_KEYS.has(resumableStage as PipelineStage)) {
+    return PIPELINE_STAGES;
+  }
+
+  const startIndex = PIPELINE_STAGES.findIndex((pipelineStage) => pipelineStage.key === resumableStage);
+  if (startIndex < 0) {
+    return PIPELINE_STAGES;
+  }
+
+  return PIPELINE_STAGES.slice(startIndex);
 }
 
 function requireJobId(jobId: string): string {

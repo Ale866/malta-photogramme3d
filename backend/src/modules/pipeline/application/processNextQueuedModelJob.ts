@@ -19,7 +19,7 @@ export async function processNextQueuedModelJob(
   const job = await claimNextQueuedJob({ modelJobs: services.modelJobs });
   if (!job) return false;
 
-  const pipeline = job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN
+  const pipeline = job.status === MODEL_JOB_STATUS.QUEUED_TO_RERUN || job.hasBeenRerun
     ? services.pipelines.relaxed
     : services.pipelines.strict;
 

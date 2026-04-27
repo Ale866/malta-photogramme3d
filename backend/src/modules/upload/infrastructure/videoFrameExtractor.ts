@@ -6,7 +6,7 @@ import { config } from "../../../shared/config/env";
 import { FileStorage } from "./fileStorage";
 
 const DEFAULT_VIDEO_FRAME_PREFIX = "frame_";
-const VIDEO_FPS = "4";
+const VIDEO_FPS = "3";
 
 export const videoFrameExtractor = {
   async extractFrames(videoPath: string, inputFolder: string, framePrefix: string, clearExisting = false) {

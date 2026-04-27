@@ -70,7 +70,7 @@ export type UpdateModelJobStateInput = {
 export interface ModelJobRepository {
   create(input: CreateModelJobInput): Promise<ModelJob>;
   findById(id: string): Promise<ModelJob | null>;
-  claimNextQueued(): Promise<ModelJob | null>;
+  claimNextProcessable(): Promise<ModelJob | null>;
   updateState(jobId: string, patch: UpdateModelJobStateInput): Promise<ModelJob | null>;
   listNonCompletedByOwner(ownerId: string): Promise<ModelJob[]>;
   deleteById(jobId: string): Promise<boolean>;
