@@ -14,6 +14,7 @@ type FusionOptions = {
   minNumPixels: string;
   maxDepthError: string;
   maxReprojError: string;
+  numThreads: string;
 };
 
 function buildFusionCommand(outputFolder: string, options: FusionOptions): StageCommand {
@@ -36,6 +37,7 @@ function buildFusionCommand(outputFolder: string, options: FusionOptions): Stage
       "--StereoFusion.min_num_pixels", options.minNumPixels,
       "--StereoFusion.max_depth_error", options.maxDepthError,
       "--StereoFusion.max_reproj_error", options.maxReprojError,
+      "--StereoFusion.num_threads", options.numThreads,
     ],
   };
 }
@@ -46,6 +48,7 @@ function buildStrictFusionCommand(outputFolder: string): StageCommand {
     minNumPixels: "6",
     maxDepthError: "0.01",
     maxReprojError: "2",
+    numThreads: "2",
   });
 }
 
@@ -55,6 +58,7 @@ function buildRelaxedFusionCommand(outputFolder: string): StageCommand {
     minNumPixels: "3",
     maxDepthError: "0.02",
     maxReprojError: "4",
+    numThreads: "2",
   });
 }
 
