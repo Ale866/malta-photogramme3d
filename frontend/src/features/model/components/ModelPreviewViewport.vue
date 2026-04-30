@@ -98,7 +98,7 @@ function mountScene(sceneElement: HTMLElement) {
     <div ref="scene-element-container" class="model-preview-canvas" aria-label="Interactive model preview"></div>
     <div v-if="interactive && !hasError" class="model-preview-zoom-controls" aria-label="Preview zoom controls">
       <div class="model-preview-control-cluster">
-        <mobile-joystick class="model-preview-joystick" :output-sensitivity="0.18" @move="handleJoystickMove"></mobile-joystick>
+        <mobile-joystick class="model-preview-joystick" :output-sensitivity="0.28" @move="handleJoystickMove"></mobile-joystick>
       </div>
     </div>
     <div v-if="isLoading" class="model-preview-loader" aria-live="polite">

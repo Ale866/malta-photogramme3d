@@ -395,7 +395,7 @@ export class ModelPreviewScene {
   }
 
   private setZoomScale(scale: number) {
-    this.zoomScale = T.MathUtils.clamp(scale, 0.42, 1.9)
+    this.zoomScale = T.MathUtils.clamp(scale, 0.18, 1.9)
     this.applyCameraFrame()
   }
 
@@ -474,7 +474,7 @@ export class ModelPreviewScene {
   private applyPanInput() {
     if (this.panInput.lengthSq() < 1e-4) return
 
-    this.panByScreenDelta(this.panInput.x * 3, -this.panInput.y * 3)
+    this.panByScreenDelta(this.panInput.x * 3, this.panInput.y * 3)
   }
 
   private getTouchDistance() {
