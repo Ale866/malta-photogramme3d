@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { config } from "../../../../shared/config/env";
 import type { PipelineProfile, RunColmapStageHooks } from "../../application/ports";
 import {
@@ -75,8 +76,74 @@ export function runSparseMapping(inputFolder: string, outputFolder: string, hook
 
   return runStage(command, hooks).then(() => {
     const outputPaths = resolveOutputPaths(outputFolder);
+    const selectedSparseModel = selectLargestSparseModel(outputPaths.sparseRoot);
+
+    if (selectedSparseModel && path.resolve(selectedSparseModel) !== path.resolve(outputPaths.sparseModel)) {
+      console.info(
+        `[COLMAP sparse_mapping] Promoting ${path.basename(selectedSparseModel)} to sparse/0 for dense reconstruction`
+      );
+      replaceSparseModel(outputPaths.sparseModel, selectedSparseModel);
+    }
+
     if (!fs.existsSync(outputPaths.sparseModel)) {
       throw new Error(`COLMAP sparse mapping did not produce the expected output at ${outputPaths.sparseModel}`);
     }
   });
+}
+
+function selectLargestSparseModel(sparseRoot: string): string | null {
+  if (!fs.existsSync(sparseRoot)) return null;
+
+  const candidates = fs.readdirSync(sparseRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const modelPath = path.join(sparseRoot, entry.name);
+      return {
+        imageCount: readSparseModelImageCount(modelPath),
+        modelPath,
+      };
+    })
+    .filter((candidate) => candidate.imageCount > 0)
+    .sort((left, right) => right.imageCount - left.imageCount);
+
+  if (candidates.length > 0) {
+    console.info(
+      `[COLMAP sparse_mapping] Sparse model image counts: ${candidates
+        .map((candidate) => `${path.basename(candidate.modelPath)}=${candidate.imageCount}`)
+        .join(", ")}`
+    );
+  }
+
+  return candidates[0]?.modelPath ?? null;
+}
+
+function readSparseModelImageCount(modelPath: string): number {
+  const imagesBinPath = path.join(modelPath, "images.bin");
+  if (fs.existsSync(imagesBinPath)) {
+    const file = fs.openSync(imagesBinPath, "r");
+    try {
+      const buffer = Buffer.alloc(8);
+      const bytesRead = fs.readSync(file, buffer, 0, buffer.length, 0);
+      if (bytesRead === buffer.length) {
+        return Number(buffer.readBigUInt64LE(0));
+      }
+    } finally {
+      fs.closeSync(file);
+    }
+  }
+
+  const imagesTxtPath = path.join(modelPath, "images.txt");
+  if (!fs.existsSync(imagesTxtPath)) return 0;
+
+  const dataLines = fs.readFileSync(imagesTxtPath, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+
+  return Math.floor(dataLines.length / 2);
+}
+
+function replaceSparseModel(targetPath: string, sourcePath: string) {
+  fs.rmSync(targetPath, { recursive: true, force: true });
+  fs.cpSync(sourcePath, targetPath, { recursive: true });
 }

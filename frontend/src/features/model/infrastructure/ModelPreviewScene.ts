@@ -474,7 +474,7 @@ export class ModelPreviewScene {
   private applyPanInput() {
     if (this.panInput.lengthSq() < 1e-4) return
 
-    this.panByScreenDelta(this.panInput.x * 3, this.panInput.y * 3)
+    this.panByScreenDelta(-this.panInput.x * 3, -this.panInput.y * 3)
   }
 
   private getTouchDistance() {
