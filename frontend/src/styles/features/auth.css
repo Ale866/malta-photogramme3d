@@ -1,12 +1,24 @@
 .auth-page {
   width: min(640px, calc(100vw - 2rem));
-  margin: 48px auto;
-  padding: clamp(1rem, 1.8vw, 1.5rem);
+  min-height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  padding:
+    48px
+    clamp(1rem, 1.8vw, 1.5rem)
+    48px;
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgb(16 18 22 / 0.94), rgb(8 10 14 / 0.97));
   border: 1px solid rgb(255 255 255 / 0.1);
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(18px);
+  scrollbar-width: thin;
+  scrollbar-color: rgb(77 112 158 / 0.72) rgb(16 20 27 / 0.82);
 }
 
 .login-page-title {
@@ -415,8 +427,13 @@
 @media (max-width: 700px) {
   .auth-page {
     width: min(100vw - 1rem, 640px);
-    margin: 20px auto;
-    padding: var(--space-3);
+    min-height: 100dvh;
+    max-height: 100dvh;
+    margin: 0 auto;
+    padding:
+      20px
+      var(--space-3)
+      calc(env(safe-area-inset-bottom, 0px) + 20px);
   }
 
   .auth-form-grid--register {
@@ -454,4 +471,21 @@
     width: 18px;
     height: 18px;
   }
+}
+.auth-page::-webkit-scrollbar {
+  width: 10px;
+}
+
+.auth-page::-webkit-scrollbar-track {
+  background: rgb(8 12 18 / 0.86);
+}
+
+.auth-page::-webkit-scrollbar-thumb {
+  border: 2px solid rgb(8 12 18 / 0.86);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(73 107 150 / 0.95), rgb(44 67 97 / 0.95));
+}
+
+.auth-page::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgb(90 129 179 / 0.96), rgb(54 82 118 / 0.96));
 }

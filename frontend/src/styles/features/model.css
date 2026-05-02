@@ -857,8 +857,14 @@
 
 .model-list-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
+}
+
+@media (max-width: 1120px) {
+  .model-list-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .model-list-pagination {
@@ -1000,8 +1006,10 @@
 
 .model-list-card {
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 1rem;
   padding: 1.05rem;
+  height: 100%;
   border: 1px solid rgb(155 174 212 / 0.14);
   border-radius: 14px;
   background:
@@ -1044,6 +1052,11 @@
   line-height: 1.2;
   color: #f6fbff;
   max-width: 18ch;
+  min-height: calc(1.2em * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .model-list-card-status {
@@ -1180,6 +1193,7 @@
   margin: 0;
   display: grid;
   gap: 0.75rem;
+  align-content: start;
 }
 
 .model-list-card-vote-button {
@@ -1255,6 +1269,12 @@
   padding: 0.2rem 0;
 }
 
+.model-list-card-meta-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
 .model-list-card-meta-label {
   font-size: 0.72rem;
   font-weight: var(--font-weight-semibold);
@@ -1266,6 +1286,15 @@
 .model-list-card-meta-value {
   color: #f3f8ff;
   line-height: 1.45;
+  word-break: break-word;
+}
+
+.model-list-card-meta-value--location {
+  min-height: calc(1.45em * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .model-list-card-meta-icon {
@@ -1289,6 +1318,7 @@
   display: flex;
   align-items: stretch;
   gap: 0.5rem;
+  margin-top: auto;
 }
 
 .model-list-card-island-button {
@@ -2541,6 +2571,7 @@
   .model-list-card-title {
     max-width: none;
     font-size: 1.02rem;
+    min-height: calc(1.2em * 2);
   }
 
   .model-list-card-status {
@@ -2692,6 +2723,10 @@
   .model-list-card-meta-value {
     font-size: 0.92rem;
     line-height: 1.3;
+  }
+
+  .model-list-card-meta-value--location {
+    min-height: calc(1.3em * 2);
   }
 
   .model-list-card-meta-icon {

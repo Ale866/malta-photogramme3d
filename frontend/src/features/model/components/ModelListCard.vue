@@ -128,7 +128,7 @@ const deleteButtonLabel = computed(() =>
             <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
           </svg>
         </div>
-        <div>
+        <div class="model-list-card-meta-copy">
           <div class="model-list-card-meta-label">Creator</div>
           <div class="model-list-card-meta-value">{{ card.ownerName }}</div>
         </div>
@@ -142,7 +142,7 @@ const deleteButtonLabel = computed(() =>
             <path d="M12 17h.01" />
           </svg>
         </div>
-        <div>
+        <div class="model-list-card-meta-copy">
           <div class="model-list-card-meta-label">Job</div>
           <div class="model-list-card-meta-value">{{ card.status === 'failed' ? 'Failed reconstruction' : 'Processing job' }}</div>
         </div>
@@ -155,9 +155,9 @@ const deleteButtonLabel = computed(() =>
             <circle cx="12" cy="11" r="2.2" />
           </svg>
         </div>
-        <div>
+        <div class="model-list-card-meta-copy">
           <div class="model-list-card-meta-label">Location</div>
-          <div class="model-list-card-meta-value">{{ placeLabel }}</div>
+          <div class="model-list-card-meta-value model-list-card-meta-value--location">{{ placeLabel }}</div>
         </div>
       </div>
       <div class="model-list-card-meta-item">
@@ -170,7 +170,7 @@ const deleteButtonLabel = computed(() =>
             <rect x="4" y="5" width="16" height="16" rx="2" />
           </svg>
         </div>
-        <div>
+        <div class="model-list-card-meta-copy">
           <div class="model-list-card-meta-label">Created</div>
           <div class="model-list-card-meta-value">{{ formattedDate }}</div>
         </div>
