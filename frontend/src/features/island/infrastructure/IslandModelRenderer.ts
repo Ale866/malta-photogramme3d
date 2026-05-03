@@ -13,6 +13,7 @@ type IslandModelRenderInput = {
 
 type IslandModelRendererOptions = {
   onLoadingStateChange?: (state: { pending: number; loading: number }) => void
+  onHoveredModelChange?: (modelId: string | null) => void
 }
 
 const HOVER_EMISSIVE = 0xffffff
@@ -21,11 +22,11 @@ const SELECTED_LIFT = 0.45
 const SELECTED_SCALE = 1.14
 const DEEMPHASIZED_SCALE = 0.97
 const DEEMPHASIZED_OPACITY = 0.38
-const INTERACTION_TARGET_MIN_SIZE = 1.5
+const INTERACTION_TARGET_MIN_FOOTPRINT = 2.1
 const INTERACTION_TARGET_MAX_FOOTPRINT = 4.2
 const INTERACTION_TARGET_MAX_HEIGHT = 5.4
-const INTERACTION_TARGET_MIN_HEIGHT = 2.2
-const DEFAULT_INTERACTION_SIZE = new T.Vector3(2.2, TARGET_MODEL_HEIGHT, 2.2)
+const INTERACTION_TARGET_MIN_HEIGHT = 2.5
+const DEFAULT_INTERACTION_SIZE = new T.Vector3(2.5, TARGET_MODEL_HEIGHT, 2.5)
 const INITIAL_PRIORITY_LOAD_COUNT = isConservativeGraphicsDevice() ? 2 : 8
 const MAX_CONCURRENT_LOADS = isConservativeGraphicsDevice() ? 1 : 2
 const PRIORITY_LOAD_DISTANCE = 110
@@ -67,11 +68,13 @@ export class IslandModelRenderer {
   private activeLoads = 0
 
   private readonly onLoadingStateChange?: (state: { pending: number; loading: number }) => void
+  private readonly onHoveredModelChange?: (modelId: string | null) => void
 
   constructor(scene: T.Scene, camera: T.PerspectiveCamera, options: IslandModelRendererOptions = {}) {
     this.scene = scene
     this.camera = camera
     this.onLoadingStateChange = options.onLoadingStateChange
+    this.onHoveredModelChange = options.onHoveredModelChange
     this.group.name = 'island-models'
     this.scene.add(this.group)
   }
@@ -166,12 +169,9 @@ export class IslandModelRenderer {
     if (!this.objectsByModelId.has(modelId)) return
     if (this.selectedModelId === modelId) return
 
-    if (this.hoveredModelId) {
-      this.setObjectHighlight(this.hoveredModelId, false)
-    }
+    this.setHoveredModel(null)
 
     this.selectedModelId = modelId
-    this.hoveredModelId = null
     void this.ensureModelLoaded(modelId, this.loadToken, true)
     this.refreshLoadingPriorities()
     this.animateFocusState()
@@ -206,6 +206,7 @@ export class IslandModelRenderer {
       if (this.hoveredModelId) {
         this.setObjectHighlight(this.hoveredModelId, false)
         this.hoveredModelId = null
+        this.onHoveredModelChange?.(null)
       }
       return
     }
@@ -217,6 +218,7 @@ export class IslandModelRenderer {
     }
 
     this.hoveredModelId = modelId
+    this.onHoveredModelChange?.(this.hoveredModelId)
 
     if (this.hoveredModelId) {
       this.setObjectHighlight(this.hoveredModelId, true)
@@ -618,9 +620,9 @@ export class IslandModelRenderer {
   private createInteractionTarget(modelId: string, size: T.Vector3, center: T.Vector3) {
     const target = new T.Mesh(
       new T.BoxGeometry(
-        Math.max(size.x * 1.08, INTERACTION_TARGET_MIN_SIZE),
-        Math.max(size.y * 1.08, INTERACTION_TARGET_MIN_SIZE),
-        Math.max(size.z * 1.08, INTERACTION_TARGET_MIN_SIZE),
+        Math.max(size.x * 1.12, INTERACTION_TARGET_MIN_FOOTPRINT),
+        Math.max(size.y * 1.08, INTERACTION_TARGET_MIN_HEIGHT),
+        Math.max(size.z * 1.12, INTERACTION_TARGET_MIN_FOOTPRINT),
       ),
       new T.MeshBasicMaterial({
         color: 0xffffff,
@@ -643,12 +645,12 @@ export class IslandModelRenderer {
     scaledCenter: T.Vector3,
   ) {
     const footprint = T.MathUtils.clamp(
-      Math.max(scaledSize.x, scaledSize.z) * 0.92,
-      INTERACTION_TARGET_MIN_SIZE,
+      Math.max(scaledSize.x, scaledSize.z) * 1.08,
+      INTERACTION_TARGET_MIN_FOOTPRINT,
       INTERACTION_TARGET_MAX_FOOTPRINT,
     )
     const height = T.MathUtils.clamp(
-      Math.max(scaledSize.y * 0.9, INTERACTION_TARGET_MIN_HEIGHT),
+      Math.max(scaledSize.y * 0.96, INTERACTION_TARGET_MIN_HEIGHT),
       INTERACTION_TARGET_MIN_HEIGHT,
       INTERACTION_TARGET_MAX_HEIGHT,
     )

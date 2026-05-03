@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, inject, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineAsyncComponent, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MALTA_TERRAIN_UTM_BBOX } from '@/core/config/maltaTerrainBounds'
 import { useScene } from '@/features/island/composables/useScene'
@@ -26,10 +26,14 @@ const {
   refreshLoadingPriorities,
   focusModel,
   exitFocusMode,
+  focusedModelId,
+  hoveredModelId,
   isFocusModeActive,
   isLoadingModels,
   dispose: disposeIslandModelLayer,
 } = useIslandModelLayer()
+
+const HOVER_LABEL_WORLD_OFFSET = 4.0
 let stopCameraChangeListener: (() => void) | null = null
 let viewportProjectionPort: ViewportProjectionPort | null = null
 let cameraController: CameraController | null = null
@@ -37,10 +41,25 @@ let islandOrchestrator: IslandOrchestrator | null = null
 let activeMountToken = 0
 const isLoadingModelCatalog = ref(false)
 const showModelLoadingHint = computed(() => isLoadingModelCatalog.value || isLoadingModels.value)
+const hoveredModelLabelVisible = ref(false)
+const hoveredModelLabelStyle = ref<{ left: string; top: string }>({
+  left: '0px',
+  top: '0px',
+})
 const sceneRoot = inject('sceneRoot') as { value: HTMLElement | null } | null
 const route = useRoute()
 const router = useRouter()
 const { placements, refresh, findById } = islandModelCatalogStore
+const hoveredModelScreenProjection = { x: 0, y: 0, visible: false }
+const focusedIslandModel = computed(() => {
+  const modelId = focusedModelId.value
+  return modelId ? findById(modelId) : null
+})
+const hoveredIslandModel = computed(() => {
+  if (isFocusModeActive.value) return null
+  const modelId = hoveredModelId.value
+  return modelId ? findById(modelId) : null
+})
 const {
   terrainSelectionCoordinates,
   isCreateModelOpen,
@@ -59,6 +78,13 @@ const {
   getOrchestrator: () => islandOrchestrator ?? getOrchestrator(),
   getViewportProjectionPort: () => viewportProjectionPort,
 })
+
+watch([() => hoveredIslandModel.value?.id ?? null, () => isFocusModeActive.value],
+  () => {
+    updateHoveredModelLabelPosition()
+  },
+  { flush: 'post' },
+)
 
 function handleSearchSelected(query: SearchEntry) {
   if (isFocusModeActive.value && islandOrchestrator) {
@@ -82,6 +108,32 @@ function handleWindowKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape' || !isFocusModeActive.value || !islandOrchestrator) return
 
   exitFocusMode(islandOrchestrator)
+}
+
+function updateHoveredModelLabelPosition() {
+  const hoveredModel = hoveredIslandModel.value
+  if (!hoveredModel || !viewportProjectionPort) {
+    hoveredModelLabelVisible.value = false
+    return
+  }
+
+  const screen = viewportProjectionPort.projectPoint(
+    {
+      x: hoveredModel.coordinates.x,
+      y: hoveredModel.coordinates.y + HOVER_LABEL_WORLD_OFFSET,
+      z: hoveredModel.coordinates.z,
+    },
+    hoveredModelScreenProjection,
+  )
+
+  if (!screen.visible) {
+    hoveredModelLabelVisible.value = false
+    return
+  }
+
+  hoveredModelLabelStyle.value.left = `${screen.x}px`
+  hoveredModelLabelStyle.value.top = `${screen.y}px`
+  hoveredModelLabelVisible.value = true
 }
 
 async function focusRequestedModel(modelId: string) {
@@ -158,7 +210,9 @@ onMounted(async () => {
         refreshLoadingPriorities(islandOrchestrator)
       }
       updateMarkerButtonPosition()
+      updateHoveredModelLabelPosition()
     })
+    updateHoveredModelLabelPosition()
   } catch (error) {
     isLoadingModelCatalog.value = false
     console.error('Failed to initialize island view:', error)
@@ -186,12 +240,13 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleWindowKeydown)
   activeMountToken += 1
   isLoadingModelCatalog.value = false
+  hoveredModelLabelVisible.value = false
   disposeIslandModelLayer()
   cameraController?.setMobileMoveInput({ x: 0, y: 0 })
   cameraController = null
 
   if (stopCameraChangeListener) {
-    stopCameraChangeListener()  
+    stopCameraChangeListener()
     stopCameraChangeListener = null
   }
   viewportProjectionPort = null
@@ -204,6 +259,18 @@ onUnmounted(() => {
 <template>
   <div class="island-view-root">
     <search-bar @search-selected="handleSearchSelected"></search-bar>
+    <div v-if="hoveredIslandModel && hoveredModelLabelVisible" class="island-model-hover-label"
+      :style="hoveredModelLabelStyle">
+      {{ hoveredIslandModel.title }}
+    </div>
+    <div v-if="focusedIslandModel" class="island-focused-model-card">
+      <p class="island-focused-model-title">
+        {{ focusedIslandModel.title }}
+      </p>
+      <p class="island-focused-model-creator">
+        by {{ focusedIslandModel.ownerNickname }}
+      </p>
+    </div>
     <button v-if="markerButtonVisible" class="btn btn-primary btn-pill island-marker-add-model" type="button"
       :style="markerButtonStyle" @click.stop="openCreateModel">
       Add model
@@ -211,20 +278,11 @@ onUnmounted(() => {
     <div v-if="showModelLoadingHint" class="island-model-loading-hint" aria-live="polite">
       Models are loading
     </div>
-    <button
-      v-if="isFocusModeActive"
-      class="btn island-focus-exit"
-      type="button"
-      @click.stop="exitFocusedModel"
-    >
+    <button v-if="isFocusModeActive" class="btn island-focus-exit" type="button" @click.stop="exitFocusedModel">
       Back to island
     </button>
-    <model-creation-modal
-      :open="isCreateModelOpen"
-      :coordinates="terrainSelectionCoordinates!"
-      @close="closeCreateModel"
-      @open-job-details="openCreatedJobDetails"
-    />
+    <model-creation-modal :open="isCreateModelOpen" :coordinates="terrainSelectionCoordinates!"
+      @close="closeCreateModel" @open-job-details="openCreatedJobDetails" />
     <login-modal :open="isLoginModalOpen" @close="closeLoginModal" @success="onLoginSuccess" />
     <profile-dock />
     <mobile-joystick class="island-mobile-joystick" @move="onMobileJoystickMove" />

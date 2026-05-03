@@ -14,6 +14,7 @@ type PositionedModel = {
 const renderer = shallowRef<IslandModelRenderer | null>(null)
 const interactor = shallowRef<IslandModelInteractor | null>(null)
 const focusedModelId = shallowRef<string | null>(null)
+const hoveredModelId = shallowRef<string | null>(null)
 const loadingModelCount = shallowRef(0)
 let onModelFocus: ((modelId: string) => void) | null = null
 let onModelBlur: (() => void) | null = null
@@ -34,6 +35,7 @@ export function useIslandModelLayer() {
       interactor.value = null
       renderer.value.dispose()
       renderer.value = null
+      hoveredModelId.value = null
       loadingModelCount.value = 0
     }
 
@@ -46,6 +48,9 @@ export function useIslandModelLayer() {
         onLoadingStateChange: ({ pending, loading }) => {
           loadingModelCount.value = pending + loading
         },
+        onHoveredModelChange: (modelId) => {
+          hoveredModelId.value = modelId
+        },
       },
     )
     return renderer.value
@@ -53,6 +58,7 @@ export function useIslandModelLayer() {
 
   async function renderModels(orchestrator: IslandOrchestrator, models: PositionedModel[]) {
     focusedModelId.value = null
+    hoveredModelId.value = null
     loadingModelCount.value = 0
     orchestrator.setTerrainClickEnabled(true)
     const currentRenderer = ensureRenderer(orchestrator)
@@ -144,6 +150,7 @@ export function useIslandModelLayer() {
     interactor.value?.dispose()
     interactor.value = null
     focusedModelId.value = null
+    hoveredModelId.value = null
     loadingModelCount.value = 0
     onModelFocus = null
     onModelBlur = null
@@ -158,6 +165,7 @@ export function useIslandModelLayer() {
     focusModel,
     exitFocusMode,
     focusedModelId: computed(() => focusedModelId.value),
+    hoveredModelId: computed(() => hoveredModelId.value),
     isFocusModeActive: computed(() => focusedModelId.value !== null),
     isLoadingModels: computed(() => loadingModelCount.value > 0),
     dispose,

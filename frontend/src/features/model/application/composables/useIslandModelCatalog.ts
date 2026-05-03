@@ -5,6 +5,7 @@ import type { ModelSummary } from '../../domain/ModelSummary';
 export type IslandModelPlacement = {
   id: string;
   title: string;
+  ownerNickname: string;
   coordinates: ModelSummary['coordinates'];
   orientation: ModelSummary['orientation'];
   meshAssetUrl: string | null;
@@ -15,6 +16,7 @@ function toIslandModelPlacement(model: ModelSummary): IslandModelPlacement {
   return {
     id: model.id,
     title: model.title,
+    ownerNickname: model.ownerNickname,
     coordinates: model.coordinates,
     orientation: model.orientation,
     meshAssetUrl: model.meshAssetUrl,
