@@ -20,11 +20,28 @@ let onModelBlur: (() => void) | null = null
 
 export function useIslandModelLayer() {
   function ensureRenderer(orchestrator: IslandOrchestrator): IslandModelRenderer {
+    const currentScene = orchestrator.getSceneRenderer().getScene()
+    const currentCamera = orchestrator.getSceneRenderer().getCamera()
+
+    if (
+      renderer.value &&
+      (
+        renderer.value.getScene() !== currentScene ||
+        renderer.value.getCamera() !== currentCamera
+      )
+    ) {
+      interactor.value?.dispose()
+      interactor.value = null
+      renderer.value.dispose()
+      renderer.value = null
+      loadingModelCount.value = 0
+    }
+
     if (renderer.value) return renderer.value
 
     renderer.value = new IslandModelRenderer(
-      orchestrator.getSceneRenderer().getScene(),
-      orchestrator.getSceneRenderer().getCamera(),
+      currentScene,
+      currentCamera,
       {
         onLoadingStateChange: ({ pending, loading }) => {
           loadingModelCount.value = pending + loading
@@ -55,13 +72,28 @@ export function useIslandModelLayer() {
     },
   ) {
     const currentRenderer = ensureRenderer(orchestrator)
+    const currentCanvas = orchestrator.getSceneRenderer().getCanvas()
+    const currentCamera = orchestrator.getSceneRenderer().getCamera()
     onModelFocus = options?.onModelFocus ?? null
     onModelBlur = options?.onModelBlur ?? null
+
+    if (
+      interactor.value &&
+      (
+        interactor.value.getCanvas() !== currentCanvas ||
+        interactor.value.getCamera() !== currentCamera ||
+        interactor.value.getRenderer() !== currentRenderer
+      )
+    ) {
+      interactor.value.dispose()
+      interactor.value = null
+    }
+
     if (interactor.value) return
 
     interactor.value = new IslandModelInteractor(
-      orchestrator.getSceneRenderer().getCamera(),
-      orchestrator.getSceneRenderer().getCanvas(),
+      currentCamera,
+      currentCanvas,
       currentRenderer,
       {
         onModelClick: (modelId) => {
@@ -112,6 +144,7 @@ export function useIslandModelLayer() {
     interactor.value?.dispose()
     interactor.value = null
     focusedModelId.value = null
+    loadingModelCount.value = 0
     onModelFocus = null
     onModelBlur = null
     renderer.value?.dispose()

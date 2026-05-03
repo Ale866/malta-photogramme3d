@@ -22,6 +22,9 @@ const SELECTED_SCALE = 1.14
 const DEEMPHASIZED_SCALE = 0.97
 const DEEMPHASIZED_OPACITY = 0.38
 const INTERACTION_TARGET_MIN_SIZE = 1.5
+const INTERACTION_TARGET_MAX_FOOTPRINT = 4.2
+const INTERACTION_TARGET_MAX_HEIGHT = 5.4
+const INTERACTION_TARGET_MIN_HEIGHT = 2.2
 const DEFAULT_INTERACTION_SIZE = new T.Vector3(2.2, TARGET_MODEL_HEIGHT, 2.2)
 const INITIAL_PRIORITY_LOAD_COUNT = isConservativeGraphicsDevice() ? 2 : 8
 const MAX_CONCURRENT_LOADS = isConservativeGraphicsDevice() ? 1 : 2
@@ -71,6 +74,14 @@ export class IslandModelRenderer {
     this.onLoadingStateChange = options.onLoadingStateChange
     this.group.name = 'island-models'
     this.scene.add(this.group)
+  }
+
+  getScene() {
+    return this.scene
+  }
+
+  getCamera() {
+    return this.camera
   }
 
   async setModels(models: readonly IslandModelRenderInput[]) {
@@ -409,14 +420,7 @@ export class IslandModelRenderer {
       const scaledBounds = new T.Box3().setFromObject(entry.modelGroup)
       const scaledSize = scaledBounds.getSize(new T.Vector3())
       const scaledCenter = scaledBounds.getCenter(new T.Vector3()).sub(entry.root.position)
-
-      entry.interactionTarget.geometry.dispose()
-      entry.interactionTarget.geometry = new T.BoxGeometry(
-        Math.max(scaledSize.x * 1.08, INTERACTION_TARGET_MIN_SIZE),
-        Math.max(scaledSize.y * 1.08, INTERACTION_TARGET_MIN_SIZE),
-        Math.max(scaledSize.z * 1.08, INTERACTION_TARGET_MIN_SIZE),
-      )
-      entry.interactionTarget.position.copy(scaledCenter)
+      this.updateInteractionTarget(entry, scaledSize, scaledCenter)
 
       this.originalStatesByModelId.set(modelId, {
         position: entry.root.position.clone(),
@@ -631,6 +635,32 @@ export class IslandModelRenderer {
     target.userData.isInteractionTarget = true
     target.userData.excludeFromFocusBounds = true
     return target
+  }
+
+  private updateInteractionTarget(
+    entry: ModelRenderEntry,
+    scaledSize: T.Vector3,
+    scaledCenter: T.Vector3,
+  ) {
+    const footprint = T.MathUtils.clamp(
+      Math.max(scaledSize.x, scaledSize.z) * 0.92,
+      INTERACTION_TARGET_MIN_SIZE,
+      INTERACTION_TARGET_MAX_FOOTPRINT,
+    )
+    const height = T.MathUtils.clamp(
+      Math.max(scaledSize.y * 0.9, INTERACTION_TARGET_MIN_HEIGHT),
+      INTERACTION_TARGET_MIN_HEIGHT,
+      INTERACTION_TARGET_MAX_HEIGHT,
+    )
+    const horizontalOffsetLimit = footprint * 0.35
+
+    entry.interactionTarget.geometry.dispose()
+    entry.interactionTarget.geometry = new T.BoxGeometry(footprint, height, footprint)
+    entry.interactionTarget.position.set(
+      T.MathUtils.clamp(scaledCenter.x, -horizontalOffsetLimit, horizontalOffsetLimit),
+      height * 0.5,
+      T.MathUtils.clamp(scaledCenter.z, -horizontalOffsetLimit, horizontalOffsetLimit),
+    )
   }
 }
 

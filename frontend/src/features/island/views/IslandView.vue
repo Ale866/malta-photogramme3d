@@ -34,7 +34,7 @@ let stopCameraChangeListener: (() => void) | null = null
 let viewportProjectionPort: ViewportProjectionPort | null = null
 let cameraController: CameraController | null = null
 let islandOrchestrator: IslandOrchestrator | null = null
-let isViewActive = true
+let activeMountToken = 0
 const isLoadingModelCatalog = ref(false)
 const showModelLoadingHint = computed(() => isLoadingModelCatalog.value || isLoadingModels.value)
 const sceneRoot = inject('sceneRoot') as { value: HTMLElement | null } | null
@@ -95,6 +95,7 @@ async function focusRequestedModel(modelId: string) {
 }
 
 onMounted(async () => {
+  const mountToken = ++activeMountToken
   window.addEventListener('keydown', handleWindowKeydown)
   const container = sceneRoot?.value
   if (!container) {
@@ -103,12 +104,16 @@ onMounted(async () => {
 
   try {
     const terrainUrl = await resolveIslandTerrainUrl()
+    if (mountToken !== activeMountToken) {
+      return
+    }
+
     islandOrchestrator = await initScene(container, {
       terrainUrl,
       utmBbox: MALTA_TERRAIN_UTM_BBOX,
     })
 
-    if (!isViewActive || !islandOrchestrator) {
+    if (mountToken !== activeMountToken || !islandOrchestrator) {
       return
     }
 
@@ -125,8 +130,17 @@ onMounted(async () => {
 
     isLoadingModelCatalog.value = true
     await refresh()
+    if (mountToken !== activeMountToken || !islandOrchestrator) {
+      isLoadingModelCatalog.value = false
+      return
+    }
+
     isLoadingModelCatalog.value = false
     await renderModels(islandOrchestrator, placements.value)
+    if (mountToken !== activeMountToken || !islandOrchestrator) {
+      return
+    }
+
     attachInteractions(islandOrchestrator, {
       onModelFocus: () => {
         clearTerrainSelection()
@@ -170,7 +184,8 @@ function onMobileJoystickMove(input: { x: number; y: number }) {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleWindowKeydown)
-  isViewActive = false
+  activeMountToken += 1
+  isLoadingModelCatalog.value = false
   disposeIslandModelLayer()
   cameraController?.setMobileMoveInput({ x: 0, y: 0 })
   cameraController = null

@@ -144,6 +144,8 @@ export class IslandOrchestrator {
   }
 
   dispose() {
+    this.interactionHandler?.dispose()
+    this.interactionHandler = null
     this.sceneRenderer.stopRenderLoop()
     this.debugOverlayService.dispose()
     this.terrainService.dispose()

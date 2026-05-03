@@ -44,6 +44,18 @@ export class IslandModelInteractor {
     this.canvas.addEventListener('pointercancel', this.handlePointerLeave, { capture: true })
   }
 
+  getCanvas() {
+    return this.canvas
+  }
+
+  getCamera() {
+    return this.camera
+  }
+
+  getRenderer() {
+    return this.renderer
+  }
+
   dispose() {
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown, { capture: true })
     this.canvas.removeEventListener('pointermove', this.handlePointerMove, { capture: true })
@@ -129,7 +141,7 @@ export class IslandModelInteractor {
     }
 
     if (!this.isDragging) {
-      const modelId = this.pickModelId(event.clientX, event.clientY)
+      const modelId = this.pointerDownModelId ?? this.pickModelId(event.clientX, event.clientY)
       if (modelId) {
         event.stopImmediatePropagation()
         event.preventDefault()

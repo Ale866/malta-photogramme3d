@@ -5,6 +5,11 @@ export class InteractionHandler {
   private canvas: HTMLCanvasElement
   private isDragging = false
   private pointerDownClient: { x: number; y: number } | null = null
+  private onClick: ((point: T.Vector3) => void) | null = null
+  private onMiss: (() => void) | null = null
+  private scene: T.Scene | null = null
+  private terrainObject: T.Object3D | undefined
+  private isBound = false
 
   constructor(camera: T.PerspectiveCamera, canvas: HTMLCanvasElement) {
     this.camera = camera
@@ -17,42 +22,72 @@ export class InteractionHandler {
     scene: T.Scene,
     terrainObject?: T.Object3D,
   ) {
-    this.canvas.addEventListener('pointerdown', (event) => {
-      if (!event.isPrimary) return
-      if (event.pointerType === 'mouse' && event.button !== 0) return
+    this.onClick = onClick
+    this.onMiss = onMiss
+    this.scene = scene
+    this.terrainObject = terrainObject
 
-      this.isDragging = false
-      this.pointerDownClient = { x: event.clientX, y: event.clientY }
-    })
+    if (this.isBound) return
 
-    this.canvas.addEventListener('pointermove', (event) => {
-      if (!this.pointerDownClient) return
+    this.canvas.addEventListener('pointerdown', this.handlePointerDown)
+    this.canvas.addEventListener('pointermove', this.handlePointerMove)
+    this.canvas.addEventListener('pointerup', this.handlePointerUp)
+    this.canvas.addEventListener('pointercancel', this.handlePointerCancel)
+    this.isBound = true
+  }
 
-      const dx = event.clientX - this.pointerDownClient.x
-      const dy = event.clientY - this.pointerDownClient.y
-      if (Math.hypot(dx, dy) > 4) {
-        this.isDragging = true
+  dispose() {
+    if (this.isBound) {
+      this.canvas.removeEventListener('pointerdown', this.handlePointerDown)
+      this.canvas.removeEventListener('pointermove', this.handlePointerMove)
+      this.canvas.removeEventListener('pointerup', this.handlePointerUp)
+      this.canvas.removeEventListener('pointercancel', this.handlePointerCancel)
+      this.isBound = false
+    }
+
+    this.pointerDownClient = null
+    this.isDragging = false
+    this.onClick = null
+    this.onMiss = null
+    this.scene = null
+    this.terrainObject = undefined
+  }
+
+  private readonly handlePointerDown = (event: PointerEvent) => {
+    if (!event.isPrimary) return
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+
+    this.isDragging = false
+    this.pointerDownClient = { x: event.clientX, y: event.clientY }
+  }
+
+  private readonly handlePointerMove = (event: PointerEvent) => {
+    if (!this.pointerDownClient) return
+
+    const dx = event.clientX - this.pointerDownClient.x
+    const dy = event.clientY - this.pointerDownClient.y
+    if (Math.hypot(dx, dy) > 4) {
+      this.isDragging = true
+    }
+  }
+
+  private readonly handlePointerUp = (event: PointerEvent) => {
+    if (!event.isPrimary) return
+    if (!this.isDragging && this.pointerDownClient && this.scene) {
+      const point = this.raycastClick(event.clientX, event.clientY, this.scene, this.terrainObject)
+      if (point) {
+        this.onClick?.(point)
+      } else {
+        this.onMiss?.()
       }
-    })
+    }
+    this.pointerDownClient = null
+    this.isDragging = false
+  }
 
-    this.canvas.addEventListener('pointerup', (event) => {
-      if (!event.isPrimary) return
-      if (!this.isDragging && this.pointerDownClient) {
-        const point = this.raycastClick(event.clientX, event.clientY, scene, terrainObject)
-        if (point) {
-          onClick(point)
-        } else {
-          onMiss()
-        }
-      }
-      this.pointerDownClient = null
-      this.isDragging = false
-    })
-
-    this.canvas.addEventListener('pointercancel', () => {
-      this.pointerDownClient = null
-      this.isDragging = false
-    })
+  private readonly handlePointerCancel = () => {
+    this.pointerDownClient = null
+    this.isDragging = false
   }
 
   private raycastClick(
