@@ -240,11 +240,16 @@ def read_scalar(handle, fmt, value_type):
     return struct.unpack(fmt + scalar_format, data)[0]
 
 
-def make_materials(base_dir: Path, texture_files):
+def make_materials(base_dir: Path, texture_files, override_texture_paths=None):
     materials = []
+    override_texture_paths = override_texture_paths or []
 
-    for tex_name in texture_files:
-        tex_path = base_dir / tex_name
+    for index, tex_name in enumerate(texture_files):
+        tex_path = (
+            override_texture_paths[index]
+            if index < len(override_texture_paths)
+            else (base_dir / tex_name)
+        )
         if not tex_path.exists():
             raise RuntimeError(f"Missing atlas file: {tex_path}")
 
@@ -309,10 +314,13 @@ def main():
 
     argv = argv[argv.index("--") + 1:]
     if len(argv) < 2:
-        raise RuntimeError("Usage: blender -b -P convert_textured_ply_to_glb.py -- <input.ply> <output.glb>")
+        raise RuntimeError(
+            "Usage: blender -b -P convert_textured_ply_to_glb.py -- <input.ply> <output.glb> [override_texture ...]"
+        )
 
     input_ply = Path(argv[0]).resolve()
     output_glb = Path(argv[1]).resolve()
+    override_texture_paths = [Path(value).resolve() for value in argv[2:]]
     output_glb.parent.mkdir(parents=True, exist_ok=True)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -331,7 +339,15 @@ def main():
     if not texture_files:
         raise RuntimeError("No TextureFile comments found in PLY header")
 
-    materials = make_materials(input_ply.parent, texture_files)
+    if override_texture_paths and len(override_texture_paths) != len(texture_files):
+        raise RuntimeError(
+            f"Expected {len(texture_files)} override textures, got {len(override_texture_paths)}"
+        )
+
+    if override_texture_paths:
+        print("Override textures:", [str(path) for path in override_texture_paths])
+
+    materials = make_materials(input_ply.parent, texture_files, override_texture_paths)
     obj = build_mesh_object("OpenMVSModel", verts, faces, face_uvs, face_texnums, materials)
 
     bpy.context.view_layer.objects.active = obj

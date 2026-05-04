@@ -1,5 +1,6 @@
 import { getErrorMessage, http } from '@/core/api/httpClient';
 import { runtimeConfig } from '@/core/config/runtime';
+import { isConservativeGraphicsDevice } from '@/core/device/performance';
 import type { ModelJobDetails } from '@/features/model/domain/ModelJobDetails';
 import type { ModelJobSnapshot } from '@/features/model/domain/ModelJob';
 import type { ModelLibrary, NonCompletedModelJobSummary } from '@/features/model/domain/ModelLibrary';
@@ -126,6 +127,8 @@ const MAX_BATCH_ATTEMPTS = 2;
 const VIDEO_CHUNK_SIZE_BYTES = 5 * 1024 * 1024;
 
 function toModelSummary(dto: ModelDto): ModelSummary {
+  const meshAssetUrl = toPreferredMeshAssetUrl(dto.id);
+
   return {
     id: dto.id,
     ownerId: dto.ownerId,
@@ -133,7 +136,7 @@ function toModelSummary(dto: ModelDto): ModelSummary {
     title: dto.title,
     sourceJobId: dto.sourceJobId ?? null,
     outputFolder: dto.outputFolder,
-    meshAssetUrl: toApiAssetUrl(`/model/${dto.id}/mesh`),
+    meshAssetUrl,
     textureAssetUrl: toApiAssetUrl(`/model/${dto.id}/texture`),
     createdAt: dto.createdAt,
     coordinates: dto.coordinates,
@@ -156,6 +159,23 @@ function toApiAssetUrl(pathname: string) {
 
 function ensureTrailingSlash(value: string) {
   return value.endsWith('/') ? value : `${value}/`;
+}
+
+function toPreferredMeshAssetUrl(modelId: string) {
+  const baseUrl = toApiAssetUrl(`/model/${modelId}/mesh`);
+  return isConservativeGraphicsDevice() ? withQueryParam(baseUrl, 'variant', 'mobile') : baseUrl;
+}
+
+function withQueryParam(assetUrl: string, key: string, value: string) {
+  const isAbsoluteUrl = /^https?:\/\//iu.test(assetUrl);
+  const parsedUrl = new URL(assetUrl, 'http://local/');
+  parsedUrl.searchParams.set(key, value);
+
+  if (isAbsoluteUrl) {
+    return parsedUrl.toString();
+  }
+
+  return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
 }
 
 function toNonCompletedModelJobSummary(dto: ModelJobDto): NonCompletedModelJobSummary {

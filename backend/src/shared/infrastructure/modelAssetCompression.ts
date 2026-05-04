@@ -16,7 +16,7 @@ export async function writeOptimizedModelAssetVariants(meshPath: string, texture
 
 export async function ensureCompressedMeshVariant(meshPath: string, encoding: "br" | "gzip") {
   const variantPath = getCompressedMeshVariantPath(meshPath, encoding);
-  if (fs.existsSync(variantPath)) {
+  if (await isVariantCurrent(meshPath, variantPath)) {
     return variantPath;
   }
 
@@ -29,7 +29,7 @@ export async function ensureCompressedMeshVariant(meshPath: string, encoding: "b
 
 export async function ensureWebpTextureVariant(texturePath: string) {
   const variantPath = getWebpTextureVariantPath(texturePath);
-  if (fs.existsSync(variantPath)) {
+  if (await isVariantCurrent(texturePath, variantPath)) {
     return variantPath;
   }
 
@@ -47,4 +47,17 @@ export function getCompressedMeshVariantPath(meshPath: string, encoding: "br" | 
 
 export function getWebpTextureVariantPath(texturePath: string) {
   return texturePath.replace(/\.[^.]+$/u, ".webp");
+}
+
+async function isVariantCurrent(sourcePath: string, variantPath: string) {
+  if (!fs.existsSync(variantPath)) {
+    return false;
+  }
+
+  const [sourceStats, variantStats] = await Promise.all([
+    fs.promises.stat(sourcePath),
+    fs.promises.stat(variantPath),
+  ]);
+
+  return variantStats.mtimeMs >= sourceStats.mtimeMs;
 }

@@ -1,15 +1,16 @@
 import { notFound } from "../../../shared/errors/applicationError";
-import type { ModelAssetServices } from "./ports";
+import type { ModelAssetServices, ModelMeshVariant } from "./ports";
 
 export async function getModelMeshAsset(
   services: ModelAssetServices,
   modelId: string,
   acceptEncodingHeader: string | string[] | undefined,
+  variant: ModelMeshVariant,
 ) {
   const model = await services.models.findById(modelId);
   if (!model) throw notFound("Model not found", "model_not_found");
 
-  const asset = await services.assets.resolveMeshDelivery(model.outputFolder, acceptEncodingHeader);
+  const asset = await services.assets.resolveMeshDelivery(model.outputFolder, acceptEncodingHeader, variant);
   if (!asset) throw notFound("Model mesh asset not found", "model_mesh_not_found");
 
   return asset;

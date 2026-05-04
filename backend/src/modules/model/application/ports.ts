@@ -20,10 +20,13 @@ export type ModelAssetDelivery = {
   varyHeader?: "Accept" | "Accept-Encoding";
 };
 
+export type ModelMeshVariant = "default" | "mobile";
+
 export type ModelAssetStorage = {
   resolveMeshDelivery(
     outputFolder: string,
     acceptEncodingHeader: string | string[] | undefined,
+    variant: ModelMeshVariant,
   ): Promise<ModelAssetDelivery | null>;
   resolveTextureDelivery(
     outputFolder: string,

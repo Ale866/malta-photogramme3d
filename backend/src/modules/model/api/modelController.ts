@@ -5,7 +5,7 @@ import { getAllModels } from "../application/getAllModels";
 import { getCatalogModelById, getUserModelById } from "../application/getModelById";
 import { getModelMeshAsset, getModelTextureAsset } from "../application/getModelAsset";
 import { getIslandModels } from "../application/getIslandModels";
-import type { ModelAssetDelivery } from "../application/ports";
+import type { ModelAssetDelivery, ModelMeshVariant } from "../application/ports";
 import { notFound, sendErrorResponse, unauthorized, } from "../../../shared/errors/applicationError";
 import { modelRepo } from "../infrastructure/modelRepo";
 import { modelJobRepo } from "../../model-jobs/infrastructure/modelJobRepo";
@@ -112,6 +112,7 @@ export async function getModelMeshAssetController(req: AuthedRequest, res: Respo
       modelAssetDependencies,
       req.params.modelId,
       req.headers["accept-encoding"],
+      resolveRequestedMeshVariant(req.query.variant),
     );
 
     return sendAssetVariant(res, asset);
@@ -243,4 +244,12 @@ function sendAssetVariant(res: Response, asset: ModelAssetDelivery) {
   }
 
   return res.sendFile(asset.path);
+}
+
+function resolveRequestedMeshVariant(value: unknown): ModelMeshVariant {
+  if (Array.isArray(value)) {
+    return value.includes("mobile") ? "mobile" : "default";
+  }
+
+  return value === "mobile" ? "mobile" : "default";
 }
