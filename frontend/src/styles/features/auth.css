@@ -295,6 +295,12 @@
   gap: var(--space-3);
 }
 
+.profile-dock-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .profile-dock-backdrop {
   position: fixed;
   inset: 0;
@@ -333,6 +339,12 @@
   z-index: 2;
 }
 
+.profile-dock-trigger--guide {
+  border-color: rgb(255 255 255 / 0.22);
+  background: linear-gradient(180deg, rgb(20 24 30 / 0.98), rgb(6 8 12 / 0.98));
+  color: #ffffff;
+}
+
 .profile-dock-trigger-label {
   display: inline-grid;
   place-items: center;
@@ -349,9 +361,87 @@
   height: 20px;
 }
 
+.profile-dock-trigger-icon--guide {
+  width: 18px;
+  height: 18px;
+}
+
 .profile-summary {
   display: grid;
   gap: var(--space-4);
+}
+
+.photogrammetry-guide {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.photogrammetry-guide-header,
+.photogrammetry-guide-sections {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.photogrammetry-guide-title,
+.photogrammetry-guide-copy,
+.photogrammetry-guide-section-title,
+.photogrammetry-guide-note-title,
+.photogrammetry-guide-note-copy {
+  margin: 0;
+}
+
+.photogrammetry-guide-title {
+  font-size: 1.12rem;
+  color: #f6fbff;
+}
+
+.photogrammetry-guide-copy {
+  line-height: 1.55;
+}
+
+.photogrammetry-guide-section {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.photogrammetry-guide-section-title {
+  font-size: 0.94rem;
+  color: #f5f9ff;
+}
+
+.photogrammetry-guide-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.photogrammetry-guide-note {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.95rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgb(122 172 235 / 0.2);
+  background: linear-gradient(180deg, rgb(12 24 40 / 0.92), rgb(8 15 27 / 0.96));
+}
+
+.photogrammetry-guide-note-title {
+  font-size: 0.82rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9ec8ff;
+}
+
+.photogrammetry-guide-note-copy {
+  color: #dcecff;
+  line-height: 1.55;
 }
 
 .profile-summary-header {
@@ -447,6 +537,10 @@
     align-items: flex-end;
   }
 
+  .profile-dock-actions {
+    gap: 0.45rem;
+  }
+
   .profile-dock-panel {
     position: fixed;
     top: calc(var(--space-3) + 42px + var(--space-2));
@@ -470,6 +564,11 @@
   .profile-dock-trigger-icon {
     width: 18px;
     height: 18px;
+  }
+
+  .photogrammetry-guide-section,
+  .photogrammetry-guide-note {
+    padding: 0.85rem 0.9rem;
   }
 }
 .auth-page::-webkit-scrollbar {
